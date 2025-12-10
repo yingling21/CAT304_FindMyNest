@@ -1,0 +1,844 @@
+import PropertyCard from "@/components/PropertyCard";
+import { mockProperties } from "@/mocks/properties";
+import type { PropertyType, FurnishingLevel } from "@/types";
+import { Stack } from "expo-router";
+import {
+  MapPin,
+  SlidersHorizontal,
+  Search,
+  X,
+} from "lucide-react-native";
+import React, { useState, useMemo } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  Pressable,
+  ScrollView,
+  Modal,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+type AmenityFilter = {
+  airConditioning: boolean;
+  wifi: boolean;
+  parking: boolean;
+  kitchenAccess: boolean;
+  washingMachine: boolean;
+  security: boolean;
+};
+
+type Filters = {
+  location: string;
+  propertyTypes: PropertyType[];
+  priceMin: string;
+  priceMax: string;
+  sizeMin: string;
+  sizeMax: string;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  furnishing: FurnishingLevel[];
+  amenities: AmenityFilter;
+};
+
+const initialFilters: Filters = {
+  location: "",
+  propertyTypes: [],
+  priceMin: "",
+  priceMax: "",
+  sizeMin: "",
+  sizeMax: "",
+  bedrooms: null,
+  bathrooms: null,
+  furnishing: [],
+  amenities: {
+    airConditioning: false,
+    wifi: false,
+    parking: false,
+    kitchenAccess: false,
+    washingMachine: false,
+    security: false,
+  },
+};
+
+type SortOption = "newest" | "price_low" | "price_high";
+
+export default function SearchScreen() {
+  const [filters, setFilters] = useState<Filters>(initialFilters);
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
+
+  const filteredAndSortedProperties = useMemo(() => {
+    let results = mockProperties.filter((property) => {
+      if (
+        filters.location &&
+        !property.address.toLowerCase().includes(filters.location.toLowerCase())
+      ) {
+        return false;
+      }
+
+      if (
+        filters.propertyTypes.length > 0 &&
+        !filters.propertyTypes.includes(property.propertyType)
+      ) {
+        return false;
+      }
+
+      if (
+        filters.priceMin &&
+        property.monthlyRent < parseInt(filters.priceMin)
+      ) {
+        return false;
+      }
+
+      if (
+        filters.priceMax &&
+        property.monthlyRent > parseInt(filters.priceMax)
+      ) {
+        return false;
+      }
+
+      if (filters.sizeMin && property.size < parseInt(filters.sizeMin)) {
+        return false;
+      }
+
+      if (filters.sizeMax && property.size > parseInt(filters.sizeMax)) {
+        return false;
+      }
+
+      if (filters.bedrooms && property.bedrooms < filters.bedrooms) {
+        return false;
+      }
+
+      if (filters.bathrooms && property.bathrooms < filters.bathrooms) {
+        return false;
+      }
+
+      if (
+        filters.furnishing.length > 0 &&
+        !filters.furnishing.includes(property.furnishingLevel)
+      ) {
+        return false;
+      }
+
+      if (
+        filters.amenities.airConditioning &&
+        !property.amenities.airConditioning
+      ) {
+        return false;
+      }
+      if (filters.amenities.wifi && !property.amenities.wifi) {
+        return false;
+      }
+      if (filters.amenities.parking && !property.amenities.parking) {
+        return false;
+      }
+      if (
+        filters.amenities.kitchenAccess &&
+        !property.amenities.kitchenAccess
+      ) {
+        return false;
+      }
+      if (
+        filters.amenities.washingMachine &&
+        !property.amenities.washingMachine
+      ) {
+        return false;
+      }
+      if (filters.amenities.security && !property.amenities.security) {
+        return false;
+      }
+
+      return true;
+    });
+
+    if (sortBy === "price_low") {
+      results = results.sort((a, b) => a.monthlyRent - b.monthlyRent);
+    } else if (sortBy === "price_high") {
+      results = results.sort((a, b) => b.monthlyRent - a.monthlyRent);
+    } else {
+      results = results.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    }
+
+    return results;
+  }, [filters, sortBy]);
+
+  const togglePropertyType = (type: PropertyType) => {
+    setFilters((prev) => ({
+      ...prev,
+      propertyTypes: prev.propertyTypes.includes(type)
+        ? prev.propertyTypes.filter((t) => t !== type)
+        : [...prev.propertyTypes, type],
+    }));
+  };
+
+  const toggleFurnishing = (level: FurnishingLevel) => {
+    setFilters((prev) => ({
+      ...prev,
+      furnishing: prev.furnishing.includes(level)
+        ? prev.furnishing.filter((l) => l !== level)
+        : [...prev.furnishing, level],
+    }));
+  };
+
+  const toggleAmenity = (amenity: keyof AmenityFilter) => {
+    setFilters((prev) => ({
+      ...prev,
+      amenities: {
+        ...prev.amenities,
+        [amenity]: !prev.amenities[amenity],
+      },
+    }));
+  };
+
+  const resetFilters = () => {
+    setFilters(initialFilters);
+  };
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (filters.location) count++;
+    if (filters.propertyTypes.length > 0) count++;
+    if (filters.priceMin || filters.priceMax) count++;
+    if (filters.sizeMin || filters.sizeMax) count++;
+    if (filters.bedrooms) count++;
+    if (filters.bathrooms) count++;
+    if (filters.furnishing.length > 0) count++;
+    if (Object.values(filters.amenities).some((v) => v)) count++;
+    return count;
+  }, [filters]);
+
+  return (
+    <>
+      <Stack.Screen
+        options={{
+          title: "Search Properties",
+          headerShown: true,
+        }}
+      />
+      <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
+        <View style={styles.container}>
+          <View style={styles.searchSection}>
+            <View style={styles.searchBar}>
+              <Search size={20} color="#9CA3AF" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search by location (e.g., Penang, Bayan Lepas)"
+                value={filters.location}
+                onChangeText={(text) =>
+                  setFilters((prev) => ({ ...prev, location: text }))
+                }
+                placeholderTextColor="#9CA3AF"
+              />
+              {filters.location.length > 0 && (
+                <Pressable onPress={() => setFilters((prev) => ({ ...prev, location: "" }))}>
+                  <X size={20} color="#9CA3AF" />
+                </Pressable>
+              )}
+            </View>
+
+            <View style={styles.actionRow}>
+              <Pressable
+                style={[styles.filterButton, activeFiltersCount > 0 && styles.filterButtonActive]}
+                onPress={() => setShowFilters(true)}
+              >
+                <SlidersHorizontal size={20} color={activeFiltersCount > 0 ? "#FFFFFF" : "#6366F1"} />
+                <Text style={[styles.filterButtonText, activeFiltersCount > 0 && styles.filterButtonTextActive]}>
+                  Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}
+                </Text>
+              </Pressable>
+
+              <View style={styles.sortContainer}>
+                <Text style={styles.sortLabel}>Sort:</Text>
+                <Pressable
+                  style={styles.sortButton}
+                  onPress={() => {
+                    if (sortBy === "newest") setSortBy("price_low");
+                    else if (sortBy === "price_low") setSortBy("price_high");
+                    else setSortBy("newest");
+                  }}
+                >
+                  <Text style={styles.sortButtonText}>
+                    {sortBy === "newest" && "Newest"}
+                    {sortBy === "price_low" && "Price: Low to High"}
+                    {sortBy === "price_high" && "Price: High to Low"}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+
+          <Text style={styles.resultsText}>
+            {filteredAndSortedProperties.length} properties found
+          </Text>
+
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {filteredAndSortedProperties.map((property) => (
+              <PropertyCard key={property.id} property={property} />
+            ))}
+
+            {filteredAndSortedProperties.length === 0 && (
+              <View style={styles.emptyState}>
+                <MapPin size={64} color="#D1D5DB" />
+                <Text style={styles.emptyTitle}>No properties found</Text>
+                <Text style={styles.emptySubtitle}>
+                  Try adjusting your filters to see more results
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+
+        <Modal
+          visible={showFilters}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowFilters(false)}
+        >
+          <SafeAreaView style={styles.modalContainer} edges={["top", "bottom"]}>
+            <View style={styles.modalHeader}>
+              <Pressable onPress={() => setShowFilters(false)}>
+                <X size={24} color="#1F2937" />
+              </Pressable>
+              <Text style={styles.modalTitle}>Filters</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Property Type</Text>
+                <View style={styles.chipContainer}>
+                  {(["house", "apartment", "studio", "room"] as PropertyType[]).map(
+                    (type) => (
+                      <Pressable
+                        key={type}
+                        style={[
+                          styles.chip,
+                          filters.propertyTypes.includes(type) && styles.chipActive,
+                        ]}
+                        onPress={() => togglePropertyType(type)}
+                      >
+                        <Text
+                          style={[
+                            styles.chipText,
+                            filters.propertyTypes.includes(type) &&
+                              styles.chipTextActive,
+                          ]}
+                        >
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </Text>
+                      </Pressable>
+                    )
+                  )}
+                </View>
+              </View>
+
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Price Range (RM/month)</Text>
+                <View style={styles.rangeRow}>
+                  <View style={styles.rangeInput}>
+                    <Text style={styles.rangeLabel}>Minimum</Text>
+                    <TextInput
+                      style={styles.rangeTextInput}
+                      placeholder="0"
+                      value={filters.priceMin}
+                      onChangeText={(text) =>
+                        setFilters((prev) => ({ ...prev, priceMin: text }))
+                      }
+                      keyboardType="numeric"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                  <Text style={styles.rangeSeparator}>-</Text>
+                  <View style={styles.rangeInput}>
+                    <Text style={styles.rangeLabel}>Maximum</Text>
+                    <TextInput
+                      style={styles.rangeTextInput}
+                      placeholder="No limit"
+                      value={filters.priceMax}
+                      onChangeText={(text) =>
+                        setFilters((prev) => ({ ...prev, priceMax: text }))
+                      }
+                      keyboardType="numeric"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Size Range (sq ft)</Text>
+                <View style={styles.rangeRow}>
+                  <View style={styles.rangeInput}>
+                    <Text style={styles.rangeLabel}>Minimum</Text>
+                    <TextInput
+                      style={styles.rangeTextInput}
+                      placeholder="0"
+                      value={filters.sizeMin}
+                      onChangeText={(text) =>
+                        setFilters((prev) => ({ ...prev, sizeMin: text }))
+                      }
+                      keyboardType="numeric"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                  <Text style={styles.rangeSeparator}>-</Text>
+                  <View style={styles.rangeInput}>
+                    <Text style={styles.rangeLabel}>Maximum</Text>
+                    <TextInput
+                      style={styles.rangeTextInput}
+                      placeholder="No limit"
+                      value={filters.sizeMax}
+                      onChangeText={(text) =>
+                        setFilters((prev) => ({ ...prev, sizeMax: text }))
+                      }
+                      keyboardType="numeric"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Bedrooms</Text>
+                <View style={styles.chipContainer}>
+                  {[1, 2, 3, 4].map((num) => (
+                    <Pressable
+                      key={num}
+                      style={[
+                        styles.chip,
+                        filters.bedrooms === num && styles.chipActive,
+                      ]}
+                      onPress={() =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          bedrooms: prev.bedrooms === num ? null : num,
+                        }))
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          filters.bedrooms === num && styles.chipTextActive,
+                        ]}
+                      >
+                        {num}+
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Bathrooms</Text>
+                <View style={styles.chipContainer}>
+                  {[1, 2, 3, 4].map((num) => (
+                    <Pressable
+                      key={num}
+                      style={[
+                        styles.chip,
+                        filters.bathrooms === num && styles.chipActive,
+                      ]}
+                      onPress={() =>
+                        setFilters((prev) => ({
+                          ...prev,
+                          bathrooms: prev.bathrooms === num ? null : num,
+                        }))
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          filters.bathrooms === num && styles.chipTextActive,
+                        ]}
+                      >
+                        {num}+
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Furnishing</Text>
+                <View style={styles.chipContainer}>
+                  {(
+                    [
+                      "fully_furnished",
+                      "partially_furnished",
+                      "unfurnished",
+                    ] as FurnishingLevel[]
+                  ).map((level) => (
+                    <Pressable
+                      key={level}
+                      style={[
+                        styles.chip,
+                        filters.furnishing.includes(level) && styles.chipActive,
+                      ]}
+                      onPress={() => toggleFurnishing(level)}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          filters.furnishing.includes(level) &&
+                            styles.chipTextActive,
+                        ]}
+                      >
+                        {level === "fully_furnished"
+                          ? "Fully"
+                          : level === "partially_furnished"
+                          ? "Partially"
+                          : "Unfurnished"}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Amenities</Text>
+                <View style={styles.chipContainer}>
+                  <Pressable
+                    style={[styles.chip, filters.amenities.airConditioning && styles.chipActive]}
+                    onPress={() => toggleAmenity("airConditioning")}
+                  >
+                    <Text style={[styles.chipText, filters.amenities.airConditioning && styles.chipTextActive]}>
+                      Air Conditioning
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.chip, filters.amenities.wifi && styles.chipActive]}
+                    onPress={() => toggleAmenity("wifi")}
+                  >
+                    <Text style={[styles.chipText, filters.amenities.wifi && styles.chipTextActive]}>
+                      WiFi
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.chip, filters.amenities.parking && styles.chipActive]}
+                    onPress={() => toggleAmenity("parking")}
+                  >
+                    <Text style={[styles.chipText, filters.amenities.parking && styles.chipTextActive]}>
+                      Parking
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.chip, filters.amenities.kitchenAccess && styles.chipActive]}
+                    onPress={() => toggleAmenity("kitchenAccess")}
+                  >
+                    <Text style={[styles.chipText, filters.amenities.kitchenAccess && styles.chipTextActive]}>
+                      Kitchen
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.chip, filters.amenities.washingMachine && styles.chipActive]}
+                    onPress={() => toggleAmenity("washingMachine")}
+                  >
+                    <Text style={[styles.chipText, filters.amenities.washingMachine && styles.chipTextActive]}>
+                      Washing Machine
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.chip, filters.amenities.security && styles.chipActive]}
+                    onPress={() => toggleAmenity("security")}
+                  >
+                    <Text style={[styles.chipText, filters.amenities.security && styles.chipTextActive]}>
+                      Security
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Location</Text>
+                <View style={styles.locationSearchContainer}>
+                  <MapPin size={18} color="#9CA3AF" />
+                  <TextInput
+                    style={styles.locationSearchInput}
+                    placeholder="Search by city or area..."
+                    value={filters.location}
+                    onChangeText={(text) => setFilters(prev => ({ ...prev, location: text }))}
+                    placeholderTextColor="#9CA3AF"
+                  />
+                  {filters.location.length > 0 && (
+                    <Pressable onPress={() => setFilters(prev => ({ ...prev, location: "" }))}>
+                      <X size={18} color="#9CA3AF" />
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <Pressable
+                style={styles.resetButtonFooter}
+                onPress={resetFilters}
+              >
+                <Text style={styles.resetButtonFooterText}>Reset</Text>
+              </Pressable>
+              <Pressable
+                style={styles.applyButton}
+                onPress={() => setShowFilters(false)}
+              >
+                <Text style={styles.applyButtonText}>Apply Filters</Text>
+              </Pressable>
+            </View>
+          </SafeAreaView>
+        </Modal>
+      </SafeAreaView>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#F9FAFB",
+  },
+  container: {
+    flex: 1,
+  },
+  searchSection: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    marginBottom: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: "#1F2937",
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  filterButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#6366F1",
+    backgroundColor: "#FFFFFF",
+  },
+  filterButtonActive: {
+    backgroundColor: "#6366F1",
+  },
+  filterButtonText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "#6366F1",
+  },
+  filterButtonTextActive: {
+    color: "#FFFFFF",
+  },
+  sortContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  sortLabel: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "500" as const,
+  },
+  sortButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: "#F3F4F6",
+  },
+  sortButtonText: {
+    fontSize: 13,
+    color: "#374151",
+    fontWeight: "500" as const,
+  },
+  resultsText: {
+    fontSize: 14,
+    color: "#6B7280",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 24,
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "700" as const,
+    color: "#1F2937",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 15,
+    color: "#6B7280",
+    textAlign: "center",
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700" as const,
+    color: "#1F2937",
+  },
+  modalContent: {
+    flex: 1,
+  },
+  filterSection: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+  },
+  filterSectionTitle: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: "#1F2937",
+    marginBottom: 16,
+  },
+  chipContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    backgroundColor: "#FFFFFF",
+  },
+  chipActive: {
+    borderColor: "#6366F1",
+    backgroundColor: "#6366F1",
+  },
+  chipText: {
+    fontSize: 14,
+    fontWeight: "500" as const,
+    color: "#374151",
+  },
+  chipTextActive: {
+    color: "#FFFFFF",
+  },
+  rangeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  rangeInput: {
+    flex: 1,
+  },
+  rangeLabel: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginBottom: 6,
+  },
+  rangeTextInput: {
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: "#1F2937",
+    backgroundColor: "#F9FAFB",
+  },
+  rangeSeparator: {
+    fontSize: 16,
+    color: "#9CA3AF",
+    marginTop: 20,
+  },
+  locationSearchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  locationSearchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: "#1F2937",
+  },
+  modalFooter: {
+    flexDirection: "row",
+    padding: 20,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  resetButtonFooter: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    backgroundColor: "#FFFFFF",
+  },
+  resetButtonFooterText: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: "#374151",
+  },
+  applyButton: {
+    flex: 2,
+    backgroundColor: "#6366F1",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  applyButtonText: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: "#FFFFFF",
+  },
+});
