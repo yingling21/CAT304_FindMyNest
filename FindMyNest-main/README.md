@@ -1,4 +1,8 @@
-# Welcome to your app
+# Welcome to your Rork app
+
+## Project info
+
+This is a native cross-platform mobile app created with [Rork](https://rork.com)
 
 **Platform**: Native iOS & Android app, exportable to web
 **Framework**: Expo Router + React Native
@@ -19,7 +23,7 @@ Follow these steps:
 
 ```bash
 # Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone https://github.com/yingling21/CAT304_FindMyNest.git
 
 # Step 2: Navigate to the project directory.
 cd <YOUR_PROJECT_NAME>
@@ -297,3 +301,10 @@ For mobile apps, you'll configure your app's deep linking scheme in `app.json`.
 
 - Check [Expo's documentation](https://docs.expo.dev/) for native APIs
 - Browse [React Native's documentation](https://reactnative.dev/docs/getting-started) for core components
+- Visit [Rork's FAQ](https://rork.com/faq) for platform-specific questions
+
+## About Rork
+
+Rork builds fully native mobile apps using React Native and Expo - the same technology stack used by Discord, Shopify, Coinbase, Instagram, and nearly 30% of the top 100 apps on the App Store.
+
+Your Rork app is production-ready and can be published to both the App Store and Google Play Store. You can also export your app to run on the web, making it truly cross-platform.
