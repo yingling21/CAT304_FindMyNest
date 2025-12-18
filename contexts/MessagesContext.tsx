@@ -3,7 +3,7 @@ import { useAuth } from "./AuthContext";
 import type { Conversation, Message } from "@/types";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
-//import { maskSensitiveData } from "@/utils/sensitiveDataMask";
+import { maskSensitiveData } from "@/utils/sensitiveDataMask";
 
 export const [MessagesProvider, useMessages] = createContextHook(() => {
   const auth = useAuth();
