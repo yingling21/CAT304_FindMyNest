@@ -1,8 +1,10 @@
+// app/property/[id].tsx
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useMessages } from "@/contexts/MessagesContext";
 import { useReviews } from "@/contexts/ReviewsContext";
-import { mockProperties } from "@/mocks/properties";
+// import { mockProperties } from "@/mocks/properties";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -78,27 +80,33 @@ export default function PropertyDetailScreen() {
   };
 
   const handleContactLandlord = async () => {
-    if (!user) {
-      Alert.alert("Sign in required", "Please sign in to contact the landlord");
-      return;
-    }
+  if (!user) {
+    Alert.alert("Sign in required", "Please sign in to contact the landlord");
+    return;
+  }
 
-    try {
-      const conversationId = await createOrGetConversation(
-        property.id,
-        property.title,
-        property.photos[0],
-        property.monthlyRent,
-        property.landlordId,
-        property.landlordName,
-        property.landlordPhoto
-      );
-      router.push(`/chat/${conversationId}` as any);
-    } catch (error) {
-      console.error("Failed to create conversation:", error);
-      Alert.alert("Error", "Failed to start conversation. Please try again.");
-    }
-  };
+  try {
+    // 🔑 TEMP: use a REAL UUID from public.users
+    const landlordUserId = "128b79b5-944d-4d45-a6fa-a09e10a83c5d";
+
+    console.log("Using landlord UUID:", landlordUserId);
+
+    const conversationId = await createOrGetConversation(
+      Number(property.id),              // ensure number
+      property.title,
+      property.photos[0],
+      property.monthlyRent,
+      landlordUserId,                   // ✅ UUID
+      property.landlordName,
+      property.landlordPhoto
+    );
+
+    router.push(`/chat/${conversationId}` as any);
+  } catch (error) {
+    console.error("Failed to create conversation:", error);
+    Alert.alert("Error", "Failed to start conversation. Please try again.");
+  }
+};
 
   const handleRentNow = () => {
     if (!user) {

@@ -1,11 +1,11 @@
 import createContextHook from "@nkzw/create-context-hook";
-import { useState, useEffect } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { PropertyType, RoomType, FurnishingLevel, CookingPolicy } from "@/types";
+import { useState, useEffect, useCallback } from "react";
+import type { PropertyType, FurnishingLevel } from "@/types";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type ListingFormData = {
   propertyType: PropertyType | "";
-  roomType: RoomType | "";
   size: string;
   bedrooms: string;
   bathrooms: string;
@@ -35,7 +35,6 @@ export type ListingFormData = {
   estimatedMonthlyUtilities: string;
   internetSpeed: string;
   
-  cooking: CookingPolicy | "";
   guestsAllowed: boolean;
   smokingAllowed: boolean;
   petsAllowed: boolean;
@@ -54,7 +53,6 @@ export type ListingFormData = {
 
 const initialFormData: ListingFormData = {
   propertyType: "",
-  roomType: "",
   size: "",
   bedrooms: "",
   bathrooms: "",
@@ -84,7 +82,6 @@ const initialFormData: ListingFormData = {
   estimatedMonthlyUtilities: "",
   internetSpeed: "",
   
-  cooking: "",
   guestsAllowed: false,
   smokingAllowed: false,
   petsAllowed: false,
@@ -107,7 +104,6 @@ export type StoredListing = {
   title: string;
   description: string;
   propertyType: PropertyType | "";
-  roomType: RoomType | "";
   size: string;
   bedrooms: string;
   bathrooms: string;
@@ -121,6 +117,8 @@ export type StoredListing = {
 };
 
 export const [ListingProvider, useListing] = createContextHook(() => {
+  const auth = useAuth();
+  const user = auth?.user ?? null;
   const [formData, setFormData] = useState<ListingFormData>(initialFormData);
   const [currentStep, setCurrentStep] = useState(1);
   const [listings, setListings] = useState<StoredListing[]>([]);
@@ -146,46 +144,128 @@ export const [ListingProvider, useListing] = createContextHook(() => {
     setCurrentStep(Math.max(1, Math.min(step, 9)));
   };
 
-  useEffect(() => {
-    loadListings();
-  }, []);
-
-  const loadListings = async () => {
+  const loadListings = useCallback(async () => {
     try {
-      const stored = await AsyncStorage.getItem("listings");
-      if (stored) {
-        setListings(JSON.parse(stored));
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('landlord_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (data) {
+        setListings(data.map((listing: any) => ({
+          id: listing.id,
+          landlordId: listing.landlord_id,
+          title: listing.title,
+          description: listing.description,
+          propertyType: listing.property_type,
+          size: listing.size,
+          bedrooms: listing.bedrooms,
+          bathrooms: listing.bathrooms,
+          price: listing.monthly_rent,
+          address: listing.address,
+          status: listing.status,
+          views: listing.views,
+          messages: listing.messages,
+          createdAt: listing.created_at,
+          formData: listing.form_data,
+        })));
       }
     } catch (error) {
       console.error("Failed to load listings:", error);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadListings();
+    }
+  }, [user, loadListings]);
 
   const saveListing = async (landlordId: string) => {
     try {
-      const newListing: StoredListing = {
-        id: Date.now().toString(),
-        landlordId,
-        title: formData.title,
-        description: formData.description,
-        propertyType: formData.propertyType,
-        roomType: formData.roomType,
-        size: formData.size,
-        bedrooms: formData.bedrooms,
-        bathrooms: formData.bathrooms,
-        price: parseFloat(formData.monthlyRent) || 0,
-        address: formData.address,
-        status: "pending",
-        views: 0,
-        messages: 0,
-        createdAt: new Date().toISOString(),
-        formData,
+      const amenities = {
+        bedType: formData.bedType,
+        deskAndChair: formData.deskAndChair,
+        wardrobe: formData.wardrobe,
+        airConditioning: formData.airConditioning,
+        waterHeater: formData.waterHeater,
+        wifi: formData.wifi,
+        kitchenAccess: formData.kitchenAccess,
+        washingMachine: formData.washingMachine,
+        refrigerator: formData.refrigerator,
+        parking: formData.parking,
+        security: formData.security,
+        balcony: formData.balcony,
       };
 
-      const updatedListings = [...listings, newListing];
-      await AsyncStorage.setItem("listings", JSON.stringify(updatedListings));
-      setListings(updatedListings);
-      console.log("Listing saved:", newListing.id);
+      const houseRules = {
+        guestsAllowed: formData.guestsAllowed,
+        smokingAllowed: formData.smokingAllowed,
+        petsAllowed: formData.petsAllowed,
+        quietHours: formData.quietHours,
+        cleaningRules: formData.cleaningRules,
+      };
+
+      const { data, error } = await supabase
+        .from('listings')
+        .insert({
+          landlord_id: landlordId,
+          title: formData.title,
+          description: formData.description,
+          property_type: formData.propertyType,
+          size: formData.size,
+          bedrooms: formData.bedrooms,
+          bathrooms: formData.bathrooms,
+          floor_level: formData.floorLevel,
+          furnishing_level: formData.furnishingLevel,
+          monthly_rent: parseFloat(formData.monthlyRent) || 0,
+          security_deposit: parseFloat(formData.securityDeposit) || 0,
+          utilities_deposit: parseFloat(formData.utilitiesDeposit) || 0,
+          minimum_rental_period: formData.minimumRentalPeriod,
+          move_in_date: formData.moveInDate,
+          amenities,
+          utilities_included: formData.utilitiesIncluded,
+          estimated_monthly_utilities: formData.estimatedMonthlyUtilities,
+          internet_speed: formData.internetSpeed,
+          house_rules: houseRules,
+          address: formData.address,
+          nearby_landmarks: formData.nearbyLandmarks,
+          distance_to_transport: formData.distanceToTransport,
+          photos: formData.photos,
+          status: 'pending',
+          form_data: formData,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      if (data) {
+        const newListing: StoredListing = {
+          id: data.id,
+          landlordId: data.landlord_id,
+          title: data.title,
+          description: data.description,
+          propertyType: data.property_type,
+          size: data.size,
+          bedrooms: data.bedrooms,
+          bathrooms: data.bathrooms,
+          price: data.monthly_rent,
+          address: data.address,
+          status: data.status,
+          views: data.views,
+          messages: data.messages,
+          createdAt: data.created_at,
+          formData: data.form_data,
+        };
+        setListings(prev => [newListing, ...prev]);
+        console.log("Listing saved:", newListing.id);
+      }
     } catch (error) {
       console.error("Failed to save listing:", error);
       throw error;
@@ -193,7 +273,7 @@ export const [ListingProvider, useListing] = createContextHook(() => {
   };
 
   const getListingsByLandlord = (landlordId: string) => {
-    return listings.filter((listing) => listing.landlordId === landlordId);
+    return listings;
   };
 
   const updateListingStatus = async (
@@ -201,11 +281,16 @@ export const [ListingProvider, useListing] = createContextHook(() => {
     status: "approved" | "pending" | "rejected"
   ) => {
     try {
-      const updatedListings = listings.map((listing) =>
+      const { error } = await supabase
+        .from('listings')
+        .update({ status })
+        .eq('id', listingId);
+      
+      if (error) throw error;
+      
+      setListings(prev => prev.map((listing) =>
         listing.id === listingId ? { ...listing, status } : listing
-      );
-      await AsyncStorage.setItem("listings", JSON.stringify(updatedListings));
-      setListings(updatedListings);
+      ));
     } catch (error) {
       console.error("Failed to update listing status:", error);
       throw error;

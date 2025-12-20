@@ -1,24 +1,23 @@
+export type UserRole = "tenant" | "landlord";
+
+export type VerificationStatus = "pending" | "approved" | "rejected";
+
 export type User = {
   id: string;
   email: string;
   fullName: string;
   phoneNumber: string;
-  role: string;
-  profilePicture?: string;
-  verificationStatus: string;
+  role: UserRole;
+  avatarUrl?: string;
+  verificationStatus: VerificationStatus;
   identityDocument?: string;
   ownershipDocument?: string;
+  createdAt: string;
 };
 
-export type PropertyType = "house" | "apartment" | "studio" | "room";
-
-export type RoomType = "master_room" | "single_room" | "shared_room";
+export type PropertyType = "house" | "apartment" | "studio" | "condo" | "room";
 
 export type FurnishingLevel = "fully_furnished" | "partially_furnished" | "unfurnished";
-
-export type RentalStatus = "available" | "reserved" | "occupied";
-
-export type CookingPolicy = "allowed" | "light_cooking" | "no_cooking";
 
 export type Property = {
   id: string;
@@ -28,20 +27,12 @@ export type Property = {
   landlordVerified: boolean;
   
   propertyType: PropertyType;
-  roomType?: RoomType;
-  
-  title: string;
   description: string;
   address: string;
-  latitude?: number;
-  longitude?: number;
-  nearbyLandmarks: string[];
-  distanceToTransport: string;
   
   size: number;
   bedrooms: number;
   bathrooms: number;
-  floorLevel?: number;
   furnishingLevel: FurnishingLevel;
   
   monthlyRent: number;
@@ -49,36 +40,16 @@ export type Property = {
   utilitiesDeposit: number;
   minimumRentalPeriod: number;
   moveInDate: string;
-  rentalStatus: RentalStatus;
+  rentalStatus: boolean;
   
-  estimatedMonthlyUtilities?: number;
-  utilitiesIncluded: boolean;
+  amenities: any;
+  houseRules: any;
   
-  amenities: {
-    bedType?: string;
-    deskAndChair: boolean;
-    wardrobe: boolean;
-    airConditioning: boolean;
-    waterHeater: boolean;
-    wifi: boolean;
-    kitchenAccess: boolean;
-    washingMachine: boolean;
-    refrigerator: boolean;
-    parking: boolean;
-    security: boolean;
-    balcony: boolean;
-  };
-  
-  houseRules: {
-    cooking: CookingPolicy;
-    guestsAllowed: boolean;
-    smokingAllowed: boolean;
-    petsAllowed: boolean;
-    quietHours?: string;
-    cleaningRules?: string;
-  };
-  
-  photos: string[];
+  photos: {
+    id: string;
+    url: string;
+    isCover: boolean;
+  }[];
   
   averageRating: number;
   totalReviews: number;

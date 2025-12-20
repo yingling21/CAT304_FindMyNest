@@ -77,7 +77,7 @@ export const [ReviewsProvider, useReviews] = createContextHook(() => {
           rental_id: rentalId,
           tenant_id: user.id,
           tenant_name: user.fullName,
-          tenant_photo: user.profilePicture,
+          tenant_photo: user.avatarUrl,
           tenant_verified: user.verificationStatus === "approved",
           rating,
           location_rating: locationRating,

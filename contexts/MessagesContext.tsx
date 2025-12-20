@@ -1,9 +1,14 @@
 import createContextHook from "@nkzw/create-context-hook";
 import { useAuth } from "./AuthContext";
-import type { Conversation, Message } from "@/types";
+import type { Conversation, Message } from "@/src/types";
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
-import { maskSensitiveData } from "@/utils/sensitiveDataMask";
+import { 
+  getConversationsByUser, 
+  getMessagesByConversations, 
+  createOrGetConversation as createOrGetConversationAPI,
+  sendMessage as sendMessageAPI,
+  markMessagesAsRead as markMessagesAsReadAPI 
+} from "@/src/api/messages";
 
 export const [MessagesProvider, useMessages] = createContextHook(() => {
   const auth = useAuth();
@@ -21,63 +26,13 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
         return;
       }
 
-      const { data: conversationsData, error: convError } = await supabase
-        .from('conversations')
-        .select('*')
-        .or(`tenant_id.eq.${user.id},landlord_id.eq.${user.id}`)
-        .order('last_message_time', { ascending: false });
-      
-      if (convError) throw convError;
-      
-      if (conversationsData) {
-        const formattedConversations: Conversation[] = conversationsData.map((conv: any) => ({
-          id: conv.id,
-          propertyId: conv.property_id,
-          propertyTitle: conv.property_title,
-          propertyImage: conv.property_image,
-          propertyPrice: conv.property_price,
-          tenantId: conv.tenant_id,
-          tenantName: conv.tenant_name,
-          tenantPhoto: conv.tenant_photo,
-          landlordId: conv.landlord_id,
-          landlordName: conv.landlord_name,
-          landlordPhoto: conv.landlord_photo,
-          lastMessage: conv.last_message,
-          lastMessageTime: conv.last_message_time,
-          unreadCount: conv.unread_count,
-          createdAt: conv.created_at,
-          updatedAt: conv.updated_at,
-        }));
-        setConversations(formattedConversations);
+      const conversationsData = await getConversationsByUser(user.id);
+      setConversations(conversationsData);
 
-        const conversationIds = formattedConversations.map(c => c.id);
-        if (conversationIds.length > 0) {
-          const { data: messagesData, error: msgError } = await supabase
-            .from('messages')
-            .select('*')
-            .in('conversation_id', conversationIds)
-            .order('created_at', { ascending: true });
-          
-          if (msgError) throw msgError;
-          
-          const messagesByConversation: Record<string, Message[]> = {};
-          messagesData?.forEach((msg: any) => {
-            const message: Message = {
-              id: msg.id,
-              conversationId: msg.conversation_id,
-              senderId: msg.sender_id,
-              receiverId: msg.receiver_id,
-              content: msg.content,
-              read: msg.read,
-              createdAt: msg.created_at,
-            };
-            if (!messagesByConversation[msg.conversation_id]) {
-              messagesByConversation[msg.conversation_id] = [];
-            }
-            messagesByConversation[msg.conversation_id].push(message);
-          });
-          setMessages(messagesByConversation);
-        }
+      const conversationIds = conversationsData.map(c => c.id);
+      if (conversationIds.length > 0) {
+        const messagesByConversation = await getMessagesByConversations(conversationIds);
+        setMessages(messagesByConversation);
       }
     } catch (error) {
       console.error("Failed to load messages:", error);
@@ -101,60 +56,22 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
   ): Promise<string> => {
     if (!user) throw new Error("User not authenticated");
 
-    const { data: existingConv, error: searchError } = await supabase
-      .from('conversations')
-      .select('*')
-      .eq('property_id', propertyId)
-      .eq('tenant_id', user.id)
-      .single();
-    
-    if (!searchError && existingConv) {
-      return existingConv.id;
-    }
+    const conversationId = await createOrGetConversationAPI({
+      propertyId,
+      propertyTitle,
+      propertyImage,
+      propertyPrice,
+      tenantId: user.id,
+      tenantName: user.fullName,
+      tenantPhoto: user.avatarUrl,
+      landlordId,
+      landlordName,
+      landlordPhoto,
+    });
 
-    const { data, error } = await supabase
-      .from('conversations')
-      .insert({
-        property_id: propertyId,
-        property_title: propertyTitle,
-        property_image: propertyImage,
-        property_price: propertyPrice,
-        tenant_id: user.id,
-        tenant_name: user.fullName,
-        tenant_photo: user.profilePicture,
-        landlord_id: landlordId,
-        landlord_name: landlordName,
-        landlord_photo: landlordPhoto,
-        last_message: '',
-        unread_count: 0,
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
+    await loadData();
 
-    const newConversation: Conversation = {
-      id: data.id,
-      propertyId: data.property_id,
-      propertyTitle: data.property_title,
-      propertyImage: data.property_image,
-      propertyPrice: data.property_price,
-      tenantId: data.tenant_id,
-      tenantName: data.tenant_name,
-      tenantPhoto: data.tenant_photo,
-      landlordId: data.landlord_id,
-      landlordName: data.landlord_name,
-      landlordPhoto: data.landlord_photo,
-      lastMessage: data.last_message,
-      lastMessageTime: data.last_message_time,
-      unreadCount: data.unread_count,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-    };
-    
-    setConversations(prev => [newConversation, ...prev]);
-
-    return newConversation.id;
+    return conversationId;
   };
 
   const sendMessage = async (
@@ -168,41 +85,12 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
 
     const receiverId = user.role === "tenant" ? conversation.landlordId : conversation.tenantId;
 
-    const maskedContent = maskSensitiveData(content);
-
-    const { data: messageData, error: msgError } = await supabase
-      .from('messages')
-      .insert({
-        conversation_id: conversationId,
-        sender_id: user.id,
-        receiver_id: receiverId,
-        content: maskedContent,
-        read: false,
-      })
-      .select()
-      .single();
-    
-    if (msgError) throw msgError;
-
-    const { error: convError } = await supabase
-      .from('conversations')
-      .update({
-        last_message: maskedContent,
-        last_message_time: new Date().toISOString(),
-      })
-      .eq('id', conversationId);
-    
-    if (convError) throw convError;
-
-    const newMessage: Message = {
-      id: messageData.id,
-      conversationId: messageData.conversation_id,
-      senderId: messageData.sender_id,
-      receiverId: messageData.receiver_id,
-      content: messageData.content,
-      read: messageData.read,
-      createdAt: messageData.created_at,
-    };
+    const newMessage = await sendMessageAPI({
+      conversationId,
+      senderId: user.id,
+      receiverId,
+      content,
+    });
 
     setMessages(prev => ({
       ...prev,
@@ -213,9 +101,9 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
       c.id === conversationId
         ? {
             ...c,
-            lastMessage: maskedContent,
-            lastMessageTime: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            lastMessage: newMessage.content,
+            lastMessageTime: newMessage.createdAt,
+            updatedAt: newMessage.createdAt,
           }
         : c
     ));
@@ -224,38 +112,22 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
   const markAsRead = async (conversationId: string): Promise<void> => {
     if (!user) return;
 
-    const { error: msgError } = await supabase
-      .from('messages')
-      .update({ read: true })
-      .eq('conversation_id', conversationId)
-      .eq('receiver_id', user.id)
-      .eq('read', false);
-    
-    if (msgError) {
-      console.error('Failed to mark messages as read:', msgError);
-      return;
+    try {
+      await markMessagesAsReadAPI(conversationId, user.id);
+
+      setMessages(prev => ({
+        ...prev,
+        [conversationId]: (prev[conversationId] || []).map((msg) =>
+          msg.receiverId === user.id && !msg.read ? { ...msg, read: true } : msg
+        ),
+      }));
+
+      setConversations(prev => prev.map((c) =>
+        c.id === conversationId ? { ...c, unreadCount: 0 } : c
+      ));
+    } catch (error) {
+      console.error('Failed to mark messages as read:', error);
     }
-
-    const { error: convError } = await supabase
-      .from('conversations')
-      .update({ unread_count: 0 })
-      .eq('id', conversationId);
-    
-    if (convError) {
-      console.error('Failed to update conversation:', convError);
-      return;
-    }
-
-    setMessages(prev => ({
-      ...prev,
-      [conversationId]: (prev[conversationId] || []).map((msg) =>
-        msg.receiverId === user.id && !msg.read ? { ...msg, read: true } : msg
-      ),
-    }));
-
-    setConversations(prev => prev.map((c) =>
-      c.id === conversationId ? { ...c, unreadCount: 0 } : c
-    ));
   };
 
   const userConversations = useMemo(() => {
