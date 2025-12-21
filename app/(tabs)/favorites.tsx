@@ -1,7 +1,7 @@
 import PropertyCard from "@/components/PropertyCard";
 import { useFavorites } from "@/contexts/FavoritesContext";
-import { mockProperties } from "@/mocks/properties";
 import { Heart } from "lucide-react-native";
+import type { Property } from "@/types";
 import React, { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,10 +9,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function FavoritesScreen() {
   const { favorites } = useFavorites();
 
-  const favoriteProperties = useMemo(
-    () => mockProperties.filter((property) => favorites.includes(property.id)),
-    [favorites]
-  );
+  const favoriteProperties = useMemo(() => {
+    const properties: Property[] = [];
+    return properties.filter((property) => favorites.includes(property.id));
+  }, [favorites]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>

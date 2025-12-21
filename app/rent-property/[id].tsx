@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRentals } from "@/contexts/RentalsContext";
-import { mockProperties } from "@/mocks/properties";
+import type { Property } from "@/types";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -14,7 +14,6 @@ import {
 import React, { useState } from "react";
 import {
   ScrollView,
-  StyleSheet,
   Text,
   View,
   Pressable,
@@ -22,6 +21,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { styles } from "./styles";
 
 type PaymentMethod = "fpx" | "card" | "ewallet";
 
@@ -31,7 +31,8 @@ export default function RentPropertyScreen() {
   const { user } = useAuth();
   const { createRental } = useRentals();
 
-  const property = mockProperties.find((p) => p.id === id);
+  const properties: Property[] = [];
+  const property = properties.find((p) => p.id === id);
 
   const [step, setStep] = useState<number>(1);
   const [duration, setDuration] = useState<number>(12);
@@ -93,8 +94,8 @@ export default function RentPropertyScreen() {
     try {
       await createRental(
         property.id,
-        property.title,
-        property.photos[0],
+        property.description.substring(0, 50),
+        property.photos[0]?.url || '',
         property.address,
         property.landlordId,
         property.monthlyRent,
@@ -141,12 +142,12 @@ export default function RentPropertyScreen() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.propertyCard}>
             <Image
-              source={{ uri: property.photos[0] }}
+              source={{ uri: property.photos[0]?.url || 'https://via.placeholder.com/400' }}
               style={styles.propertyImage}
               contentFit="cover"
             />
             <View style={styles.propertyInfo}>
-              <Text style={styles.propertyName}>{property.title}</Text>
+              <Text style={styles.propertyName}>{property.description.substring(0, 50)}</Text>
               <Text style={styles.propertyPrice}>RM {property.monthlyRent}/mo</Text>
             </View>
           </View>
@@ -404,327 +405,3 @@ export default function RentPropertyScreen() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F9FAFB",
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#F9FAFB",
-  },
-  errorText: {
-    fontSize: 18,
-    color: "#6B7280",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTitleContainer: {
-    alignItems: "center",
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700" as const,
-    color: "#1F2937",
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginTop: 2,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  propertyCard: {
-    backgroundColor: "#FFFFFF",
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: 12,
-    padding: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  propertyImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 8,
-  },
-  propertyInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  propertyName: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-    color: "#1F2937",
-    marginBottom: 4,
-  },
-  propertyPrice: {
-    fontSize: 16,
-    fontWeight: "700" as const,
-    color: "#6366F1",
-  },
-  section: {
-    marginTop: 24,
-    paddingHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700" as const,
-    color: "#1F2937",
-    marginBottom: 12,
-  },
-  durationOptions: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  durationButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-  },
-  durationButtonActive: {
-    borderColor: "#6366F1",
-    backgroundColor: "#EEF2FF",
-  },
-  durationButtonText: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-    color: "#6B7280",
-  },
-  durationButtonTextActive: {
-    color: "#6366F1",
-  },
-  customDurationInput: {
-    marginTop: 12,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 14,
-    color: "#1F2937",
-  },
-  dateInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  dateInput: {
-    flex: 1,
-    fontSize: 14,
-    color: "#1F2937",
-  },
-  availableFromText: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginTop: 8,
-  },
-  rentalPeriodCard: {
-    backgroundColor: "#EEF2FF",
-    marginHorizontal: 20,
-    marginTop: 16,
-    borderRadius: 12,
-    padding: 16,
-  },
-  rentalPeriodTitle: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-    color: "#6366F1",
-    marginBottom: 8,
-  },
-  rentalPeriodDates: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  rentalPeriodDate: {
-    fontSize: 13,
-    color: "#4F46E5",
-  },
-  summaryCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: "#6B7280",
-  },
-  summaryValue: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-    color: "#1F2937",
-  },
-  summaryDivider: {
-    height: 1,
-    backgroundColor: "#E5E7EB",
-    marginVertical: 8,
-  },
-  summaryTotalLabel: {
-    fontSize: 16,
-    fontWeight: "700" as const,
-    color: "#1F2937",
-  },
-  summaryTotalValue: {
-    fontSize: 18,
-    fontWeight: "700" as const,
-    color: "#6366F1",
-  },
-  proceedButton: {
-    backgroundColor: "#6366F1",
-    marginHorizontal: 20,
-    marginTop: 24,
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: "center",
-    shadowColor: "#6366F1",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  proceedButtonText: {
-    fontSize: 16,
-    fontWeight: "700" as const,
-    color: "#FFFFFF",
-  },
-  paymentMethodCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: "#E5E7EB",
-  },
-  paymentMethodCardActive: {
-    borderColor: "#6366F1",
-    backgroundColor: "#F5F7FF",
-  },
-  paymentMethodIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#EEF2FF",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  paymentMethodInfo: {
-    flex: 1,
-  },
-  paymentMethodTitle: {
-    fontSize: 15,
-    fontWeight: "600" as const,
-    color: "#1F2937",
-    marginBottom: 2,
-  },
-  paymentMethodSubtitle: {
-    fontSize: 12,
-    color: "#6B7280",
-  },
-  securePaymentNotice: {
-    flexDirection: "row",
-    backgroundColor: "#ECFDF5",
-    marginHorizontal: 20,
-    marginTop: 24,
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
-  },
-  securePaymentText: {
-    flex: 1,
-    fontSize: 12,
-    color: "#065F46",
-    lineHeight: 18,
-  },
-  securePaymentBold: {
-    fontWeight: "700" as const,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    marginHorizontal: 20,
-    marginTop: 24,
-    gap: 12,
-  },
-  backPaymentButton: {
-    flex: 1,
-    borderWidth: 2,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-  },
-  backPaymentButtonText: {
-    fontSize: 16,
-    fontWeight: "600" as const,
-    color: "#1F2937",
-  },
-  confirmButton: {
-    flex: 1,
-    backgroundColor: "#6366F1",
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: "center",
-    shadowColor: "#6366F1",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  confirmButtonDisabled: {
-    opacity: 0.6,
-  },
-  confirmButtonText: {
-    fontSize: 16,
-    fontWeight: "700" as const,
-    color: "#FFFFFF",
-  },
-});
