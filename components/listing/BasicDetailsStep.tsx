@@ -1,10 +1,9 @@
 import React from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
-import type { PropertyType, RoomType, FurnishingLevel } from "@/types";
+import type { PropertyType, FurnishingLevel } from "@/types";
 
 type FormData = {
   propertyType: PropertyType | "";
-  roomType?: RoomType;
   size: string;
   bedrooms: string;
   bathrooms: string;
@@ -46,33 +45,6 @@ export default function BasicDetailsStep({ formData, onUpdate }: Props) {
           </TouchableOpacity>
         ))}
       </View>
-
-      {formData.propertyType === "room" && (
-        <>
-          <Text style={styles.label}>Room Type</Text>
-          <View style={styles.optionsRow}>
-            {(["master_room", "single_room", "shared_room"] as RoomType[]).map((type) => (
-              <TouchableOpacity
-                key={type}
-                style={[
-                  styles.optionChip,
-                  formData.roomType === type && styles.optionChipSelected,
-                ]}
-                onPress={() => onUpdate({ roomType: type })}
-              >
-                <Text
-                  style={[
-                    styles.optionChipText,
-                    formData.roomType === type && styles.optionChipTextSelected,
-                  ]}
-                >
-                  {type.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </>
-      )}
 
       <Text style={styles.label}>Size (sq ft) <Text style={styles.requiredStar}>*</Text></Text>
       <TextInput

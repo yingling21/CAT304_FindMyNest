@@ -37,7 +37,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
     <Pressable style={styles.card} onPress={handlePress}>
       <View style={styles.imageContainer}>
         <Image
-          source={{ uri: property.photos[0] }}
+          source={{ uri: property.photos[0]?.url || 'https://via.placeholder.com/400' }}
           style={styles.image}
           contentFit="cover"
         />
@@ -48,7 +48,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
               {property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)}
             </Text>
           </View>
-          {property.rentalStatus === "available" && (
+          {property.rentalStatus && (
             <View style={styles.statusBadge}>
               <Text style={styles.statusBadgeText}>Available Now</Text>
             </View>
@@ -69,7 +69,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
 
       <View style={styles.content}>
         <Text style={styles.title} numberOfLines={1}>
-          {property.title}
+          {property.description.length > 50 ? property.description.substring(0, 50) + '...' : property.description}
         </Text>
         <View style={styles.priceRow}>
           <Text style={styles.price}>RM {property.monthlyRent}</Text>

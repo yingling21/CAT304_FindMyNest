@@ -1,6 +1,5 @@
 import PropertyCard from "@/components/PropertyCard";
-import { mockProperties } from "@/mocks/properties";
-import type { PropertyType, FurnishingLevel } from "@/types";
+import type { PropertyType, FurnishingLevel, Property } from "@/types";
 import { Stack } from "expo-router";
 import {
   MapPin,
@@ -70,7 +69,8 @@ export default function SearchScreen() {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
 
   const filteredAndSortedProperties = useMemo(() => {
-    let results = mockProperties.filter((property) => {
+    const properties: Property[] = [];
+    let results = properties.filter((property) => {
       if (
         filters.location &&
         !property.address.toLowerCase().includes(filters.location.toLowerCase())

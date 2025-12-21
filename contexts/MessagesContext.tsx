@@ -1,8 +1,14 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { useAuth } from "./AuthContext";
-import type { Conversation, Message } from "@/types";
-import { useEffect, useState, useMemo } from "react";
+import type { Conversation, Message } from "@/src/types";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { 
+  getConversationsByUser, 
+  getMessagesByConversations, 
+  createOrGetConversation as createOrGetConversationAPI,
+  sendMessage as sendMessageAPI,
+  markMessagesAsRead as markMessagesAsReadAPI 
+} from "@/src/api/messages";
 
 export const [MessagesProvider, useMessages] = createContextHook(() => {
   const auth = useAuth();
@@ -11,29 +17,33 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
-      const [storedConversations, storedMessages] = await Promise.all([
-        AsyncStorage.getItem("conversations"),
-        AsyncStorage.getItem("messages"),
-      ]);
-
-      if (storedConversations) {
-        setConversations(JSON.parse(storedConversations));
+      if (!user) {
+        setConversations([]);
+        setMessages({});
+        setIsLoading(false);
+        return;
       }
-      if (storedMessages) {
-        setMessages(JSON.parse(storedMessages));
+
+      const conversationsData = await getConversationsByUser(user.id);
+      setConversations(conversationsData);
+
+      const conversationIds = conversationsData.map(c => c.id);
+      if (conversationIds.length > 0) {
+        const messagesByConversation = await getMessagesByConversations(conversationIds);
+        setMessages(messagesByConversation);
       }
     } catch (error) {
       console.error("Failed to load messages:", error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const createOrGetConversation = async (
     propertyId: string,
@@ -46,43 +56,22 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
   ): Promise<string> => {
     if (!user) throw new Error("User not authenticated");
 
-    const existingConversation = conversations.find(
-      (conv) => conv.propertyId === propertyId && conv.tenantId === user.id
-    );
-
-    if (existingConversation) {
-      return existingConversation.id;
-    }
-
-    const newConversation: Conversation = {
-      id: Date.now().toString(),
+    const conversationId = await createOrGetConversationAPI({
       propertyId,
       propertyTitle,
       propertyImage,
       propertyPrice,
       tenantId: user.id,
       tenantName: user.fullName,
-      tenantPhoto: user.profilePicture,
+      tenantPhoto: user.avatarUrl,
       landlordId,
       landlordName,
       landlordPhoto,
-      lastMessage: "",
-      lastMessageTime: new Date().toISOString(),
-      unreadCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    });
 
-    const updatedConversations = [...conversations, newConversation];
-    
-    await AsyncStorage.setItem(
-      "conversations",
-      JSON.stringify(updatedConversations)
-    );
-    
-    setConversations(updatedConversations);
+    await loadData();
 
-    return newConversation.id;
+    return conversationId;
   };
 
   const sendMessage = async (
@@ -96,74 +85,49 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
 
     const receiverId = user.role === "tenant" ? conversation.landlordId : conversation.tenantId;
 
-    const updatedConversation = {
-      ...conversation,
-      lastMessage: content,
-      lastMessageTime: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    const updatedConversations = conversations.map((c) =>
-      c.id === conversationId ? updatedConversation : c
-    );
-
-    const newMessage: Message = {
-      id: Date.now().toString(),
+    const newMessage = await sendMessageAPI({
       conversationId,
       senderId: user.id,
       receiverId,
       content,
-      read: false,
-      createdAt: new Date().toISOString(),
-    };
+    });
 
-    const conversationMessages = messages[conversationId] || [];
-    const updatedMessages = {
-      ...messages,
-      [conversationId]: [...conversationMessages, newMessage],
-    };
+    setMessages(prev => ({
+      ...prev,
+      [conversationId]: [...(prev[conversationId] || []), newMessage],
+    }));
 
-    await Promise.all([
-      AsyncStorage.setItem("conversations", JSON.stringify(updatedConversations)),
-      AsyncStorage.setItem("messages", JSON.stringify(updatedMessages)),
-    ]);
-
-    setConversations(updatedConversations);
-    setMessages(updatedMessages);
+    setConversations(prev => prev.map((c) =>
+      c.id === conversationId
+        ? {
+            ...c,
+            lastMessage: newMessage.content,
+            lastMessageTime: newMessage.createdAt,
+            updatedAt: newMessage.createdAt,
+          }
+        : c
+    ));
   };
 
   const markAsRead = async (conversationId: string): Promise<void> => {
     if (!user) return;
 
-    const conversationMessages = messages[conversationId] || [];
-    const updatedConversationMessages = conversationMessages.map((msg) =>
-      msg.receiverId === user.id && !msg.read ? { ...msg, read: true } : msg
-    );
+    try {
+      await markMessagesAsReadAPI(conversationId, user.id);
 
-    const updatedMessages = {
-      ...messages,
-      [conversationId]: updatedConversationMessages,
-    };
+      setMessages(prev => ({
+        ...prev,
+        [conversationId]: (prev[conversationId] || []).map((msg) =>
+          msg.receiverId === user.id && !msg.read ? { ...msg, read: true } : msg
+        ),
+      }));
 
-    const conversation = conversations.find((c) => c.id === conversationId);
-    if (!conversation) return;
-
-    const updatedConversation = {
-      ...conversation,
-      unreadCount: 0,
-    };
-
-    const updatedConversations = conversations.map((c) =>
-      c.id === conversationId ? updatedConversation : c
-    );
-
-    await Promise.all([
-      AsyncStorage.setItem("messages", JSON.stringify(updatedMessages)),
-      AsyncStorage.setItem("conversations", JSON.stringify(updatedConversations)),
-    ]);
-
-    setMessages(updatedMessages);
-    setConversations(updatedConversations);
+      setConversations(prev => prev.map((c) =>
+        c.id === conversationId ? { ...c, unreadCount: 0 } : c
+      ));
+    } catch (error) {
+      console.error('Failed to mark messages as read:', error);
+    }
   };
 
   const userConversations = useMemo(() => {
