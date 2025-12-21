@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMessages } from "@/contexts/MessagesContext";
 import { useListing } from "@/contexts/ListingContext";
 import { mockProperties } from "@/mocks/properties";
+import { supabase } from "@/lib/supabase";
 import AffordabilityCalculator from "@/app/affordability-calculator";
 import PropertySearchHeader from "@/components/tenant/PropertySearchHeader";
 import PropertyFilterTools from "@/components/tenant/PropertyFilterTools";
