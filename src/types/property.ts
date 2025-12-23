@@ -10,7 +10,6 @@ export interface Property {
   landlordVerified: boolean;
   
   propertyType: PropertyType;
-  title?: string;
   description: string;
   address: string;
   

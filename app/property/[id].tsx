@@ -104,7 +104,7 @@ export default function PropertyDetailScreen() {
     try {
       const conversationId = await createOrGetConversation(
         property.id,
-        property.title || property.description.substring(0, 50),
+        `${property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)} at ${property.address.split(',')[0]}`,
         property.photos[0]?.url || '',
         property.monthlyRent,
         property.landlordId,
@@ -200,7 +200,7 @@ export default function PropertyDetailScreen() {
                 </View>
               )}
             </View>
-            <Text style={styles.title}>{property.title || `${property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)} at ${property.address.split(',')[0]}`}</Text>
+            <Text style={styles.title}>{`${property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)} at ${property.address.split(',')[0]}`}</Text>
             <View style={styles.locationRow}>
               <MapPin size={18} color="#6B7280" />
               <Text style={styles.address}>{property.address}</Text>

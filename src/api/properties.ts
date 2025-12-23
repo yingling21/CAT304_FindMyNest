@@ -6,6 +6,7 @@ async function enrichPropertiesWithData(properties: any[]): Promise<any[]> {
   if (properties.length === 0) return [];
 
   const propertyIds = properties.map(p => p.property_id);
+  const landlordIds = properties.map(p => p.landlord_id).filter(Boolean);
 
   const [photosResult, landlordResult, reviewsResult] = await Promise.all([
     supabase
@@ -13,10 +14,10 @@ async function enrichPropertiesWithData(properties: any[]): Promise<any[]> {
       .select('*')
       .in('property_id', propertyIds),
     
-    supabase
-      .from('landlord')
-      .select('id, user_id, users!inner(full_name, avatar_url, verification_status)')
-      .in('id', properties.map(p => p.landlord_id).filter(Boolean)),
+    landlordIds.length > 0 ? supabase
+      .from('users')
+      .select('id, full_name, avatar_url, verification_status')
+      .in('id', landlordIds) : Promise.resolve({ data: [] }),
     
     supabase
       .from('reviews')
@@ -26,7 +27,7 @@ async function enrichPropertiesWithData(properties: any[]): Promise<any[]> {
 
   const photosByProperty: Record<string, any[]> = {};
   (photosResult.data || []).forEach((photo) => {
-    const propId = photo.property_id.toString();
+    const propId = photo.property_id;
     if (!photosByProperty[propId]) photosByProperty[propId] = [];
     photosByProperty[propId].push({
       id: photo.Photo_id.toString(),
@@ -37,23 +38,23 @@ async function enrichPropertiesWithData(properties: any[]): Promise<any[]> {
 
   const landlordMap: Record<string, any> = {};
   (landlordResult.data || []).forEach((landlord: any) => {
-    landlordMap[landlord.id.toString()] = {
-      name: landlord.users?.full_name || 'Unknown',
-      photo: landlord.users?.avatar_url,
-      verified: landlord.users?.verification_status === 'approved',
+    landlordMap[landlord.id] = {
+      name: landlord.full_name || 'Unknown',
+      photo: landlord.avatar_url,
+      verified: landlord.verification_status === 'approved',
     };
   });
 
   const reviewsByProperty: Record<string, number[]> = {};
   (reviewsResult.data || []).forEach((review) => {
-    const propId = review.property_id.toString();
+    const propId = review.property_id;
     if (!reviewsByProperty[propId]) reviewsByProperty[propId] = [];
     reviewsByProperty[propId].push(Number(review.rating));
   });
 
   return properties.map(property => {
-    const propId = property.property_id.toString();
-    const landlordId = property.landlord_id?.toString();
+    const propId = property.property_id;
+    const landlordId = property.landlord_id;
     const landlordData = landlordId ? landlordMap[landlordId] : null;
     const reviews = reviewsByProperty[propId] || [];
     const avgRating = reviews.length > 0 
@@ -74,7 +75,7 @@ async function enrichPropertiesWithData(properties: any[]): Promise<any[]> {
 
 export async function getAvailableProperties(): Promise<Property[]> {
   const { data, error } = await supabase
-    .from('listing')
+    .from('property')
     .select('*')
     .eq('rentalStatus', true)
     .order('created_At', { ascending: false });
@@ -90,7 +91,7 @@ export async function getAvailableProperties(): Promise<Property[]> {
 
 export async function getPropertyById(id: string): Promise<Property | null> {
   const { data, error } = await supabase
-    .from('listing')
+    .from('property')
     .select('*')
     .eq('property_id', id)
     .single();
@@ -107,21 +108,10 @@ export async function getPropertyById(id: string): Promise<Property | null> {
 }
 
 export async function getPropertiesByLandlord(landlordId: string): Promise<Property[]> {
-  const { data: landlordData, error: landlordError } = await supabase
-    .from('landlord')
-    .select('id')
-    .eq('user_id', landlordId)
-    .single();
-
-  if (landlordError || !landlordData) {
-    console.error('Failed to fetch landlord:', landlordError);
-    return [];
-  }
-
   const { data, error } = await supabase
-    .from('listing')
+    .from('property')
     .select('*')
-    .eq('landlord_id', landlordData.id)
+    .eq('landlord_id', landlordId)
     .order('created_At', { ascending: false });
 
   if (error) {
@@ -134,22 +124,11 @@ export async function getPropertiesByLandlord(landlordId: string): Promise<Prope
 }
 
 export async function createProperty(propertyData: Partial<Property>): Promise<Property> {
-  const { data: landlordData } = await supabase
-    .from('landlord')
-    .select('id')
-    .eq('user_id', propertyData.landlordId)
-    .single();
-
-  if (!landlordData) {
-    throw new Error('Landlord not found');
-  }
-
   const { data, error } = await supabase
-    .from('listing')
+    .from('property')
     .insert({
-      landlord_id: landlordData.id,
+      landlord_id: propertyData.landlordId,
       propertyType: propertyData.propertyType,
-      title: propertyData.title,
       description: propertyData.description,
       address: propertyData.address,
       size: propertyData.size,
@@ -195,10 +174,9 @@ export async function createProperty(propertyData: Partial<Property>): Promise<P
 
 export async function updateProperty(id: string, propertyData: Partial<Property>): Promise<Property> {
   const { data, error } = await supabase
-    .from('listing')
+    .from('property')
     .update({
       propertyType: propertyData.propertyType,
-      title: propertyData.title,
       description: propertyData.description,
       address: propertyData.address,
       size: propertyData.size,
@@ -252,7 +230,7 @@ export async function updateProperty(id: string, propertyData: Partial<Property>
 
 export async function deleteProperty(id: string): Promise<void> {
   const { error } = await supabase
-    .from('listing')
+    .from('property')
     .delete()
     .eq('property_id', id);
 
