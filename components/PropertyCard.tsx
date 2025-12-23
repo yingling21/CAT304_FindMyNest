@@ -1,9 +1,8 @@
 import { useFavorites } from "@/contexts/FavoritesContext";
-import type { Property } from "@/types/property.ts";
+import type { Property } from "@/types/property";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Bed, Bath, Maximize2, Heart } from "lucide-react-native";
-import React from "react";
 import {
   Dimensions,
   Pressable,
@@ -33,11 +32,25 @@ export default function PropertyCard({ property }: PropertyCardProps) {
     toggleFavorite(property.id);
   };
 
+  const coverPhoto =
+    property.photos.length > 0
+      ? property.photos[0]
+      : "https://via.placeholder.com/800x600?text=No+Image";
+
+  const furnishingLabel =
+    property.furnishingLevel === "fully_furnished"
+      ? "Fully Furnished"
+      : property.furnishingLevel === "partially_furnished"
+      ? "Partially Furnished"
+      : "Unfurnished";
+
+  const title = `${property.propertyType.charAt(0).toUpperCase()}${property.propertyType.slice(1)} in ${property.address}`;
+
   return (
     <Pressable style={styles.card} onPress={handlePress}>
       <View style={styles.imageContainer}>
         <Image
-          source={{ uri: property.photos[0] }}
+          source={{ uri: coverPhoto }}
           style={styles.image}
           contentFit="cover"
         />
@@ -69,7 +82,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
 
       <View style={styles.content}>
         <Text style={styles.title} numberOfLines={1}>
-          {property.title}
+          {title}
         </Text>
         <View style={styles.priceRow}>
           <Text style={styles.price}>RM {property.monthlyRent}</Text>
@@ -97,12 +110,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
             <Text style={styles.specText}>{property.size} sqft</Text>
           </View>
           <View style={styles.specItem}>
-            <Text style={styles.specText} >              
-              {property.furnishingLevel === "fully_furnished"
-                ? "Unfurnished"
-                : property.furnishingLevel === "partially_furnished"
-                ? "Partially Furnished"
-                : "Fully Furnished"}
+            <Text style={styles.specText}>{furnishingLabel}
             </Text>
           </View>
         </View>

@@ -2,7 +2,6 @@ import { useMessages } from "@/contexts/MessagesContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs } from "expo-router";
 import { Home, Heart, MapPin, User, MessageCircle, LayoutDashboard, Building2 } from "lucide-react-native";
-import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({

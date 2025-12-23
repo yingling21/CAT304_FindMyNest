@@ -2,7 +2,7 @@ import PropertyCard from "@/components/PropertyCard";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { mockProperties } from "@/mocks/properties";
 import { Heart } from "lucide-react-native";
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 

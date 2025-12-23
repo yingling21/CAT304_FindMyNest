@@ -8,7 +8,7 @@ import {
   Search,
   X,
 } from "lucide-react-native";
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   StyleSheet,
   Text,

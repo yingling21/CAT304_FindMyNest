@@ -3,7 +3,7 @@ import { useMessages } from "@/contexts/MessagesContext";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { MessageCircle, Search } from "lucide-react-native";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Pressable,
   ScrollView,

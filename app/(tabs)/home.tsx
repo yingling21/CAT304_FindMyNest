@@ -15,7 +15,7 @@ import LandlordRecentActivity from "@/components/landlord/LandlordRecentActivity
 
 import { Search, Building2, Home, Users, MessageSquare, ChevronRight, Plus, Wallet, User, CheckCircle } from "lucide-react-native";
 import { useRouter } from "expo-router";
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   Pressable,
   ScrollView,

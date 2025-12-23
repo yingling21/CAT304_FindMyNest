@@ -2,7 +2,6 @@ import PropertyCard from "@/components/PropertyCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMessages } from "@/contexts/MessagesContext";
 import { useListing } from "@/contexts/ListingContext";
-import { supabase } from "@/lib/supabase";
 import AffordabilityCalculator from "@/app/affordability-calculator";
 import PropertySearchHeader from "@/components/tenant/PropertySearchHeader";
 import PropertyFilterTools from "@/components/tenant/PropertyFilterTools";
@@ -12,10 +11,11 @@ import LandlordDashboardHeader from "@/components/landlord/LandlordDashboardHead
 import LandlordOverviewStats from "@/components/landlord/LandlordOverviewStats";
 import LandlordQuickActions from "@/components/landlord/LandlordQuickActions";
 import LandlordRecentActivity from "@/components/landlord/LandlordRecentActivity";
+import { fetchFilteredProperties } from "contexts/FilterProperties";
+import type { Property } from "@/types/property";
 
-import { Search, Building2, Home, Users, MessageSquare, ChevronRight, Plus, Wallet, User, CheckCircle } from "lucide-react-native";
-import { useRouter } from "expo-router";
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { Search} from "lucide-react-native";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Pressable,
   ScrollView,
@@ -24,6 +24,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import React = require("react");
 
 const initialFilters: Filters = {
   location: "",
@@ -50,46 +51,25 @@ function TenantHomeScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCalculator, setShowCalculator] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [properties, setProperties] = React.useState<any[]>([]);
-  const [loading,setLoading] = useState(false);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState<Filters>(initialFilters);
 
-const filteredProperties = useCallback(async () => {
-  setLoading(true);
-  let query = supabase.from("Property").select("*");
+  const filteredProperties = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await fetchFilteredProperties(searchQuery, filters);
+      setProperties(data);
+    } catch (error) {
+      console.error("Failed to fetch properties:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchQuery, filters]);
 
-  if (searchQuery) {
-    query = query.or(
-      `title.ilike.%${searchQuery}%,address.ilike.%${searchQuery}%`
-    );
-  }
-
-  if (filters.location) query = query.ilike("address", `%${filters.location}%`);
-  if (filters.propertyTypes.length > 0) query = query.in("property_type", filters.propertyTypes);
-  if (filters.priceMin) query = query.gte("monthly_rent", Number(filters.priceMin));
-  if (filters.priceMax) query = query.lte("monthly_rent", Number(filters.priceMax));
-  if (filters.sizeMin) query = query.gte("size", Number(filters.sizeMin));
-  if (filters.sizeMax) query = query.lte("size", Number(filters.sizeMax));
-  if (filters.bedrooms) query = query.gte("bedrooms", filters.bedrooms);
-  if (filters.bathrooms) query = query.gte("bathrooms", filters.bathrooms);
-  if (filters.furnishing.length > 0) query = query.in("furnishing_level", filters.furnishing);
-
-  Object.entries(filters.amenities).forEach(([key, value]) => {
-    if (value) query = query.eq(`amenities->>${key}`, "true");
-  });
-
-  query = query.order("created_At", { ascending: false });
-
-  const { data, error } = await query;
-  if (error) console.error("Supabase error:", error);
-  else setProperties(data || []);
-
-  setLoading(false);
-}, [searchQuery, filters]);
-
-useEffect(() => {
-    filteredProperties();  
-}, [filteredProperties]);
+  useEffect(() => {
+    filteredProperties();
+  }, [filteredProperties]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;

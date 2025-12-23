@@ -1,12 +1,10 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useReviews } from "@/contexts/ReviewsContext";
 import { User, Mail, Phone, LogOut, Star, MessageCircle, Home, ChevronRight, Info } from "lucide-react-native";
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();

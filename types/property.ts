@@ -11,13 +11,34 @@ export type FurnishingLevel =
 
 export type CookingPolicy = "allowed" | "light_cooking" | "no_cooking";
 
+export type PropertyAmenities = {
+  deskAndChair?: boolean;
+  wardrobe?: boolean;
+  airConditioning?: boolean;
+  waterHeater?: boolean;
+  wifi?: boolean;
+  kitchenAccess?: boolean;
+  washingMachine?: boolean;
+  refrigerator?: boolean;
+  parking?: boolean;
+  security?: boolean;
+  balcony?: boolean;
+};
+
+export type PropertyHouseRules = {
+  cooking?: CookingPolicy;
+  guestsAllowed?: boolean;
+  smokingAllowed?: boolean;
+  petsAllowed?: boolean;
+};
+
 /* =========================
    DATABASE ROW (SUPABASE)
    ========================= */
 
 export type PropertyRow = {
-  property_id: number;
-  landlord_id: number;
+  property_id: string;
+  landlord_id: string;
 
   propertyType: PropertyType;
   description: string;
@@ -34,40 +55,39 @@ export type PropertyRow = {
   minimumRentalPeriod: number;
   moveInDate: string;
 
-  rentalStatus: boolean; // true = available, false = occupied
+  rentalStatus: boolean;
 
-  amenities: {
-    deskAndChair?: boolean;
-    wardrobe?: boolean;
-    airConditioning?: boolean;
-    waterHeater?: boolean;
-    wifi?: boolean;
-    kitchenAccess?: boolean;
-    washingMachine?: boolean;
-    refrigerator?: boolean;
-    parking?: boolean;
-    security?: boolean;
-    balcony?: boolean;
-  };
-
-  houseRules: {
-    cooking?: CookingPolicy;
-    guestsAllowed?: boolean;
-    smokingAllowed?: boolean;
-    petsAllowed?: boolean;
-  };
+  amenities?: PropertyAmenities;
+  houseRules?: PropertyHouseRules;
 
   created_at: string;
   updated_at: string;
-};
 
-/* =========================
-   FRONTEND DOMAIN MODEL
-   ========================= */
+  landlord?: {
+    id: string;
+    full_name: string;
+    avatar_url: string | null;
+    verified: boolean;
+  };
+
+  property_Photo?: {
+    photo_id: number;
+    photo_url: string;
+    is_cover: boolean;
+  }[];
+};
 
 export type Property = {
   id: string;
-  landlordId: string;
+
+  landlord?: {
+    id: string;
+    name: string;
+    photo: string | null;
+    verified: boolean;
+  };
+
+  photos: string[];
 
   propertyType: PropertyType;
   description: string;
@@ -86,10 +106,9 @@ export type Property = {
 
   rentalStatus: "available" | "occupied";
 
-  amenities: PropertyRow["amenities"];
-  houseRules: PropertyRow["houseRules"];
+  amenities: PropertyAmenities;
+  houseRules: PropertyHouseRules;
 
   createdAt: string;
   updatedAt: string;
 };
-
