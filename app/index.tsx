@@ -15,7 +15,7 @@ export default function IndexScreen() {
     } else if (!user) {
       router.replace("/login");
     } else {
-      router.replace("/(tabs)/home");
+      router.replace("/(tabs)/newHome");
     }
   }, [user, hasCompletedOnboarding, isLoading, router]);
 
@@ -34,3 +34,4 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
 });
+

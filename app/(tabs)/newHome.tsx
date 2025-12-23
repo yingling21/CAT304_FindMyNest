@@ -2,7 +2,7 @@ import PropertyCard from "@/components/PropertyCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMessages } from "@/contexts/MessagesContext";
 import { useListing } from "@/contexts/ListingContext";
-import { mockProperties } from "@/mocks/properties";
+import { supabase } from "@/lib/supabase";
 import AffordabilityCalculator from "@/app/affordability-calculator";
 import PropertySearchHeader from "@/components/tenant/PropertySearchHeader";
 import PropertyFilterTools from "@/components/tenant/PropertyFilterTools";
@@ -15,7 +15,7 @@ import LandlordRecentActivity from "@/components/landlord/LandlordRecentActivity
 
 import { Search, Building2, Home, Users, MessageSquare, ChevronRight, Plus, Wallet, User, CheckCircle } from "lucide-react-native";
 import { useRouter } from "expo-router";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Pressable,
   ScrollView,
@@ -50,97 +50,46 @@ function TenantHomeScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCalculator, setShowCalculator] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [properties, setProperties] = React.useState<any[]>([]);
+  const [loading,setLoading] = useState(false);
   const [filters, setFilters] = useState<Filters>(initialFilters);
 
-  const filteredProperties = useMemo(() => {
-    return mockProperties.filter((property) => {
-      const matchesSearch = property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        property.address.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      if (!matchesSearch) return false;
+const filteredProperties = useCallback(async () => {
+  setLoading(true);
+  let query = supabase.from("Property").select("*");
 
-      if (
-        filters.location &&
-        !property.address.toLowerCase().includes(filters.location.toLowerCase())
-      ) {
-        return false;
-      }
+  if (searchQuery) {
+    query = query.or(
+      `title.ilike.%${searchQuery}%,address.ilike.%${searchQuery}%`
+    );
+  }
 
-      if (
-        filters.propertyTypes.length > 0 &&
-        !filters.propertyTypes.includes(property.propertyType)
-      ) {
-        return false;
-      }
+  if (filters.location) query = query.ilike("address", `%${filters.location}%`);
+  if (filters.propertyTypes.length > 0) query = query.in("property_type", filters.propertyTypes);
+  if (filters.priceMin) query = query.gte("monthly_rent", Number(filters.priceMin));
+  if (filters.priceMax) query = query.lte("monthly_rent", Number(filters.priceMax));
+  if (filters.sizeMin) query = query.gte("size", Number(filters.sizeMin));
+  if (filters.sizeMax) query = query.lte("size", Number(filters.sizeMax));
+  if (filters.bedrooms) query = query.gte("bedrooms", filters.bedrooms);
+  if (filters.bathrooms) query = query.gte("bathrooms", filters.bathrooms);
+  if (filters.furnishing.length > 0) query = query.in("furnishing_level", filters.furnishing);
 
-      if (
-        filters.priceMin &&
-        property.monthlyRent < parseInt(filters.priceMin)
-      ) {
-        return false;
-      }
+  Object.entries(filters.amenities).forEach(([key, value]) => {
+    if (value) query = query.eq(`amenities->>${key}`, "true");
+  });
 
-      if (
-        filters.priceMax &&
-        property.monthlyRent > parseInt(filters.priceMax)
-      ) {
-        return false;
-      }
+  query = query.order("created_At", { ascending: false });
 
-      if (filters.sizeMin && property.size < parseInt(filters.sizeMin)) {
-        return false;
-      }
+  const { data, error } = await query;
+  if (error) console.error("Supabase error:", error);
+  else setProperties(data || []);
 
-      if (filters.sizeMax && property.size > parseInt(filters.sizeMax)) {
-        return false;
-      }
+  setLoading(false);
+}, [searchQuery, filters]);
 
-      if (filters.bedrooms && property.bedrooms < filters.bedrooms) {
-        return false;
-      }
-
-      if (filters.bathrooms && property.bathrooms < filters.bathrooms) {
-        return false;
-      }
-
-      if (
-        filters.furnishing.length > 0 &&
-        !filters.furnishing.includes(property.furnishingLevel)
-      ) {
-        return false;
-      }
-
-      if (
-        filters.amenities.airConditioning &&
-        !property.amenities.airConditioning
-      ) {
-        return false;
-      }
-      if (filters.amenities.wifi && !property.amenities.wifi) {
-        return false;
-      }
-      if (filters.amenities.parking && !property.amenities.parking) {
-        return false;
-      }
-      if (
-        filters.amenities.kitchenAccess &&
-        !property.amenities.kitchenAccess
-      ) {
-        return false;
-      }
-      if (
-        filters.amenities.washingMachine &&
-        !property.amenities.washingMachine
-      ) {
-        return false;
-      }
-      if (filters.amenities.security && !property.amenities.security) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [searchQuery, filters]);
+useEffect(() => {
+    filteredProperties();  
+}, [filteredProperties]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -178,7 +127,7 @@ function TenantHomeScreen() {
 
         <View style={styles.resultsHeader}>
           <Text style={styles.resultsCount}>
-            {filteredProperties.length} {filteredProperties.length === 1 ? "property" : "properties"} found
+            {properties.length} {properties.length === 1 ? "property" : "properties"} found
           </Text>
           <Pressable>
             <Text style={styles.sortButton}>Newest</Text>
@@ -186,12 +135,12 @@ function TenantHomeScreen() {
         </View>
 
         <View style={styles.propertiesContainer}>
-          {filteredProperties.map((property) => (
+          {properties.map((property) => (
             <PropertyCard key={property.id} property={property} />
           ))}
         </View>
 
-        {filteredProperties.length === 0 && (
+        {properties.length === 0 && (
           <View style={styles.emptyState}>
             <Search size={64} color="#D1D5DB" />
             <Text style={styles.emptyStateTitle}>No Properties Found</Text>
@@ -585,6 +534,7 @@ function LandlordDashboard() {
     </SafeAreaView>
   );
 }
+
 
 const dashboardStyles = StyleSheet.create({
   safeArea: {

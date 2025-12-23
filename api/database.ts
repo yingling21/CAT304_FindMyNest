@@ -4,7 +4,7 @@ import { normalizeProperty } from "./normalizeProperty";
 
 export async function getAvailableProperties(): Promise<Property[]> {
   const { data, error } = await supabase
-    .from("properties")
+    .from("Property")
     .select("*")
     .eq("rental_status", "available");
 

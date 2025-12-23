@@ -11,7 +11,7 @@ export const mockProperties: Property[] = [
     propertyType: "house",
     title: "house in Kuala Lumpur",
     description: "Cozy house located in the heart of Kuala Lumpur with easy access to public transportation and nearby amenities. Perfect for families or working professionals looking for a comfortable living space.",
-    address: "No123, Jalan Sungai 12, Kuala Lumpur",
+    address: "2",
     nearbyLandmarks: ["LRT Station", "Shopping Mall", "Restaurants"],
     distanceToTransport: "5 min walk to LRT",
 

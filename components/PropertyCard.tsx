@@ -1,5 +1,5 @@
 import { useFavorites } from "@/contexts/FavoritesContext";
-import type { Property } from "@/types";
+import type { Property } from "@/types/property.ts";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Bed, Bath, Maximize2, Heart } from "lucide-react-native";
