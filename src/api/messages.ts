@@ -74,12 +74,10 @@ export async function createOrGetConversation(params: {
   landlordName: string;
   landlordPhoto?: string;
 }): Promise<string> {
-  const propertyIdNum = parseInt(params.propertyId);
-  
   const { data: existingConv, error: searchError } = await supabase
     .from('conversations')
     .select('*')
-    .eq('property_id', propertyIdNum)
+    .eq('property_id', params.propertyId)
     .eq('tenant_id', params.tenantId)
     .single();
 
@@ -90,7 +88,7 @@ export async function createOrGetConversation(params: {
   const { data, error } = await supabase
     .from('conversations')
     .insert({
-      property_id: propertyIdNum,
+      property_id: params.propertyId,
       property_title: params.propertyTitle,
       property_image: params.propertyImage,
       property_price: params.propertyPrice,

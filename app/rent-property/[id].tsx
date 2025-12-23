@@ -31,8 +31,27 @@ export default function RentPropertyScreen() {
   const { user } = useAuth();
   const { createRental } = useRentals();
 
-  const properties: Property[] = [];
-  const property = properties.find((p) => p.id === id);
+  const [property, setProperty] = React.useState<Property | null>(null);
+  const [isLoadingProperty, setIsLoadingProperty] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadProperty = async () => {
+      if (!id) {
+        setIsLoadingProperty(false);
+        return;
+      }
+      try {
+        const { getPropertyById } = await import('@/src/api/properties');
+        const data = await getPropertyById(id);
+        setProperty(data);
+      } catch (error) {
+        console.error('Failed to load property:', error);
+      } finally {
+        setIsLoadingProperty(false);
+      }
+    };
+    loadProperty();
+  }, [id]);
 
   const [step, setStep] = useState<number>(1);
   const [duration, setDuration] = useState<number>(12);
@@ -42,6 +61,14 @@ export default function RentPropertyScreen() {
   );
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("fpx");
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+
+  if (isLoadingProperty) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Loading...</Text>
+      </View>
+    );
+  }
 
   if (!property) {
     return (
@@ -92,9 +119,11 @@ export default function RentPropertyScreen() {
 
     setIsProcessing(true);
     try {
+      const propertyTitle = `${property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)} at ${property.address.split(',')[0]}`;
+      
       await createRental(
         property.id,
-        property.description.substring(0, 50),
+        propertyTitle,
         property.photos[0]?.url || '',
         property.address,
         property.landlordId,
@@ -147,7 +176,7 @@ export default function RentPropertyScreen() {
               contentFit="cover"
             />
             <View style={styles.propertyInfo}>
-              <Text style={styles.propertyName}>{property.description.substring(0, 50)}</Text>
+              <Text style={styles.propertyName}>{`${property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)} at ${property.address.split(',')[0]}`}</Text>
               <Text style={styles.propertyPrice}>RM {property.monthlyRent}/mo</Text>
             </View>
           </View>
