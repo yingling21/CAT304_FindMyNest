@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRentals } from "@/contexts/RentalsContext";
-import type { Property } from "@/types";
+import type { Property } from "@/src/types";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -21,7 +21,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "./styles";
+import { styles } from "@/styles/rental";
 
 type PaymentMethod = "fpx" | "card" | "ewallet";
 

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TextInput,
   TouchableOpacity,
@@ -12,7 +11,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react-native";
 import { useListing } from "@/contexts/ListingContext";
-import type { PropertyType, RoomType, FurnishingLevel, CookingPolicy } from "@/types";
+import type { PropertyType, FurnishingLevel } from "@/src/types";
+import { styles } from "@/styles/listing";
 
 const TOTAL_STEPS = 9;
 
@@ -27,213 +27,6 @@ const STEP_TITLES = [
   "Review",
   "Submit",
 ];
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F9FAFB",
-  },
-  header: {
-    backgroundColor: "#6366F1",
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 20,
-  },
-  headerTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  backButton: {
-    marginRight: 12,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "700" as const,
-    color: "#FFFFFF",
-    flex: 1,
-  },
-  stepText: {
-    fontSize: 14,
-    color: "#C7D2FE",
-  },
-  progressContainer: {
-    marginTop: 8,
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
-    borderRadius: 2,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 2,
-  },
-  scrollContent: {
-    paddingBottom: 100,
-  },
-  section: {
-    backgroundColor: "#FFFFFF",
-    marginTop: 16,
-    marginHorizontal: 20,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700" as const,
-    color: "#111827",
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-    color: "#374151",
-    marginBottom: 8,
-  },
-  requiredStar: {
-    color: "#EF4444",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: "#111827",
-    backgroundColor: "#F9FAFB",
-    marginBottom: 16,
-  },
-  inputMultiline: {
-    height: 100,
-    textAlignVertical: "top",
-  },
-  optionsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 16,
-  },
-  optionChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: "#D1D5DB",
-    backgroundColor: "#FFFFFF",
-  },
-  optionChipSelected: {
-    borderColor: "#6366F1",
-    backgroundColor: "#EEF2FF",
-  },
-  optionChipText: {
-    fontSize: 14,
-    fontWeight: "500" as const,
-    color: "#6B7280",
-  },
-  optionChipTextSelected: {
-    color: "#6366F1",
-    fontWeight: "600" as const,
-  },
-  switchRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  switchLabel: {
-    fontSize: 15,
-    color: "#374151",
-    flex: 1,
-  },
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 20,
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-    flexDirection: "row",
-    gap: 12,
-  },
-  footerButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 6,
-  },
-  buttonPrevious: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-  },
-  buttonNext: {
-    backgroundColor: "#6366F1",
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: "600" as const,
-  },
-  buttonTextPrevious: {
-    color: "#374151",
-  },
-  buttonTextNext: {
-    color: "#FFFFFF",
-  },
-  reviewItem: {
-    marginBottom: 16,
-  },
-  reviewLabel: {
-    fontSize: 13,
-    color: "#6B7280",
-    marginBottom: 4,
-  },
-  reviewValue: {
-    fontSize: 15,
-    color: "#111827",
-    fontWeight: "500" as const,
-  },
-  submitSuccess: {
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  successIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#D1FAE5",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
-  },
-  successTitle: {
-    fontSize: 22,
-    fontWeight: "700" as const,
-    color: "#111827",
-    marginBottom: 8,
-  },
-  successMessage: {
-    fontSize: 15,
-    color: "#6B7280",
-    textAlign: "center",
-    paddingHorizontal: 40,
-  },
-});
 
 export default function EditListingScreen() {
   const router = useRouter();
@@ -295,33 +88,6 @@ export default function EditListingScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-
-            {formData.propertyType === "room" && (
-              <>
-                <Text style={styles.label}>Room Type</Text>
-                <View style={styles.optionsRow}>
-                  {(["master_room", "single_room", "shared_room"] as RoomType[]).map((type) => (
-                    <TouchableOpacity
-                      key={type}
-                      style={[
-                        styles.optionChip,
-                        formData.roomType === type && styles.optionChipSelected,
-                      ]}
-                      onPress={() => updateFormData({ roomType: type })}
-                    >
-                      <Text
-                        style={[
-                          styles.optionChipText,
-                          formData.roomType === type && styles.optionChipTextSelected,
-                        ]}
-                      >
-                        {type.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </>
-            )}
 
             <Text style={styles.label}>Size (sq ft) <Text style={styles.requiredStar}>*</Text></Text>
             <TextInput
@@ -640,33 +406,6 @@ export default function EditListingScreen() {
         return (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>House Rules</Text>
-
-            <Text style={styles.label}>Cooking Policy</Text>
-            <View style={styles.optionsRow}>
-              {([
-                { value: "allowed", label: "Cooking Allowed" },
-                { value: "light_cooking", label: "Light Cooking" },
-                { value: "no_cooking", label: "No Cooking" },
-              ] as { value: CookingPolicy; label: string }[]).map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.optionChip,
-                    formData.cooking === option.value && styles.optionChipSelected,
-                  ]}
-                  onPress={() => updateFormData({ cooking: option.value })}
-                >
-                  <Text
-                    style={[
-                      styles.optionChipText,
-                      formData.cooking === option.value && styles.optionChipTextSelected,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
 
             <View style={styles.switchRow}>
               <Text style={styles.switchLabel}>Guests Allowed</Text>

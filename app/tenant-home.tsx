@@ -1,12 +1,11 @@
 import PropertyCard from "@/components/PropertyCard";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Property } from "@/src/types/property";
+import type { Property } from "@/src/types";
 import AffordabilityCalculator from "@/app/affordability-calculator";
 import PropertySearchHeader from "@/components/tenant/PropertySearchHeader";
 import PropertyFilterTools from "@/components/tenant/PropertyFilterTools";
 import PropertyFiltersModal from "@/components/tenant/PropertyFiltersModal";
 import type { Filters } from "@/components/tenant/PropertyFiltersModal";
-import { styles } from "./TenantHomeScreen.styles";
 
 import { Search } from "lucide-react-native";
 import React, { useState, useMemo, useEffect } from "react";
@@ -17,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { tenantHomeStyles as styles } from "@/styles/tenant";
 
 const initialFilters: Filters = {
   location: "",

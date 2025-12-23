@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
-import TenantHomeScreen from "@/components/tenant/TenantHomeScreen";
-import LandlordHomeScreen from "@/components/landlord/LandlordHomeScreen";
+import TenantHomeScreen from "@/app/tenant-home";
+import LandlordHomeScreen from "@/app/landlord-home";
 
 export default function HomeScreen() {
   const { user } = useAuth();

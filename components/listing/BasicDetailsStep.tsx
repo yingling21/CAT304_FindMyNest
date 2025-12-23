@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
-import type { PropertyType, FurnishingLevel } from "@/types";
+import type { PropertyType, FurnishingLevel } from "@/src/types";
 
 type FormData = {
   propertyType: PropertyType | "";

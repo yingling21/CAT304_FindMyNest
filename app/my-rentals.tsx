@@ -6,13 +6,13 @@ import { ChevronLeft, Home as HomeIcon } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ScrollView,
-  StyleSheet,
   Text,
   View,
   Pressable,
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { styles } from "@/styles/rental";
 
 export default function MyRentalsScreen() {
   const router = useRouter();
@@ -94,7 +94,7 @@ export default function MyRentalsScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.myRentalsScrollView} showsVerticalScrollIndicator={false}>
           {activeRentals.length === 0 && pastRentals.length === 0 ? (
             <View style={styles.emptyContainer}>
               <HomeIcon size={64} color="#D1D5DB" />
@@ -251,204 +251,3 @@ export default function MyRentalsScreen() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F9FAFB",
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#F9FAFB",
-  },
-  errorText: {
-    fontSize: 18,
-    color: "#6B7280",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700" as const,
-    color: "#1F2937",
-  },
-  scrollView: {
-    flex: 1,
-  },
-  emptyContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 80,
-    paddingHorizontal: 40,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: "700" as const,
-    color: "#1F2937",
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    textAlign: "center",
-  },
-  section: {
-    marginTop: 24,
-    paddingHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700" as const,
-    color: "#1F2937",
-    marginBottom: 16,
-  },
-  rentalCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  propertyImage: {
-    width: "100%",
-    height: 160,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  rentalInfo: {
-    marginBottom: 12,
-  },
-  rentalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  propertyTitle: {
-    fontSize: 16,
-    fontWeight: "700" as const,
-    color: "#1F2937",
-    flex: 1,
-    marginRight: 8,
-  },
-  statusBadge: {
-    backgroundColor: "#10B981",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: "600" as const,
-    color: "#FFFFFF",
-  },
-  statusBadgeCompleted: {
-    backgroundColor: "#6B7280",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusTextCompleted: {
-    fontSize: 11,
-    fontWeight: "600" as const,
-    color: "#FFFFFF",
-  },
-  propertyAddress: {
-    fontSize: 13,
-    color: "#6B7280",
-    marginBottom: 4,
-  },
-  propertyPrice: {
-    fontSize: 18,
-    fontWeight: "700" as const,
-    color: "#6366F1",
-    marginBottom: 8,
-  },
-  rentalPeriod: {
-    fontSize: 13,
-    color: "#1F2937",
-    marginBottom: 4,
-  },
-  daysRemaining: {
-    fontSize: 13,
-    color: "#10B981",
-    fontWeight: "600" as const,
-  },
-  stopButton: {
-    backgroundColor: "#EF4444",
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  stopButtonDisabled: {
-    opacity: 0.6,
-  },
-  stopButtonText: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-    color: "#FFFFFF",
-  },
-  actionButtons: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  payButton: {
-    flex: 1,
-    backgroundColor: "#6366F1",
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  payButtonText: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-    color: "#FFFFFF",
-  },
-  reviewSubmittedBadge: {
-    backgroundColor: "#ECFDF5",
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#10B981",
-  },
-  reviewSubmittedText: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-    color: "#10B981",
-  },
-  reviewButton: {
-    backgroundColor: "#F59E0B",
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  reviewButtonText: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-    color: "#FFFFFF",
-  },
-});

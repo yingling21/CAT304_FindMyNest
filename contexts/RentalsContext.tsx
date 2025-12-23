@@ -1,6 +1,6 @@
 import createContextHook from "@nkzw/create-context-hook";
 import { useState, useEffect, useCallback } from "react";
-import type { Rental } from "@/types";
+import type { Rental } from "@/src/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 

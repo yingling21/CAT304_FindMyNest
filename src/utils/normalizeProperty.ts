@@ -9,6 +9,7 @@ export function normalizeProperty(row: any): Property {
     landlordVerified: row.landlord_verified || false,
     
     propertyType: (row.propertyType || 'apartment') as PropertyType,
+    title: row.title || undefined,
     description: row.description || '',
     address: row.address || '',
     

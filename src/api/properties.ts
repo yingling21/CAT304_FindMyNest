@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { Property } from '@/src/types/property';
+import type { Property } from '@/src/types/property';
 import { normalizeProperty, normalizeProperties } from '@/src/utils/normalizeProperty';
 
 async function enrichPropertiesWithData(properties: any[]): Promise<any[]> {
@@ -149,6 +149,7 @@ export async function createProperty(propertyData: Partial<Property>): Promise<P
     .insert({
       landlord_id: landlordData.id,
       propertyType: propertyData.propertyType,
+      title: propertyData.title,
       description: propertyData.description,
       address: propertyData.address,
       size: propertyData.size,
@@ -197,6 +198,7 @@ export async function updateProperty(id: string, propertyData: Partial<Property>
     .from('listing')
     .update({
       propertyType: propertyData.propertyType,
+      title: propertyData.title,
       description: propertyData.description,
       address: propertyData.address,
       size: propertyData.size,

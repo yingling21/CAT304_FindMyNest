@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, Modal, Pressable, ScrollView, TextInput, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { X, MapPin } from "lucide-react-native";
-import type { PropertyType, FurnishingLevel } from "@/types";
+import type { PropertyType, FurnishingLevel } from "@/src/types";
 
 type AmenityFilter = {
   airConditioning: boolean;

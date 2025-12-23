@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { maskSensitiveData, containsSensitiveData } from "@/utils/sensitiveDataMask";
-import { styles } from "./styles";
+import { styles } from "@/styles/chat";
 
 export default function ChatRoomScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

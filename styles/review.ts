@@ -239,3 +239,144 @@ export const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
 });
+
+export const reviewHistoryStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F9FAFB",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+  },
+  errorText: {
+    fontSize: 18,
+    color: "#6B7280",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "700" as const,
+    color: "#1F2937",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 80,
+    paddingHorizontal: 40,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "700" as const,
+    color: "#1F2937",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    textAlign: "center",
+  },
+  reviewsList: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  reviewCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    overflow: "hidden",
+    marginBottom: 16,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  propertyImage: {
+    width: "100%",
+    height: 120,
+  },
+  reviewContent: {
+    padding: 16,
+  },
+  reviewHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  propertyTitle: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: "#1F2937",
+    flex: 1,
+    marginRight: 8,
+  },
+  ratingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#FFFBEB",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  ratingText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "#92400E",
+  },
+  reviewDate: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginBottom: 12,
+  },
+  comment: {
+    fontSize: 14,
+    color: "#1F2937",
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  ratingsBreakdown: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  ratingDetail: {
+    alignItems: "center",
+    gap: 4,
+  },
+  ratingDetailLabel: {
+    fontSize: 10,
+    color: "#6B7280",
+  },
+  ratingDetailValue: {
+    flexDirection: "row",
+    gap: 2,
+  },
+});
