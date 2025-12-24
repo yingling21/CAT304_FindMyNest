@@ -10,6 +10,7 @@ import { styles } from "../../styles/LandlordHomeScreen.styles";
 import React, { useMemo } from "react";
 import { ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { landlordHomeStyles as styles } from "@/styles/LandlordHomeScreen.styles";
 
 export default function LandlordHomeScreen() {
   const { user } = useAuth();

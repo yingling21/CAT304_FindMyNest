@@ -3,11 +3,11 @@ import { Building2, Home } from "lucide-react-native";
 import React from "react";
 import {
   Pressable,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { roleSelectionStyles as styles } from "@/styles/auth";
 
 export default function RoleSelectionScreen() {
   const { user, updateUserRole } = useAuth();
@@ -55,63 +55,3 @@ export default function RoleSelectionScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 40,
-  },
-  header: {
-    marginBottom: 48,
-  },
-  greeting: {
-    fontSize: 32,
-    fontWeight: "700" as const,
-    color: "#1F2937",
-    marginBottom: 12,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#6B7280",
-    lineHeight: 24,
-  },
-  optionsContainer: {
-    gap: 20,
-  },
-  optionCard: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 2,
-    borderColor: "#E5E7EB",
-    borderRadius: 20,
-    padding: 28,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
-  },
-  optionTitle: {
-    fontSize: 22,
-    fontWeight: "700" as const,
-    color: "#1F2937",
-    marginBottom: 8,
-  },
-  optionSubtitle: {
-    fontSize: 15,
-    color: "#6B7280",
-    lineHeight: 22,
-  },
-});

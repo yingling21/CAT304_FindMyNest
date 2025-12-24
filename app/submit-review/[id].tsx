@@ -1,6 +1,6 @@
 import { useRentals } from "@/contexts/RentalsContext";
 import { useReviews } from "@/contexts/ReviewsContext";
-import type { Property } from "@/types";
+import type { Property } from "@/src/types";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft, Star, CheckCircle2 } from "lucide-react-native";
@@ -14,7 +14,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "../../styles/submit-review.styles";
+import { styles } from "@/styles/submit-review";
 
 export default function SubmitReviewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -23,8 +23,27 @@ export default function SubmitReviewScreen() {
   const { createReview, hasReviewed } = useReviews();
 
   const rental = getTenantRentals().find(r => r.id === id);
-  const properties: Property[] = [];
-  const property = properties.find(p => p.id === rental?.propertyId);
+  const [property, setProperty] = React.useState<Property | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadProperty = async () => {
+      if (!rental?.propertyId) {
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const { getPropertyById } = await import('@/src/api/properties');
+        const data = await getPropertyById(rental.propertyId);
+        setProperty(data);
+      } catch (error) {
+        console.error('Failed to load property:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadProperty();
+  }, [rental?.propertyId]);
 
   const [locationRating, setLocationRating] = useState<number>(0);
   const [valueRating, setValueRating] = useState<number>(0);
@@ -32,6 +51,14 @@ export default function SubmitReviewScreen() {
   const [landlordRating, setLandlordRating] = useState<number>(0);
   const [comment, setComment] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  if (isLoading) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Loading...</Text>
+      </View>
+    );
+  }
 
   if (!rental || !property) {
     return (

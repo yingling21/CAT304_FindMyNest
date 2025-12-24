@@ -3,28 +3,27 @@ import { StyleSheet } from "react-native";
 export const tenantHomeStyles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#FFFFFF",
   },
   container: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingBottom: 24,
   },
   searchSection: {
-    paddingHorizontal: 20,
-    marginTop: 20,
+    marginBottom: 20,
   },
   resultsHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    marginTop: 20,
+    paddingHorizontal: 24,
     marginBottom: 16,
+    marginTop: 20,
   },
   resultsCount: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600" as const,
     color: "#1F2937",
   },
@@ -33,27 +32,25 @@ export const tenantHomeStyles = StyleSheet.create({
     fontWeight: "600" as const,
     color: "#6366F1",
   },
-  propertiesContainer: {
-    paddingHorizontal: 20,
-  },
   emptyState: {
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 60,
+    paddingVertical: 80,
     paddingHorizontal: 40,
   },
   emptyStateTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "700" as const,
     color: "#1F2937",
     marginTop: 20,
     marginBottom: 8,
-    textAlign: "center",
   },
   emptyStateDesc: {
-    fontSize: 14,
-    color: "#6B7280",
+    fontSize: 15,
+    color: "#9CA3AF",
     textAlign: "center",
-    lineHeight: 20,
+    lineHeight: 22,
+  },
+  propertiesContainer: {
+    alignItems: "center",
   },
 });

@@ -2,7 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useMessages } from "@/contexts/MessagesContext";
 import { useReviews } from "@/contexts/ReviewsContext";
-import type { Property } from "@/types";
+import type { Property } from "@/src/types";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -37,7 +37,7 @@ import {
   Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { styles } from "../../styles/property.styles";
+import { styles } from "@/styles/property.styles";
 
 export default function PropertyDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -48,11 +48,38 @@ export default function PropertyDetailScreen() {
   const { getReviewsByProperty } = useReviews();
   const insets = useSafeAreaInsets();
 
-  const properties: Property[] = [];
-  const property = properties.find((p) => p.id === id);
+  const [property, setProperty] = React.useState<Property | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadProperty = async () => {
+      try {
+        setIsLoading(true);
+        const { getPropertyById } = await import('@/src/api/properties');
+        const data = await getPropertyById(id || '');
+        setProperty(data);
+      } catch (error) {
+        console.error('Failed to load property:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    if (id) {
+      loadProperty();
+    }
+  }, [id]);
   const reviews = getReviewsByProperty(id || "");
 
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState<number>(0);
+
+  if (isLoading) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Loading...</Text>
+      </View>
+    );
+  }
 
   if (!property) {
     return (
@@ -77,7 +104,7 @@ export default function PropertyDetailScreen() {
     try {
       const conversationId = await createOrGetConversation(
         property.id,
-        property.description.substring(0, 50),
+        `${property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)} at ${property.address.split(',')[0]}`,
         property.photos[0]?.url || '',
         property.monthlyRent,
         property.landlordId,
@@ -173,7 +200,7 @@ export default function PropertyDetailScreen() {
                 </View>
               )}
             </View>
-            <Text style={styles.title}>{property.description.length > 100 ? property.description.substring(0, 100) + '...' : property.description}</Text>
+            <Text style={styles.title}>{`${property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)} at ${property.address.split(',')[0]}`}</Text>
             <View style={styles.locationRow}>
               <MapPin size={18} color="#6B7280" />
               <Text style={styles.address}>{property.address}</Text>

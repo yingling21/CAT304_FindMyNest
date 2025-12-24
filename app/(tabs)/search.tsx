@@ -1,5 +1,5 @@
 import PropertyCard from "@/components/PropertyCard";
-import type { PropertyType, FurnishingLevel, Property } from "@/types";
+import type { PropertyType, FurnishingLevel, Property } from "@/src/types";
 import { Stack } from "expo-router";
 import {
   MapPin,
@@ -9,7 +9,6 @@ import {
 } from "lucide-react-native";
 import React, { useState, useMemo } from "react";
 import {
-  StyleSheet,
   Text,
   View,
   TextInput,
@@ -18,6 +17,7 @@ import {
   Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { searchStyles as styles } from "@/styles/tabs";
 
 type AmenityFilter = {
   airConditioning: boolean;
@@ -68,8 +68,23 @@ export default function SearchScreen() {
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
 
+  const [properties, setProperties] = useState<Property[]>([]);
+
+  React.useEffect(() => {
+    const loadProperties = async () => {
+      try {
+        const { getAvailableProperties } = await import('@/src/api/properties');
+        const data = await getAvailableProperties();
+        setProperties(data);
+      } catch (error) {
+        console.error('Failed to load properties:', error);
+      }
+    };
+    
+    loadProperties();
+  }, []);
+
   const filteredAndSortedProperties = useMemo(() => {
-    const properties: Property[] = [];
     let results = properties.filter((property) => {
       if (
         filters.location &&
@@ -165,7 +180,7 @@ export default function SearchScreen() {
     }
 
     return results;
-  }, [filters, sortBy]);
+  }, [properties, filters, sortBy]);
 
   const togglePropertyType = (type: PropertyType) => {
     setFilters((prev) => ({
@@ -598,247 +613,4 @@ export default function SearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#F9FAFB",
-  },
-  container: {
-    flex: 1,
-  },
-  searchSection: {
-    backgroundColor: "#FFFFFF",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-  },
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F3F4F6",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-    marginBottom: 12,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: "#1F2937",
-  },
-  actionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  filterButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#6366F1",
-    backgroundColor: "#FFFFFF",
-  },
-  filterButtonActive: {
-    backgroundColor: "#6366F1",
-  },
-  filterButtonText: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-    color: "#6366F1",
-  },
-  filterButtonTextActive: {
-    color: "#FFFFFF",
-  },
-  sortContainer: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  sortLabel: {
-    fontSize: 14,
-    color: "#6B7280",
-    fontWeight: "500" as const,
-  },
-  sortButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: "#F3F4F6",
-  },
-  sortButtonText: {
-    fontSize: 13,
-    color: "#374151",
-    fontWeight: "500" as const,
-  },
-  resultsText: {
-    fontSize: 14,
-    color: "#6B7280",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 24,
-  },
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 60,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: "700" as const,
-    color: "#1F2937",
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 15,
-    color: "#6B7280",
-    textAlign: "center",
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700" as const,
-    color: "#1F2937",
-  },
-  modalContent: {
-    flex: 1,
-  },
-  filterSection: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-  },
-  filterSectionTitle: {
-    fontSize: 16,
-    fontWeight: "600" as const,
-    color: "#1F2937",
-    marginBottom: 16,
-  },
-  chipContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    backgroundColor: "#FFFFFF",
-  },
-  chipActive: {
-    borderColor: "#6366F1",
-    backgroundColor: "#6366F1",
-  },
-  chipText: {
-    fontSize: 14,
-    fontWeight: "500" as const,
-    color: "#374151",
-  },
-  chipTextActive: {
-    color: "#FFFFFF",
-  },
-  rangeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  rangeInput: {
-    flex: 1,
-  },
-  rangeLabel: {
-    fontSize: 13,
-    color: "#6B7280",
-    marginBottom: 6,
-  },
-  rangeTextInput: {
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: "#1F2937",
-    backgroundColor: "#F9FAFB",
-  },
-  rangeSeparator: {
-    fontSize: 16,
-    color: "#9CA3AF",
-    marginTop: 20,
-  },
-  locationSearchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 10,
-  },
-  locationSearchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: "#1F2937",
-  },
-  modalFooter: {
-    flexDirection: "row",
-    padding: 20,
-    gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-  },
-  resetButtonFooter: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    backgroundColor: "#FFFFFF",
-  },
-  resetButtonFooterText: {
-    fontSize: 16,
-    fontWeight: "600" as const,
-    color: "#374151",
-  },
-  applyButton: {
-    flex: 2,
-    backgroundColor: "#6366F1",
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  applyButtonText: {
-    fontSize: 16,
-    fontWeight: "700" as const,
-    color: "#FFFFFF",
-  },
-});
+

@@ -1,6 +1,6 @@
 import createContextHook from "@nkzw/create-context-hook";
 import { useState, useEffect, useCallback } from "react";
-import type { Review } from "@/types";
+import type { Review } from "@/src/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 

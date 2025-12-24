@@ -5,10 +5,10 @@ import {
   Dimensions,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
+import { onboardingStyles as styles } from "@/styles/auth";
 
 const { width } = Dimensions.get("window");
 
@@ -111,111 +111,3 @@ export default function OnboardingScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  skipButton: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    zIndex: 10,
-    padding: 10,
-  },
-  skipText: {
-    fontSize: 16,
-    color: "#9CA3AF",
-    fontWeight: "500" as const,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  slide: {
-    width,
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 100,
-  },
-  imageContainer: {
-    width: width * 0.9,
-    height: width * 0.9,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 40,
-  },
-  imageCircle: {
-    width: width * 0.65,
-    height: width * 0.65,
-    borderRadius: (width * 0.65) / 2,
-    overflow: "hidden",
-    backgroundColor: "#E0E7FF",
-    shadowColor: "#6366F1",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    elevation: 8,
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-  },
-  textContainer: {
-    alignItems: "center",
-    paddingHorizontal: 32,
-    marginBottom: 40,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: "600" as const,
-    color: "#1F2937",
-    textAlign: "center",
-    marginBottom: 16,
-    lineHeight: 34,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#9CA3AF",
-    textAlign: "center",
-    lineHeight: 22,
-  },
-  pagination: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 40,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#E5E7EB",
-  },
-  activeDot: {
-    width: 24,
-    backgroundColor: "#6366F1",
-  },
-  buttonContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-  },
-  nextButton: {
-    backgroundColor: "#6366F1",
-    borderRadius: 16,
-    paddingVertical: 18,
-    alignItems: "center",
-    shadowColor: "#6366F1",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  nextButtonText: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "600" as const,
-  },
-});

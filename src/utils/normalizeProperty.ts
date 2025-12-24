@@ -2,8 +2,8 @@ import type { Property, PropertyType, FurnishingLevel } from '@/src/types/proper
 
 export function normalizeProperty(row: any): Property {
   return {
-    id: row.property_id?.toString() || '',
-    landlordId: row.landlord_id?.toString() || '',
+    id: row.property_id || '',
+    landlordId: row.landlord_id || '',
     landlordName: row.landlord_name || 'Unknown',
     landlordPhoto: row.landlord_photo || undefined,
     landlordVerified: row.landlord_verified || false,

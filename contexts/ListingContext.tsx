@@ -1,6 +1,6 @@
 import createContextHook from "@nkzw/create-context-hook";
 import { useState, useEffect, useCallback } from "react";
-import type { PropertyType, FurnishingLevel } from "@/types";
+import type { PropertyType, FurnishingLevel } from "@/src/types";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -148,31 +148,57 @@ export const [ListingProvider, useListing] = createContextHook(() => {
     try {
       if (!user) return;
       
+      const { data: landlordData, error: landlordError } = await supabase
+        .from('landlord')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (landlordError || !landlordData) {
+        console.error('Failed to fetch landlord:', landlordError);
+        return;
+      }
+      
       const { data, error } = await supabase
-        .from('listings')
+        .from('listing')
         .select('*')
-        .eq('landlord_id', user.id)
-        .order('created_at', { ascending: false });
+        .eq('landlord_id', landlordData.id)
+        .order('created_At', { ascending: false });
       
       if (error) throw error;
       
       if (data) {
         setListings(data.map((listing: any) => ({
-          id: listing.id,
-          landlordId: listing.landlord_id,
-          title: listing.title,
-          description: listing.description,
-          propertyType: listing.property_type,
-          size: listing.size,
-          bedrooms: listing.bedrooms,
-          bathrooms: listing.bathrooms,
-          price: listing.monthly_rent,
-          address: listing.address,
-          status: listing.status,
-          views: listing.views,
-          messages: listing.messages,
-          createdAt: listing.created_at,
-          formData: listing.form_data,
+          id: listing.property_id?.toString() || '',
+          landlordId: landlordData.id.toString(),
+          title: listing.title || '',
+          description: listing.description || '',
+          propertyType: listing.propertyType || 'apartment',
+          size: listing.size?.toString() || '0',
+          bedrooms: listing.bedrooms?.toString() || '0',
+          bathrooms: listing.bathrooms?.toString() || '0',
+          price: listing.monthlyRent || 0,
+          address: listing.address || '',
+          status: listing.rentalStatus ? 'approved' : 'pending',
+          views: 0,
+          messages: 0,
+          createdAt: listing.created_At || new Date().toISOString(),
+          formData: {
+            ...initialFormData,
+            propertyType: listing.propertyType,
+            title: listing.title,
+            description: listing.description,
+            size: listing.size?.toString() || '',
+            bedrooms: listing.bedrooms?.toString() || '',
+            bathrooms: listing.bathrooms?.toString() || '',
+            furnishingLevel: listing.furnishingLevel,
+            monthlyRent: listing.monthlyRent?.toString() || '',
+            securityDeposit: listing.securityDeposit?.toString() || '',
+            utilitiesDeposit: listing.utilitiesDeposit?.toString() || '',
+            minimumRentalPeriod: listing.minimumRentalPeriod?.toString() || '',
+            moveInDate: listing.moveInDate || '',
+            address: listing.address,
+          },
         })));
       }
     } catch (error) {
@@ -186,8 +212,18 @@ export const [ListingProvider, useListing] = createContextHook(() => {
     }
   }, [user, loadListings]);
 
-  const saveListing = async (landlordId: string) => {
+  const saveListing = async (landlordUserId: string) => {
     try {
+      const { data: landlordData, error: landlordError } = await supabase
+        .from('landlord')
+        .select('id')
+        .eq('user_id', landlordUserId)
+        .single();
+      
+      if (landlordError || !landlordData) {
+        throw new Error('Landlord not found');
+      }
+
       const amenities = {
         bedType: formData.bedType,
         deskAndChair: formData.deskAndChair,
@@ -212,33 +248,25 @@ export const [ListingProvider, useListing] = createContextHook(() => {
       };
 
       const { data, error } = await supabase
-        .from('listings')
+        .from('listing')
         .insert({
-          landlord_id: landlordId,
+          landlord_id: landlordData.id,
           title: formData.title,
           description: formData.description,
-          property_type: formData.propertyType,
-          size: formData.size,
-          bedrooms: formData.bedrooms,
-          bathrooms: formData.bathrooms,
-          floor_level: formData.floorLevel,
-          furnishing_level: formData.furnishingLevel,
-          monthly_rent: parseFloat(formData.monthlyRent) || 0,
-          security_deposit: parseFloat(formData.securityDeposit) || 0,
-          utilities_deposit: parseFloat(formData.utilitiesDeposit) || 0,
-          minimum_rental_period: formData.minimumRentalPeriod,
-          move_in_date: formData.moveInDate,
+          propertyType: formData.propertyType,
+          size: parseInt(formData.size) || 0,
+          bedrooms: parseInt(formData.bedrooms) || 0,
+          bathrooms: parseInt(formData.bathrooms) || 0,
+          furnishingLevel: formData.furnishingLevel,
+          monthlyRent: parseFloat(formData.monthlyRent) || 0,
+          securityDeposit: parseFloat(formData.securityDeposit) || 0,
+          utilitiesDeposit: parseFloat(formData.utilitiesDeposit) || 0,
+          minimumRentalPeriod: parseInt(formData.minimumRentalPeriod) || 6,
+          moveInDate: formData.moveInDate || new Date().toISOString().split('T')[0],
           amenities,
-          utilities_included: formData.utilitiesIncluded,
-          estimated_monthly_utilities: formData.estimatedMonthlyUtilities,
-          internet_speed: formData.internetSpeed,
-          house_rules: houseRules,
+          houseRules,
           address: formData.address,
-          nearby_landmarks: formData.nearbyLandmarks,
-          distance_to_transport: formData.distanceToTransport,
-          photos: formData.photos,
-          status: 'pending',
-          form_data: formData,
+          rentalStatus: true,
         })
         .select()
         .single();
@@ -246,22 +274,38 @@ export const [ListingProvider, useListing] = createContextHook(() => {
       if (error) throw error;
       
       if (data) {
+        if (formData.photos && formData.photos.length > 0) {
+          const photoInserts = formData.photos.map((photo, index) => ({
+            property_id: data.property_id,
+            photo_URL: photo,
+            is_cover: index === 0,
+          }));
+
+          const { error: photoError } = await supabase
+            .from('property_Photo')
+            .insert(photoInserts);
+
+          if (photoError) {
+            console.error('Failed to insert photos:', photoError);
+          }
+        }
+
         const newListing: StoredListing = {
-          id: data.id,
-          landlordId: data.landlord_id,
-          title: data.title,
-          description: data.description,
-          propertyType: data.property_type,
-          size: data.size,
-          bedrooms: data.bedrooms,
-          bathrooms: data.bathrooms,
-          price: data.monthly_rent,
+          id: data.property_id?.toString() || '',
+          landlordId: landlordData.id.toString(),
+          title: data.title || '',
+          description: data.description || '',
+          propertyType: data.propertyType,
+          size: data.size?.toString() || '0',
+          bedrooms: data.bedrooms?.toString() || '0',
+          bathrooms: data.bathrooms?.toString() || '0',
+          price: data.monthlyRent || 0,
           address: data.address,
-          status: data.status,
-          views: data.views,
-          messages: data.messages,
-          createdAt: data.created_at,
-          formData: data.form_data,
+          status: data.rentalStatus ? 'approved' : 'pending',
+          views: 0,
+          messages: 0,
+          createdAt: data.created_At || new Date().toISOString(),
+          formData: formData,
         };
         setListings(prev => [newListing, ...prev]);
         console.log("Listing saved:", newListing.id);
@@ -281,10 +325,11 @@ export const [ListingProvider, useListing] = createContextHook(() => {
     status: "approved" | "pending" | "rejected"
   ) => {
     try {
+      const rentalStatus = status === 'approved';
       const { error } = await supabase
-        .from('listings')
-        .update({ status })
-        .eq('id', listingId);
+        .from('listing')
+        .update({ rentalStatus })
+        .eq('property_id', listingId);
       
       if (error) throw error;
       

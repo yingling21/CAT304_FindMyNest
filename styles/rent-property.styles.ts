@@ -78,6 +78,13 @@ export const styles = StyleSheet.create({
     color: "#1F2937",
     marginBottom: 4,
   },
+  propertyTitle: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: "#1F2937",
+    flex: 1,
+    marginRight: 8,
+  },
   propertyPrice: {
     fontSize: 16,
     fontWeight: "700" as const,
@@ -320,6 +327,139 @@ export const styles = StyleSheet.create({
   confirmButtonText: {
     fontSize: 16,
     fontWeight: "700" as const,
+    color: "#FFFFFF",
+  },
+  myRentalsScrollView: {
+    flex: 1,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 80,
+    paddingHorizontal: 40,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "700" as const,
+    color: "#1F2937",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    textAlign: "center",
+  },
+  rentalCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  rentalInfo: {
+    marginBottom: 12,
+  },
+  rentalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  propertyAddress: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginBottom: 4,
+  },
+  rentalPeriod: {
+    fontSize: 13,
+    color: "#1F2937",
+    marginBottom: 4,
+  },
+  daysRemaining: {
+    fontSize: 13,
+    color: "#10B981",
+    fontWeight: "600" as const,
+  },
+  statusBadge: {
+    backgroundColor: "#10B981",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: "600" as const,
+    color: "#FFFFFF",
+  },
+  statusBadgeCompleted: {
+    backgroundColor: "#6B7280",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusTextCompleted: {
+    fontSize: 11,
+    fontWeight: "600" as const,
+    color: "#FFFFFF",
+  },
+  actionButtons: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  payButton: {
+    flex: 1,
+    backgroundColor: "#6366F1",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  payButtonText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "#FFFFFF",
+  },
+  stopButton: {
+    flex: 1,
+    backgroundColor: "#EF4444",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  stopButtonDisabled: {
+    opacity: 0.6,
+  },
+  stopButtonText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "#FFFFFF",
+  },
+  reviewSubmittedBadge: {
+    backgroundColor: "#ECFDF5",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#10B981",
+  },
+  reviewSubmittedText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "#10B981",
+  },
+  reviewButton: {
+    backgroundColor: "#F59E0B",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  reviewButtonText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
     color: "#FFFFFF",
   },
 });

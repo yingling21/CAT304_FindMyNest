@@ -1,5 +1,6 @@
 import PropertyCard from "@/components/PropertyCard";
 import { useAuth } from "@/contexts/AuthContext";
+import type { Property } from "@/src/types";
 import type { Property } from "@/src/types/property";
 import AffordabilityCalculator from "@/app/affordability-calculator";
 import PropertySearchHeader from "@/components/tenant/PropertySearchHeader";
@@ -17,6 +18,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { tenantHomeStyles as styles } from "@/styles/TenantHomeScreen.styles";
 
 const initialFilters: Filters = {
   location: "",

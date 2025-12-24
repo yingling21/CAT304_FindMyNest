@@ -3,12 +3,10 @@ import type { Review } from '@/src/types/review';
 import { normalizeReview, normalizeReviews } from '@/src/utils/normalizeReview';
 
 export async function getReviewsByProperty(propertyId: string): Promise<Review[]> {
-  const propertyIdNum = parseInt(propertyId);
-  
   const { data, error } = await supabase
     .from('reviews')
     .select('*')
-    .eq('property_id', propertyIdNum)
+    .eq('property_id', propertyId)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -35,12 +33,10 @@ export async function getReviewsByTenant(tenantId: string): Promise<Review[]> {
 }
 
 export async function createReview(reviewData: Partial<Review>): Promise<Review> {
-  const propertyIdNum = parseInt(reviewData.propertyId || '0');
-  
   const { data, error } = await supabase
     .from('reviews')
     .insert({
-      property_id: propertyIdNum,
+      property_id: reviewData.propertyId,
       rental_id: reviewData.rentalId,
       tenant_id: reviewData.tenantId,
       tenant_name: reviewData.tenantName || '',

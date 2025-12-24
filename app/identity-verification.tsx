@@ -7,11 +7,11 @@ import {
   Alert,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { verificationStyles as styles } from "@/styles/auth";
 
 export default function IdentityVerificationScreen() {
   const { user, completeVerification } = useAuth();
@@ -186,140 +186,3 @@ export default function IdentityVerificationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  container: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 40,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 32,
-  },
-  iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#EEF2FF",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700" as const,
-    color: "#1F2937",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#6B7280",
-    textAlign: "center",
-    lineHeight: 22,
-  },
-  section: {
-    marginBottom: 28,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700" as const,
-    color: "#1F2937",
-    marginBottom: 6,
-  },
-  sectionDesc: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginBottom: 16,
-    lineHeight: 20,
-  },
-  uploadCard: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 2,
-    borderColor: "#E5E7EB",
-    borderStyle: "dashed",
-    borderRadius: 16,
-    padding: 32,
-    alignItems: "center",
-  },
-  uploadCardSuccess: {
-    borderColor: "#10B981",
-    backgroundColor: "#ECFDF5",
-    borderStyle: "solid",
-  },
-  uploadText: {
-    fontSize: 16,
-    fontWeight: "600" as const,
-    color: "#1F2937",
-    marginTop: 12,
-  },
-  uploadTextSuccess: {
-    fontSize: 16,
-    fontWeight: "600" as const,
-    color: "#10B981",
-    marginTop: 12,
-  },
-  uploadHint: {
-    fontSize: 13,
-    color: "#9CA3AF",
-    marginTop: 4,
-  },
-  infoBox: {
-    flexDirection: "row",
-    backgroundColor: "#EEF2FF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-    gap: 12,
-  },
-  infoContent: {
-    flex: 1,
-  },
-  infoTitle: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-    color: "#1F2937",
-    marginBottom: 4,
-  },
-  infoText: {
-    fontSize: 13,
-    color: "#6B7280",
-    lineHeight: 18,
-  },
-  submitButton: {
-    backgroundColor: "#6366F1",
-    borderRadius: 12,
-    paddingVertical: 18,
-    alignItems: "center",
-    marginBottom: 12,
-    shadowColor: "#6366F1",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  submitButtonDisabled: {
-    opacity: 0.7,
-  },
-  submitButtonText: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "600" as const,
-  },
-  skipButton: {
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  skipText: {
-    fontSize: 15,
-    color: "#6B7280",
-    fontWeight: "500" as const,
-  },
-});
