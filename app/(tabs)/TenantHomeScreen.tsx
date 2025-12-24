@@ -1,6 +1,6 @@
 import PropertyCard from "@/components/PropertyCard";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Property } from "@/src/types/property";
+import type { Property } from "@/src/types";
 import AffordabilityCalculator from "@/app/affordability-calculator";
 import PropertySearchHeader from "@/components/tenant/PropertySearchHeader";
 import PropertyFilterTools from "@/components/tenant/PropertyFilterTools";
@@ -52,9 +52,12 @@ export default function TenantHomeScreen() {
 
   const loadProperties = async () => {
     try {
-      setProperties([]);
+      const { getAvailableProperties } = await import('@/src/api/properties');
+      const data = await getAvailableProperties();
+      setProperties(data);
     } catch (error) {
       console.error('Failed to load properties:', error);
+      setProperties([]);
     }
   };
 
