@@ -1,10 +1,14 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { verifyIcWithBackend } from "@/lib/verifyIcApi";
 import * as DocumentPicker from "expo-document-picker";
-import { AlertCircle, CheckCircle, FileText, Upload } from "lucide-react-native";
+import * as ImagePicker from "expo-image-picker";
+import { AlertCircle, CheckCircle, FileText, Upload, X } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,12 +18,36 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function IdentityVerificationScreen() {
-  const { user, completeVerification } = useAuth();
-  const [identityDoc, setIdentityDoc] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [frontIcUri, setFrontIcUri] = useState<string | null>(null);
+  const [backIcUri, setBackIcUri] = useState<string | null>(null);
   const [ownershipDoc, setOwnershipDoc] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handlePickDocument = async (type: "identity" | "ownership") => {
+  const handlePickIcImage = async (side: "front" | "back") => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.3, // Aggressive compression (0.3) to reduce 8-20MB images to ~500KB-2MB
+        allowsMultipleSelection: false,
+        exif: false, // Remove EXIF data to reduce size
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        if (side === "front") {
+          setFrontIcUri(result.assets[0].uri);
+        } else {
+          setBackIcUri(result.assets[0].uri);
+        }
+      }
+    } catch (err) {
+      console.error("Error picking IC image:", err);
+      Alert.alert("Error", "Failed to pick image. Please try again.");
+    }
+  };
+
+  const handlePickDocument = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ["image/*", "application/pdf"],
@@ -27,12 +55,7 @@ export default function IdentityVerificationScreen() {
       });
 
       if (!result.canceled && result.assets[0]) {
-        const docUri = result.assets[0].uri;
-        if (type === "identity") {
-          setIdentityDoc(docUri);
-        } else {
-          setOwnershipDoc(docUri);
-        }
+        setOwnershipDoc(result.assets[0].uri);
       }
     } catch (err) {
       console.error("Error picking document:", err);
@@ -41,8 +64,13 @@ export default function IdentityVerificationScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!identityDoc) {
-      Alert.alert("Missing Document", "Please upload your IC for identity verification");
+    if (!frontIcUri) {
+      Alert.alert("Missing Document", "Please upload the front side of your IC");
+      return;
+    }
+
+    if (!backIcUri) {
+      Alert.alert("Missing Document", "Please upload the back side of your IC");
       return;
     }
 
@@ -53,17 +81,59 @@ export default function IdentityVerificationScreen() {
 
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      await completeVerification(identityDoc, ownershipDoc || undefined);
+      console.log("Starting verification...");
+      console.log("Front IC URI:", frontIcUri);
+      console.log("Back IC URI:", backIcUri);
+      
+      // Use backend to OCR both front and back IC images, extract IC numbers,
+      // validate that they match, and validate Malaysia IC format (12 digits, DOB, checksum).
+      const result = await verifyIcWithBackend(frontIcUri, backIcUri);
+      
+      console.log("Verification result:", result);
+
+      if (result.status !== "VERIFIED") {
+        Alert.alert(
+          "Verification Failed",
+          result.reason ||
+            "Your IC could not be verified. Please upload clearer IC photos and try again."
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      // Backend has already updated users.verification_status = 'approved'.
+      // Just store document URIs without changing verification status
+      if (user) {
+        try {
+          const updates: Record<string, any> = {};
+          if (frontIcUri) {
+            updates.identity_document = frontIcUri;
+          }
+          if (ownershipDoc) {
+            updates.ownership_document = ownershipDoc;
+          }
+          if (Object.keys(updates).length > 0) {
+            await supabase.from("users").update(updates).eq("id", user.id);
+          }
+        } catch (err) {
+          console.error("Failed to store document URIs:", err);
+          // Don't fail the whole flow if document storage fails
+        }
+      }
+
       Alert.alert(
-        "Documents Submitted",
-        user?.role === "landlord"
-          ? "Your documents have been submitted for verification. You can access your landlord dashboard while we review your documents."
-          : "Your IC has been submitted for verification. You can browse properties while we verify your identity."
+        "Verification Successful",
+        "Your identity has been verified successfully. You can now use all features."
       );
-    } catch (err) {
+    } catch (err: any) {
       console.error("Submit error:", err);
-      Alert.alert("Error", "Failed to submit documents. Please try again.");
+      const errorMessage = err?.message || "Unknown error occurred";
+      console.error("Error details:", JSON.stringify(err, null, 2));
+      
+      Alert.alert(
+        "Error", 
+        `Failed to submit documents for verification.\n\nError: ${errorMessage}\n\nPlease check:\n1. Backend server is running on port 4000\n2. Images are valid and readable\n3. Network connection is stable`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -71,17 +141,8 @@ export default function IdentityVerificationScreen() {
 
   const handleSkip = () => {
     Alert.alert(
-      "Skip Verification",
-      "You can verify your identity later from your profile. Some features may be limited until verification is complete.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Skip",
-          onPress: async () => {
-            await completeVerification();
-          },
-        },
-      ]
+      "Verification Required",
+      "For your safety and to prevent fraud, IC verification is required. You cannot skip this step."
     );
   };
 
@@ -101,29 +162,71 @@ export default function IdentityVerificationScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>IC Upload (Required)</Text>
+          <Text style={styles.sectionTitle}>IC Front Side (Required)</Text>
           <Text style={styles.sectionDesc}>
-            Upload a clear photo of your IC for identity verification
+            Upload a clear photo of the front side of your IC
           </Text>
 
-          <Pressable
-            style={[styles.uploadCard, identityDoc && styles.uploadCardSuccess]}
-            onPress={() => handlePickDocument("identity")}
-          >
-            {identityDoc ? (
-              <>
-                <CheckCircle size={32} color="#10B981" />
-                <Text style={styles.uploadTextSuccess}>IC Uploaded</Text>
-                <Text style={styles.uploadHint}>Tap to change</Text>
-              </>
-            ) : (
-              <>
-                <Upload size={32} color="#6366F1" />
-                <Text style={styles.uploadText}>Tap to upload IC</Text>
-                <Text style={styles.uploadHint}>JPG, PNG, or PDF</Text>
-              </>
-            )}
-          </Pressable>
+          {frontIcUri ? (
+            <View style={styles.imagePreviewContainer}>
+              <Image source={{ uri: frontIcUri }} style={styles.imagePreview} />
+              <Pressable
+                style={styles.removeImageButton}
+                onPress={() => setFrontIcUri(null)}
+              >
+                <X size={20} color="#FFFFFF" />
+              </Pressable>
+              <Pressable
+                style={styles.changeImageButton}
+                onPress={() => handlePickIcImage("front")}
+              >
+                <Text style={styles.changeImageText}>Change Image</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              style={styles.uploadCard}
+              onPress={() => handlePickIcImage("front")}
+            >
+              <Upload size={32} color="#6366F1" />
+              <Text style={styles.uploadText}>Tap to upload front IC</Text>
+              <Text style={styles.uploadHint}>JPG or PNG</Text>
+            </Pressable>
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>IC Back Side (Required)</Text>
+          <Text style={styles.sectionDesc}>
+            Upload a clear photo of the back side of your IC
+          </Text>
+
+          {backIcUri ? (
+            <View style={styles.imagePreviewContainer}>
+              <Image source={{ uri: backIcUri }} style={styles.imagePreview} />
+              <Pressable
+                style={styles.removeImageButton}
+                onPress={() => setBackIcUri(null)}
+              >
+                <X size={20} color="#FFFFFF" />
+              </Pressable>
+              <Pressable
+                style={styles.changeImageButton}
+                onPress={() => handlePickIcImage("back")}
+              >
+                <Text style={styles.changeImageText}>Change Image</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              style={styles.uploadCard}
+              onPress={() => handlePickIcImage("back")}
+            >
+              <Upload size={32} color="#6366F1" />
+              <Text style={styles.uploadText}>Tap to upload back IC</Text>
+              <Text style={styles.uploadHint}>JPG or PNG</Text>
+            </Pressable>
+          )}
         </View>
 
         {user?.role === "landlord" && (
@@ -135,7 +238,7 @@ export default function IdentityVerificationScreen() {
 
             <Pressable
               style={[styles.uploadCard, ownershipDoc && styles.uploadCardSuccess]}
-              onPress={() => handlePickDocument("ownership")}
+              onPress={handlePickDocument}
             >
               {ownershipDoc ? (
                 <>
@@ -159,9 +262,7 @@ export default function IdentityVerificationScreen() {
           <View style={styles.infoContent}>
             <Text style={styles.infoTitle}>Verification Process</Text>
             <Text style={styles.infoText}>
-              {user?.role === "landlord"
-                ? "Documents typically reviewed within 24-48 hours. You can access your dashboard while we verify."
-                : "Documents typically reviewed within 24 hours. You can browse properties during verification."}
+              We will automatically verify your IC by checking the format, date of birth, and ensuring both sides match. Verification is typically completed within seconds.
             </Text>
           </View>
         </View>
@@ -271,6 +372,18 @@ const styles = StyleSheet.create({
     color: "#9CA3AF",
     marginTop: 4,
   },
+  icInput: {
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 18,
+    letterSpacing: 2,
+    textAlign: "center",
+    backgroundColor: "#F9FAFB",
+    marginTop: 8,
+  },
   infoBox: {
     flexDirection: "row",
     backgroundColor: "#EEF2FF",
@@ -321,5 +434,51 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#6B7280",
     fontWeight: "500" as const,
+  },
+  imagePreviewContainer: {
+    position: "relative",
+    borderRadius: 16,
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: "#10B981",
+    backgroundColor: "#F9FAFB",
+  },
+  imagePreview: {
+    width: "100%",
+    height: 300,
+    resizeMode: "contain",
+    backgroundColor: "#F9FAFB",
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    backgroundColor: "#EF4444",
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  changeImageButton: {
+    position: "absolute",
+    bottom: 12,
+    left: 12,
+    right: 12,
+    backgroundColor: "#6366F1",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  changeImageText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600" as const,
   },
 });

@@ -94,7 +94,7 @@ export default function RentPropertyScreen() {
       await createRental(
         property.id,
         property.title,
-        property.photos[0],
+        property.photos && property.photos.length > 0 ? property.photos[0] : "",
         property.address,
         property.landlordId,
         property.monthlyRent,
@@ -141,7 +141,7 @@ export default function RentPropertyScreen() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.propertyCard}>
             <Image
-              source={{ uri: property.photos[0] }}
+              source={{ uri: property.photos && property.photos.length > 0 ? property.photos[0] : "" }}
               style={styles.propertyImage}
               contentFit="cover"
             />
