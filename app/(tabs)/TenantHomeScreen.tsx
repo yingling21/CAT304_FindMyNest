@@ -1,11 +1,13 @@
 import PropertyCard from "@/components/PropertyCard";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Property } from "@/src/types";
+import type { Property } from "@/src/types/property";
 import AffordabilityCalculator from "@/app/affordability-calculator";
 import PropertySearchHeader from "@/components/tenant/PropertySearchHeader";
 import PropertyFilterTools from "@/components/tenant/PropertyFilterTools";
 import PropertyFiltersModal from "@/components/tenant/PropertyFiltersModal";
 import type { Filters } from "@/components/tenant/PropertyFiltersModal";
+import { styles } from "../../styles/TenantHomeScreen.styles";
 
 import { Search } from "lucide-react-native";
 import React, { useState, useMemo, useEffect } from "react";
