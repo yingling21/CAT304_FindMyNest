@@ -5,8 +5,6 @@ import LandlordDashboardHeader from "@/components/landlord/LandlordDashboardHead
 import LandlordOverviewStats from "@/components/landlord/LandlordOverviewStats";
 import LandlordQuickActions from "@/components/landlord/LandlordQuickActions";
 import LandlordRecentActivity from "@/components/landlord/LandlordRecentActivity";
-import { styles } from "../../styles/LandlordHomeScreen.styles";
-
 import React, { useMemo } from "react";
 import { ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
