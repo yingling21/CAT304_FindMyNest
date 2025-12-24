@@ -47,7 +47,7 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
 
   const createOrGetConversation = async (
     propertyId: string,
-    propertyTitle: string,
+    propertyAddress: string,
     propertyImage: string,
     propertyPrice: number,
     landlordId: string,
@@ -58,7 +58,7 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
 
     const conversationId = await createOrGetConversationAPI({
       propertyId,
-      propertyTitle,
+      propertyAddress,
       propertyImage,
       propertyPrice,
       tenantId: user.id,

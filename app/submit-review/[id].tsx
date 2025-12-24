@@ -176,7 +176,7 @@ export default function SubmitReviewScreen() {
               style={styles.propertyImage}
               contentFit="cover"
             />
-            <Text style={styles.propertyTitle}>{rental.propertyTitle}</Text>
+            <Text style={styles.propertyTitle}>{rental.propertyAddress}</Text>
             <Text style={styles.rentalDates}>
               Rented: {new Date(rental.startDate).toLocaleDateString("en-MY", {
                 day: "numeric",

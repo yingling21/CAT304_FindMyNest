@@ -11,7 +11,7 @@ export interface Message {
 export interface Conversation {
   id: string;
   propertyId: string;
-  propertyTitle: string;
+  propertyAddress: string;
   propertyImage: string;
   propertyPrice: number;
   

@@ -154,7 +154,7 @@ export default function ChatRoomScreen() {
         />
         <View style={styles.propertyBannerContent}>
           <Text style={styles.propertyBannerTitle} numberOfLines={1}>
-            {conversation.propertyTitle}
+            {conversation.propertyAddress}
           </Text>
           <Text style={styles.propertyBannerPrice}>
             RM {conversation.propertyPrice}/mo

@@ -52,9 +52,8 @@ export async function createRental(rentalData: Partial<Rental>): Promise<Rental>
     .from('rentals')
     .insert({
       property_id: rentalData.propertyId,
-      property_title: rentalData.propertyTitle,
-      property_image: rentalData.propertyImage,
       property_address: rentalData.propertyAddress,
+      property_image: rentalData.propertyImage,
       tenant_id: rentalData.tenantId,
       landlord_id: rentalData.landlordId,
       monthly_rent: rentalData.monthlyRent,

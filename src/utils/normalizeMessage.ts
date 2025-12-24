@@ -20,7 +20,7 @@ export function normalizeConversation(row: any): Conversation {
   return {
     id: row.id || '',
     propertyId: row.property_id || '',
-    propertyTitle: row.property_title || '',
+    propertyAddress: row.property_address || '',
     propertyImage: row.property_image || '',
     propertyPrice: row.property_price || 0,
     

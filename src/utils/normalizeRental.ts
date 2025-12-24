@@ -4,9 +4,8 @@ export function normalizeRental(row: any): Rental {
   return {
     id: row.id || '',
     propertyId: row.property_id || '',
-    propertyTitle: row.property_title || '',
-    propertyImage: row.property_image || '',
     propertyAddress: row.property_address || '',
+    propertyImage: row.property_image || '',
     
     tenantId: row.tenant_id || '',
     landlordId: row.landlord_id || '',

@@ -36,9 +36,8 @@ export const [RentalsProvider, useRentals] = createContextHook(() => {
         setRentals(data.map((rental: any) => ({
           id: rental.id,
           propertyId: rental.property_id,
-          propertyTitle: rental.property_title,
-          propertyImage: rental.property_image,
           propertyAddress: rental.property_address,
+          propertyImage: rental.property_image,
           tenantId: rental.tenant_id,
           landlordId: rental.landlord_id,
           monthlyRent: rental.monthly_rent,
@@ -59,9 +58,8 @@ export const [RentalsProvider, useRentals] = createContextHook(() => {
 
   const createRental = async (
     propertyId: string,
-    propertyTitle: string,
-    propertyImage: string,
     propertyAddress: string,
+    propertyImage: string,
     landlordId: string,
     monthlyRent: number,
     securityDeposit: number,
@@ -80,9 +78,8 @@ export const [RentalsProvider, useRentals] = createContextHook(() => {
         .from('rentals')
         .insert({
           property_id: propertyId,
-          property_title: propertyTitle,
-          property_image: propertyImage,
           property_address: propertyAddress,
+          property_image: propertyImage,
           tenant_id: user.id,
           landlord_id: landlordId,
           monthly_rent: monthlyRent,
@@ -99,9 +96,8 @@ export const [RentalsProvider, useRentals] = createContextHook(() => {
       const newRental: Rental = {
         id: data.id,
         propertyId: data.property_id,
-        propertyTitle: data.property_title,
-        propertyImage: data.property_image,
         propertyAddress: data.property_address,
+        propertyImage: data.property_image,
         tenantId: data.tenant_id,
         landlordId: data.landlord_id,
         monthlyRent: data.monthly_rent,

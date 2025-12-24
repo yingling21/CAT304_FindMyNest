@@ -12,7 +12,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "@/styles/rental";
+import { styles } from "@/styles/rent-property.styles";
 
 export default function MyRentalsScreen() {
   const router = useRouter();
@@ -35,7 +35,7 @@ export default function MyRentalsScreen() {
   const handleStopRent = (rental: any) => {
     Alert.alert(
       "Stop Rental",
-      `Are you sure you want to stop renting "${rental.propertyTitle}"? You will be asked to submit a review after stopping.`,
+      `Are you sure you want to stop renting at "${rental.propertyAddress}"? You will be asked to submit a review after stopping.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -61,7 +61,7 @@ export default function MyRentalsScreen() {
   const handlePayRent = (rental: any) => {
     Alert.alert(
       "Pay Rent",
-      `Pay RM ${rental.monthlyRent} for ${rental.propertyTitle}?`,
+      `Pay RM ${rental.monthlyRent} for property at ${rental.propertyAddress}?`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -123,7 +123,7 @@ export default function MyRentalsScreen() {
                         <View style={styles.rentalInfo}>
                           <View style={styles.rentalHeader}>
                             <Text style={styles.propertyTitle} numberOfLines={1}>
-                              {rental.propertyTitle}
+                              {rental.propertyAddress}
                             </Text>
                             <View style={styles.statusBadge}>
                               <Text style={styles.statusText}>Active</Text>
@@ -197,7 +197,7 @@ export default function MyRentalsScreen() {
                         <View style={styles.rentalInfo}>
                           <View style={styles.rentalHeader}>
                             <Text style={styles.propertyTitle} numberOfLines={1}>
-                              {rental.propertyTitle}
+                              {rental.propertyAddress}
                             </Text>
                             <View style={styles.statusBadgeCompleted}>
                               <Text style={styles.statusTextCompleted}>Completed</Text>

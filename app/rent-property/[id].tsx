@@ -21,7 +21,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "@/styles/rental";
+import { styles } from "@/styles/rent-property.styles";
 
 type PaymentMethod = "fpx" | "card" | "ewallet";
 
@@ -119,13 +119,10 @@ export default function RentPropertyScreen() {
 
     setIsProcessing(true);
     try {
-      const propertyTitle = `${property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)} at ${property.address.split(',')[0]}`;
-      
       await createRental(
         property.id,
-        propertyTitle,
-        property.photos[0]?.url || '',
         property.address,
+        property.photos[0]?.url || '',
         property.landlordId,
         property.monthlyRent,
         property.securityDeposit,

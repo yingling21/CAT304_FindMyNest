@@ -42,7 +42,7 @@ export default function LandlordRecentActivity() {
           id: `msg-${conv.id}`,
           type: "message",
           title: `New message from ${conv.tenantName}`,
-          subtitle: conv.propertyTitle,
+          subtitle: conv.propertyAddress,
           time: getRelativeTime(new Date(conv.lastMessageTime)),
           timestamp: new Date(conv.lastMessageTime).getTime(),
         });
@@ -63,7 +63,7 @@ export default function LandlordRecentActivity() {
         activityList.push({
           id: `tenant-${rental.id}`,
           type: "new_tenant",
-          title: `New tenant for ${rental.propertyTitle}`,
+          title: `New tenant for property at ${rental.propertyAddress}`,
           subtitle: `Rental started on ${new Date(rental.startDate).toLocaleDateString("en-MY")}`,
           time: getRelativeTime(new Date(rental.createdAt)),
           timestamp: new Date(rental.createdAt).getTime(),

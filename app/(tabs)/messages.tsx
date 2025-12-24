@@ -43,7 +43,7 @@ export default function MessagesScreen() {
     if (!searchQuery) return true;
     const otherPersonName = user?.role === "tenant" ? conversation.landlordName : conversation.tenantName;
     return otherPersonName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           conversation.propertyTitle.toLowerCase().includes(searchQuery.toLowerCase());
+           conversation.propertyAddress.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   if (isLoading) {
@@ -136,7 +136,7 @@ export default function MessagesScreen() {
                   </View>
                   
                   <Text style={styles.propertyTitle} numberOfLines={1}>
-                    {conversation.propertyTitle}
+                    {conversation.propertyAddress}
                   </Text>
 
                   <View style={styles.bottomRow}>
@@ -170,3 +170,5 @@ export default function MessagesScreen() {
     </SafeAreaView>
   );
 }
+
+

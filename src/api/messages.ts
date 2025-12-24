@@ -1,4 +1,3 @@
-// src/api/messages.ts
 import { supabase } from '@/lib/supabase';
 import type { Message, Conversation } from '@/src/types/message';
 import { normalizeMessage, normalizeMessages, normalizeConversations } from '@/src/utils/normalizeMessage';
@@ -65,7 +64,7 @@ export async function getMessagesByConversations(conversationIds: string[]): Pro
 
 export async function createOrGetConversation(params: {
   propertyId: string;
-  propertyTitle: string;
+  propertyAddress: string;
   propertyImage: string;
   propertyPrice: number;
   tenantId: string;
@@ -90,7 +89,7 @@ export async function createOrGetConversation(params: {
     .from('conversations')
     .insert({
       property_id: params.propertyId,
-      property_title: params.propertyTitle,
+      property_address: params.propertyAddress,
       property_image: params.propertyImage,
       property_price: params.propertyPrice,
       tenant_id: params.tenantId,

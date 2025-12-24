@@ -1,9 +1,8 @@
 export interface Rental {
   id: string;
   propertyId: string;
-  propertyTitle: string;
-  propertyImage: string;
   propertyAddress: string;
+  propertyImage: string;
   
   tenantId: string;
   landlordId: string;

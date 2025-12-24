@@ -89,7 +89,7 @@ export default function LandlordRentalsScreen() {
                           <View style={styles.propertyInfo}>
                             <View style={styles.rentalHeader}>
                               <Text style={styles.propertyTitle} numberOfLines={1}>
-                                {rental.propertyTitle}
+                                {rental.propertyAddress}
                               </Text>
                               <View style={styles.statusBadge}>
                                 <Text style={styles.statusText}>Active</Text>
@@ -214,7 +214,7 @@ export default function LandlordRentalsScreen() {
                           <View style={styles.propertyInfo}>
                             <View style={styles.rentalHeader}>
                               <Text style={styles.propertyTitle} numberOfLines={1}>
-                                {rental.propertyTitle}
+                                {rental.propertyAddress}
                               </Text>
                               <View style={styles.statusBadgeCompleted}>
                                 <Text style={styles.statusTextCompleted}>Completed</Text>
