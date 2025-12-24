@@ -78,6 +78,13 @@ export const styles = StyleSheet.create({
     color: "#1F2937",
     marginBottom: 4,
   },
+  propertyTitle: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: "#1F2937",
+    flex: 1,
+    marginRight: 8,
+  },
   propertyPrice: {
     fontSize: 16,
     fontWeight: "700" as const,
@@ -363,12 +370,20 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 4,
   },
-  propertyTitle: {
-    fontSize: 16,
-    fontWeight: "700" as const,
+  propertyAddress: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginBottom: 4,
+  },
+  rentalPeriod: {
+    fontSize: 13,
     color: "#1F2937",
-    flex: 1,
-    marginRight: 8,
+    marginBottom: 4,
+  },
+  daysRemaining: {
+    fontSize: 13,
+    color: "#10B981",
+    fontWeight: "600" as const,
   },
   statusBadge: {
     backgroundColor: "#10B981",
@@ -391,21 +406,6 @@ export const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "600" as const,
     color: "#FFFFFF",
-  },
-  propertyAddress: {
-    fontSize: 13,
-    color: "#6B7280",
-    marginBottom: 4,
-  },
-  rentalPeriod: {
-    fontSize: 13,
-    color: "#1F2937",
-    marginBottom: 4,
-  },
-  daysRemaining: {
-    fontSize: 13,
-    color: "#10B981",
-    fontWeight: "600" as const,
   },
   actionButtons: {
     flexDirection: "row",

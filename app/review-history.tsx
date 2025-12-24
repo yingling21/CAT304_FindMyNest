@@ -11,7 +11,7 @@ import {
   Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { reviewHistoryStyles as styles } from "@/styles/review";
+import { reviewHistoryStyles as styles } from "@/styles/submit-review";
 
 export default function ReviewHistoryScreen() {
   const router = useRouter();

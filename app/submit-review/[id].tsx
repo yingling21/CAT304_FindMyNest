@@ -14,7 +14,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "@/styles/review";
+import { styles } from "@/styles/submit-review";
 
 export default function SubmitReviewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
