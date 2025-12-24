@@ -1,3 +1,4 @@
+// src/api/messages.ts
 import { supabase } from '@/lib/supabase';
 import type { Message, Conversation } from '@/src/types/message';
 import { normalizeMessage, normalizeMessages, normalizeConversations } from '@/src/utils/normalizeMessage';
