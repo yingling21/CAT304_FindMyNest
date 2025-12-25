@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { verifyIcWithBackend } from "@/lib/verifyIcApi";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 import { AlertCircle, CheckCircle, FileText, Upload, X } from "lucide-react-native";
 import React, { useState } from "react";
 import {
@@ -19,6 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function IdentityVerificationScreen() {
   const { user } = useAuth();
+  const router = useRouter();
   const [frontIcUri, setFrontIcUri] = useState<string | null>(null);
   const [backIcUri, setBackIcUri] = useState<string | null>(null);
   const [ownershipDoc, setOwnershipDoc] = useState<string | null>(null);
@@ -123,7 +125,16 @@ export default function IdentityVerificationScreen() {
 
       Alert.alert(
         "Verification Successful",
-        "Your identity has been verified successfully. You can now use all features."
+        "Your identity has been verified successfully. You can now use all features.",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // Navigate to home page (shopping/browsing page)
+              router.replace("/(tabs)/home");
+            },
+          },
+        ]
       );
     } catch (err: any) {
       console.error("Submit error:", err);

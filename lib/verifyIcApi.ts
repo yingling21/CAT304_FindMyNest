@@ -8,14 +8,17 @@ const getVerificationApiBase = () => {
     return process.env.EXPO_PUBLIC_VERIFICATION_API_BASE;
   }
   
+  // Default port is 5001 (can be overridden via EXPO_PUBLIC_VERIFICATION_API_BASE)
+  const port = process.env.EXPO_PUBLIC_VERIFICATION_PORT || "5001";
+  
   if (Platform.OS === "android") {
     // Android emulator uses 10.0.2.2 to access host machine's localhost
     // For physical device, you need to set EXPO_PUBLIC_VERIFICATION_API_BASE to your computer's IP
-    return "http://10.0.2.2:4000";
+    return `http://10.0.2.2:${port}`;
   }
   
   // iOS simulator and web can use localhost
-  return "http://localhost:4000";
+  return `http://localhost:${port}`;
 };
 
 const VERIFICATION_API_BASE = getVerificationApiBase();
@@ -96,7 +99,7 @@ export async function verifyIcWithBackend(
 
     if (err.name === "TypeError" && (err.message.includes("fetch") || err.message.includes("Network request failed"))) {
       throw new Error(
-        `Cannot connect to backend server at ${VERIFICATION_API_BASE}.\n\nPlease check:\n1. Backend is running: cd backend && npm run dev\n2. Backend shows: "IC verification server running on port 4000"\n3. For Android emulator, backend should be accessible at http://10.0.2.2:4000`
+        `Cannot connect to backend server at ${VERIFICATION_API_BASE}.\n\nPlease check:\n1. Backend is running: cd backend && npm run dev\n2. Backend shows: "IC verification server running on port..."\n3. For Android emulator, backend should be accessible at ${VERIFICATION_API_BASE}`
       );
     }
 
