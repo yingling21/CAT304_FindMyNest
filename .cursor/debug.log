@@ -1,0 +1,4 @@
+{"location":"verification-server.ts:553","message":"Backend server started","data":{"port":5001,"host":"0.0.0.0","supabaseUrl":true,"supabaseKey":true},"timestamp":1766554877657,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"verification-server.ts:553","message":"Backend server started","data":{"port":5001,"host":"0.0.0.0","supabaseUrl":true,"supabaseKey":true},"timestamp":1766555633799,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"verification-server.ts:553","message":"Backend server started","data":{"port":5001,"host":"0.0.0.0","supabaseUrl":true,"supabaseKey":true},"timestamp":1766555707181,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"verification-server.ts:553","message":"Backend server started","data":{"port":5001,"host":"0.0.0.0","supabaseUrl":true,"supabaseKey":true},"timestamp":1766556378094,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
