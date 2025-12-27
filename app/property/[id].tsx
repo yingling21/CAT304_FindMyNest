@@ -104,8 +104,8 @@ export default function PropertyDetailScreen() {
     try {
       const conversationId = await createOrGetConversation(
         property.id,
-        `${property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)} at ${property.address.split(',')[0]}`,
-        property.photos[0]?.url || '',
+        property.title,
+        property.photos && property.photos.length > 0 ? property.photos[0] : "",
         property.monthlyRent,
         property.landlordId,
         property.landlordName,
