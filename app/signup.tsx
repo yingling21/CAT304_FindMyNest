@@ -30,11 +30,44 @@ export default function SignUpScreen() {
       return;
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert("Error", "Please enter a valid email address");
+      return;
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters long");
+      return;
+    }
+
+    // Validate phone number (basic check)
+    const phoneRegex = /^[\d\s\+\-\(\)]+$/;
+    if (!phoneRegex.test(phoneNumber) || phoneNumber.replace(/\D/g, '').length < 8) {
+      Alert.alert("Error", "Please enter a valid phone number");
+      return;
+    }
+
     setIsLoading(true);
     try {
       await signUp(email, password, fullName, phoneNumber);
-    } catch {
-      Alert.alert("Error", "Failed to create account. Please try again.");
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
+      
+      // Extract more detailed error message
+      let errorMessage = "Failed to create account. Please try again.";
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.error_description) {
+        errorMessage = error.error_description;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      Alert.alert("Error", errorMessage);
     } finally {
       setIsLoading(false);
     }

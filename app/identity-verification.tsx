@@ -16,10 +16,10 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { verificationStyles as styles } from "@/styles/auth";
+import { StyleSheet } from "react-native";
 
 export default function IdentityVerificationScreen() {
-  const { user } = useAuth();
+  const { user, reloadUserProfile } = useAuth();
   const router = useRouter();
   const [frontIcUri, setFrontIcUri] = useState<string | null>(null);
   const [backIcUri, setBackIcUri] = useState<string | null>(null);
@@ -89,7 +89,26 @@ export default function IdentityVerificationScreen() {
       
       // Use backend to OCR both front and back IC images, extract IC numbers,
       // validate that they match, and validate Malaysia IC format (12 digits, DOB, checksum).
-      const result = await verifyIcWithBackend(frontIcUri, backIcUri);
+      // Ensure email and phoneNumber are always passed to backend for storage in users table
+      if (!user || !user.email || !user.phoneNumber) {
+        Alert.alert(
+          "Missing Information",
+          "Email and phone number are required for verification. Please ensure your account information is complete."
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      const result = await verifyIcWithBackend(
+        frontIcUri, 
+        backIcUri,
+        { // Pass user info to backend - email and phoneNumber are required
+          email: user.email,
+          fullName: user.fullName || user.email.split("@")[0], // Fallback to email prefix if fullName missing
+          phoneNumber: user.phoneNumber,
+          role: user.role || "tenant",
+        }
+      );
       
       console.log("Verification result:", result);
 
@@ -103,7 +122,7 @@ export default function IdentityVerificationScreen() {
         return;
       }
 
-      // Backend has already updated users.verification_status = 'approved'.
+      // Backend has already created/updated the user row with all info
       // Just store document URIs without changing verification status
       if (user) {
         try {
@@ -123,6 +142,9 @@ export default function IdentityVerificationScreen() {
         }
       }
 
+      // Reload user profile from database (user row was just created/updated)
+      await reloadUserProfile();
+
       Alert.alert(
         "Verification Successful",
         "Your identity has been verified successfully. You can now use all features.",
@@ -138,12 +160,18 @@ export default function IdentityVerificationScreen() {
       );
     } catch (err: any) {
       console.error("Submit error:", err);
-      const errorMessage = err?.message || "Unknown error occurred";
+      let errorMessage = err?.message || "Unknown error occurred";
+      
+      // Handle specific Supabase errors
+      if (errorMessage.includes("Cannot coerce") || errorMessage.includes("PGRST")) {
+        errorMessage = "Database error: Unable to process verification. Please try again or contact support.";
+      }
+      
       console.error("Error details:", JSON.stringify(err, null, 2));
       
       Alert.alert(
         "Error", 
-        `Failed to submit documents for verification.\n\nError: ${errorMessage}\n\nPlease check:\n1. Backend server is running on port 4000\n2. Images are valid and readable\n3. Network connection is stable`
+        `Failed to submit documents for verification.\n\nError: ${errorMessage}\n\nPlease check:\n1. Backend server is running on port 5001\n2. Images are valid and readable\n3. Network connection is stable`
       );
     } finally {
       setIsLoading(false);
@@ -382,18 +410,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#9CA3AF",
     marginTop: 4,
-  },
-  icInput: {
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 18,
-    letterSpacing: 2,
-    textAlign: "center",
-    backgroundColor: "#F9FAFB",
-    marginTop: 8,
   },
   infoBox: {
     flexDirection: "row",

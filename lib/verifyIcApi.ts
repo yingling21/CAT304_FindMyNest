@@ -32,7 +32,13 @@ export type VerificationApiResponse = {
 
 export async function verifyIcWithBackend(
   frontIcUri: string,
-  backIcUri: string
+  backIcUri: string,
+  userInfo?: {
+    email: string;
+    fullName: string;
+    phoneNumber: string;
+    role: string;
+  }
 ): Promise<VerificationApiResponse> {
   const {
     data: { session },
@@ -52,6 +58,15 @@ export async function verifyIcWithBackend(
   try {
     const form = new FormData();
     form.append("userId", userId);
+    
+    // Send user info if provided (for creating user row after verification)
+    if (userInfo) {
+      form.append("email", userInfo.email);
+      form.append("fullName", userInfo.fullName);
+      form.append("phoneNumber", userInfo.phoneNumber);
+      form.append("role", userInfo.role);
+    }
+    
     form.append("front", {
       uri: frontIcUri,
       name: "front.jpg",

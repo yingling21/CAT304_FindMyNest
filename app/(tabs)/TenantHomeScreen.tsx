@@ -1,13 +1,11 @@
 import PropertyCard from "@/components/PropertyCard";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Property } from "@/src/types";
-import type { Property } from "@/src/types/property";
 import AffordabilityCalculator from "@/app/affordability-calculator";
 import PropertySearchHeader from "@/components/tenant/PropertySearchHeader";
 import PropertyFilterTools from "@/components/tenant/PropertyFilterTools";
 import PropertyFiltersModal from "@/components/tenant/PropertyFiltersModal";
 import type { Filters } from "@/components/tenant/PropertyFiltersModal";
-import { styles } from "../../styles/TenantHomeScreen.styles";
 
 import { Search } from "lucide-react-native";
 import React, { useState, useMemo, useEffect } from "react";
@@ -54,9 +52,12 @@ export default function TenantHomeScreen() {
 
   const loadProperties = async () => {
     try {
-      setProperties([]);
+      const { getAvailableProperties } = await import('@/src/api/properties');
+      const data = await getAvailableProperties();
+      setProperties(data);
     } catch (error) {
       console.error('Failed to load properties:', error);
+      setProperties([]);
     }
   };
 
@@ -81,26 +82,32 @@ export default function TenantHomeScreen() {
         return false;
       }
 
-      if (
-        filters.priceMin &&
-        property.monthlyRent < parseInt(filters.priceMin)
-      ) {
-        return false;
+      if (filters.priceMin) {
+        const priceMinNum = parseInt(filters.priceMin, 10);
+        if (!isNaN(priceMinNum) && property.monthlyRent < priceMinNum) {
+          return false;
+        }
       }
 
-      if (
-        filters.priceMax &&
-        property.monthlyRent > parseInt(filters.priceMax)
-      ) {
-        return false;
+      if (filters.priceMax) {
+        const priceMaxNum = parseInt(filters.priceMax, 10);
+        if (!isNaN(priceMaxNum) && property.monthlyRent > priceMaxNum) {
+          return false;
+        }
       }
 
-      if (filters.sizeMin && property.size < parseInt(filters.sizeMin)) {
-        return false;
+      if (filters.sizeMin) {
+        const sizeMinNum = parseInt(filters.sizeMin, 10);
+        if (!isNaN(sizeMinNum) && property.size < sizeMinNum) {
+          return false;
+        }
       }
 
-      if (filters.sizeMax && property.size > parseInt(filters.sizeMax)) {
-        return false;
+      if (filters.sizeMax) {
+        const sizeMaxNum = parseInt(filters.sizeMax, 10);
+        if (!isNaN(sizeMaxNum) && property.size > sizeMaxNum) {
+          return false;
+        }
       }
 
       if (filters.bedrooms && property.bedrooms < filters.bedrooms) {

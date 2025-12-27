@@ -146,31 +146,21 @@ export const [ListingProvider, useListing] = createContextHook(() => {
 
   const loadListings = useCallback(async () => {
     try {
-      if (!user) return;
+      if (!user || user.role !== 'landlord') return;
       
-      const { data: landlordData, error: landlordError } = await supabase
-        .from('landlord')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (landlordError || !landlordData) {
-        console.error('Failed to fetch landlord:', landlordError);
-        return;
-      }
-      
+      // Use users table directly - landlord_id is the user.id
       const { data, error } = await supabase
-        .from('listing')
+        .from('property')
         .select('*')
-        .eq('landlord_id', landlordData.id)
+        .eq('landlord_id', user.id)
         .order('created_At', { ascending: false });
       
       if (error) throw error;
       
       if (data) {
         setListings(data.map((listing: any) => ({
-          id: listing.property_id?.toString() || '',
-          landlordId: landlordData.id.toString(),
+          id: listing.property_id?.toString() || listing.id?.toString() || '',
+          landlordId: user.id,
           title: listing.title || '',
           description: listing.description || '',
           propertyType: listing.propertyType || 'apartment',
@@ -214,14 +204,15 @@ export const [ListingProvider, useListing] = createContextHook(() => {
 
   const saveListing = async (landlordUserId: string) => {
     try {
-      const { data: landlordData, error: landlordError } = await supabase
-        .from('landlord')
-        .select('id')
-        .eq('user_id', landlordUserId)
+      // Verify user exists and is a landlord
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, role')
+        .eq('id', landlordUserId)
         .single();
       
-      if (landlordError || !landlordData) {
-        throw new Error('Landlord not found');
+      if (userError || !userData || userData.role !== 'landlord') {
+        throw new Error('Landlord not found or invalid role');
       }
 
       const amenities = {
@@ -248,9 +239,9 @@ export const [ListingProvider, useListing] = createContextHook(() => {
       };
 
       const { data, error } = await supabase
-        .from('listing')
+        .from('property')
         .insert({
-          landlord_id: landlordData.id,
+          landlord_id: landlordUserId,
           title: formData.title,
           description: formData.description,
           propertyType: formData.propertyType,
@@ -291,8 +282,8 @@ export const [ListingProvider, useListing] = createContextHook(() => {
         }
 
         const newListing: StoredListing = {
-          id: data.property_id?.toString() || '',
-          landlordId: landlordData.id.toString(),
+          id: data.property_id?.toString() || data.id?.toString() || '',
+          landlordId: landlordUserId,
           title: data.title || '',
           description: data.description || '',
           propertyType: data.propertyType,
@@ -327,7 +318,7 @@ export const [ListingProvider, useListing] = createContextHook(() => {
     try {
       const rentalStatus = status === 'approved';
       const { error } = await supabase
-        .from('listing')
+        .from('property')
         .update({ rentalStatus })
         .eq('property_id', listingId);
       

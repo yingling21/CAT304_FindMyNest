@@ -246,11 +246,16 @@ app.post("/verify/ic", upload.fields([{ name: "front", maxCount: 1 }, { name: "b
 
   try {
     const userId = req.body?.userId;
+    const email = req.body?.email;
+    const fullName = req.body?.fullName;
+    const phoneNumber = req.body?.phoneNumber;
+    const role = req.body?.role || "tenant";
     const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
     const frontFile = files?.["front"]?.[0];
     const backFile = files?.["back"]?.[0];
 
     console.log(`User ID: ${userId}`);
+    console.log(`User info: email=${email}, fullName=${fullName}, phoneNumber=${phoneNumber}, role=${role}`);
     console.log(`Front file size: ${frontFile?.size || 0} bytes`);
     console.log(`Back file size: ${backFile?.size || 0} bytes`);
 
@@ -262,19 +267,42 @@ app.post("/verify/ic", upload.fields([{ name: "front", maxCount: 1 }, { name: "b
       });
     }
 
-    const { data: verRow, error: verErr } = await supabase
+    if (!email || !fullName || !phoneNumber) {
+      console.error(`\n❌ MISSING USER INFO FOR USER CREATION`);
+      console.error(`Email: ${email || "MISSING"}`);
+      console.error(`Full Name: ${fullName || "MISSING"}`);
+      console.error(`Phone Number: ${phoneNumber || "MISSING"}`);
+      console.error(`Role: ${role || "MISSING"}`);
+      console.log(`${"=".repeat(60)}\n`);
+      return res.status(400).json({
+        error: "email, fullName, and phoneNumber are required for user creation",
+        debug: {
+          hasEmail: !!email,
+          hasFullName: !!fullName,
+          hasPhoneNumber: !!phoneNumber,
+          hasRole: !!role,
+        },
+      });
+    }
+
+    const { data: verRowData, error: verErr } = await supabase
       .from("identity_verifications")
       .insert({
         user_id: userId,
         status: "PENDING" as VerificationStatus,
       })
-      .select("*")
-      .single();
+      .select("*");
 
     mark("after supabase insert");
 
-    if (verErr || !verRow) {
-      throw verErr || new Error("Failed to create verification row");
+    if (verErr) {
+      console.error("Failed to create verification row:", verErr);
+      throw verErr;
+    }
+
+    const verRow = verRowData && verRowData.length > 0 ? verRowData[0] : null;
+    if (!verRow) {
+      throw new Error("Failed to create verification row - no data returned");
     }
 
     const frontBuffer = frontFile.buffer;
@@ -300,10 +328,7 @@ app.post("/verify/ic", upload.fields([{ name: "front", maxCount: 1 }, { name: "b
         .from("identity_verifications")
         .update({ status: "FAILED", verified_at: null })
         .eq("id", verRow.id);
-      await supabase
-        .from("users")
-        .update({ verification_status: "rejected" })
-        .eq("id", userId);
+      // Don't create/update user row on failure - user should not exist in users table yet
       return res.json({
         verificationId: verRow.id,
         status: "FAILED" as VerificationStatus,
@@ -318,10 +343,7 @@ app.post("/verify/ic", upload.fields([{ name: "front", maxCount: 1 }, { name: "b
         .from("identity_verifications")
         .update({ status: "FAILED", verified_at: null })
         .eq("id", verRow.id);
-      await supabase
-        .from("users")
-        .update({ verification_status: "rejected" })
-        .eq("id", userId);
+      // Don't create/update user row on failure - user should not exist in users table yet
       return res.json({
         verificationId: verRow.id,
         status: "FAILED" as VerificationStatus,
@@ -336,10 +358,7 @@ app.post("/verify/ic", upload.fields([{ name: "front", maxCount: 1 }, { name: "b
         .from("identity_verifications")
         .update({ status: "FAILED", verified_at: null })
         .eq("id", verRow.id);
-      await supabase
-        .from("users")
-        .update({ verification_status: "rejected" })
-        .eq("id", userId);
+      // Don't create/update user row on failure - user should not exist in users table yet
       return res.json({
         verificationId: verRow.id,
         status: "FAILED" as VerificationStatus,
@@ -359,10 +378,7 @@ app.post("/verify/ic", upload.fields([{ name: "front", maxCount: 1 }, { name: "b
         .from("identity_verifications")
         .update({ status: "FAILED", verified_at: null })
         .eq("id", verRow.id);
-      await supabase
-        .from("users")
-        .update({ verification_status: "rejected" })
-        .eq("id", userId);
+      // Don't create/update user row on failure - user should not exist in users table yet
       return res.json({
         verificationId: verRow.id,
         status: "FAILED" as VerificationStatus,
@@ -388,14 +404,215 @@ app.post("/verify/ic", upload.fields([{ name: "front", maxCount: 1 }, { name: "b
 
     if (updErr) throw updErr;
 
+    // CREATE or UPDATE user row in users table ONLY after successful IC verification
     const userVerificationStatus = finalStatus === "VERIFIED" ? "approved" : "rejected";
-
-    const { error: userErr } = await supabase
+    
+    // Check if user already exists
+    const { data: existingUser, error: checkUserError } = await supabase
       .from("users")
-      .update({ verification_status: userVerificationStatus })
-      .eq("id", userId);
+      .select("id")
+      .eq("id", userId)
+      .maybeSingle(); // Use maybeSingle() instead of single() to handle no results gracefully
 
-    if (userErr) throw userErr;
+    if (checkUserError && checkUserError.code !== 'PGRST116') { // PGRST116 = no rows found
+      console.error(`❌ ERROR CHECKING USER EXISTENCE:`, checkUserError);
+      throw checkUserError;
+    }
+
+    if (existingUser) {
+      // User already exists - update all fields
+      console.log(`⚠️  User ${userId} already exists in users table, updating all user data`);
+      
+      // Ensure email and phone_number are always stored when updating
+      const updateData = {
+        email: email.trim(),
+        full_name: fullName.trim(),
+        phone_number: phoneNumber.trim(),
+        role: role.trim(),
+        verification_status: userVerificationStatus,
+      };
+
+      // Validate that email and phone_number are present before update
+      if (!updateData.email || !updateData.phone_number) {
+        console.error(`\n❌ CRITICAL: Missing required fields for user update`);
+        console.error(`Email: ${updateData.email || "MISSING"}`);
+        console.error(`Phone Number: ${updateData.phone_number || "MISSING"}`);
+        console.log(`${"=".repeat(60)}\n`);
+        throw new Error("Email and phone number are required for user update");
+      }
+      
+      console.log(`📤 Attempting to update user data:`, JSON.stringify(updateData, null, 2));
+      
+      // Update without select first (to avoid RLS issues with select)
+      const { error: updateErr } = await supabase
+        .from("users")
+        .update(updateData)
+        .eq("id", userId);
+        
+      if (updateErr) {
+        console.error(`❌ FAILED TO UPDATE USER ROW:`, updateErr);
+        console.error(`Error details:`, JSON.stringify(updateErr, null, 2));
+        throw updateErr;
+      }
+      
+      // Query the updated user separately to verify
+      const { data: updatedUserData, error: queryErr } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+      
+      if (queryErr && queryErr.code !== 'PGRST116') {
+        console.error(`⚠️  WARNING: Update succeeded but could not verify:`, queryErr);
+        // Don't throw - update may have succeeded even if query fails
+      }
+      
+      const updatedUser = updatedUserData;
+      
+      if (updatedUser) {
+        console.log(`✅ USER ROW UPDATED SUCCESSFULLY with all data`);
+        console.log(`Updated user data:`, JSON.stringify(updatedUser, null, 2));
+      } else {
+        console.warn(`⚠️  Update completed but could not verify data (may be RLS issue, but update likely succeeded)`);
+        // Don't throw - the update likely succeeded even if we can't verify due to RLS
+      }
+    } else {
+      // Create new user row after successful verification
+      console.log(`\n${"=".repeat(60)}`);
+      console.log(`📝 CREATING USER ROW IN DATABASE`);
+      console.log(`${"=".repeat(60)}`);
+      console.log(`User ID: ${userId}`);
+      console.log(`Email: ${email}`);
+      console.log(`Full Name: ${fullName}`);
+      console.log(`Phone Number: ${phoneNumber}`);
+      console.log(`Role: ${role}`);
+      console.log(`Verification Status: ${userVerificationStatus}`);
+      
+      // Prepare user data for insertion
+      // Ensure email and phone_number are always stored
+      const userData = {
+        id: userId,
+        email: email.trim(),
+        full_name: fullName.trim(),
+        phone_number: phoneNumber.trim(),
+        role: role.trim(),
+        verification_status: userVerificationStatus,
+      };
+
+      // Validate that email and phone_number are present before insertion
+      if (!userData.email || !userData.phone_number) {
+        console.error(`\n❌ CRITICAL: Missing required fields for user creation`);
+        console.error(`Email: ${userData.email || "MISSING"}`);
+        console.error(`Phone Number: ${userData.phone_number || "MISSING"}`);
+        console.log(`${"=".repeat(60)}\n`);
+        throw new Error("Email and phone number are required for user creation");
+      }
+
+      console.log(`📤 Attempting to insert user data:`, JSON.stringify(userData, null, 2));
+
+      const { data: createdUserData, error: userErr } = await supabase
+        .from("users")
+        .insert(userData)
+        .select();
+
+      if (userErr) {
+        console.error(`\n❌ FAILED TO CREATE USER ROW:`);
+        console.error(`Error code: ${userErr.code}`);
+        console.error(`Error message: ${userErr.message}`);
+        console.error(`Error details:`, JSON.stringify(userErr, null, 2));
+        console.error(`Attempted data:`, JSON.stringify(userData, null, 2));
+        console.log(`${"=".repeat(60)}\n`);
+        throw new Error(`Failed to create user in database: ${userErr.message}`);
+      }
+
+      const createdUser = createdUserData && createdUserData.length > 0 ? createdUserData[0] : null;
+
+      if (!createdUser) {
+        console.error(`\n❌ USER ROW CREATED BUT NO DATA RETURNED`);
+        console.error(`This might indicate a database issue or RLS (Row Level Security) policy blocking the select`);
+        console.error(`Response data:`, JSON.stringify(createdUserData, null, 2));
+        console.log(`${"=".repeat(60)}\n`);
+        
+        // If insert succeeded but select returned nothing, try to query it directly
+        const { data: verifyInsert, error: verifyInsertErr } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", userId)
+          .maybeSingle();
+        
+        if (verifyInsertErr) {
+          console.error(`❌ Could not verify insert:`, verifyInsertErr);
+          throw new Error(`User row may have been created but cannot be verified: ${verifyInsertErr.message}`);
+        }
+        
+        if (verifyInsert) {
+          console.log(`✅ User row exists, using verified data`);
+          // Continue with verifyInsert instead
+          const verifiedUser = verifyInsert;
+          console.log(`✅ VERIFIED: All user data saved correctly`);
+          console.log(`   Email: ${verifiedUser.email}`);
+          console.log(`   Full Name: ${verifiedUser.full_name}`);
+          console.log(`   Phone Number: ${verifiedUser.phone_number}`);
+          console.log(`   Role: ${verifiedUser.role}`);
+          console.log(`   Verification Status: ${verifiedUser.verification_status}`);
+          console.log(`${"=".repeat(60)}\n`);
+        } else {
+          throw new Error("User row created but no data returned from database and verification query also failed");
+        }
+      } else {
+        // User was created successfully and data was returned
+        console.log(`✅ USER ROW CREATED SUCCESSFULLY`);
+        console.log(`Created user data:`, JSON.stringify(createdUser, null, 2));
+        
+        // Verify the data was actually saved
+        if (!createdUser.email || !createdUser.full_name || !createdUser.phone_number) {
+          console.error(`\n❌ WARNING: USER ROW CREATED BUT DATA IS MISSING!`);
+          console.error(`Email: ${createdUser.email || "MISSING"}`);
+          console.error(`Full Name: ${createdUser.full_name || "MISSING"}`);
+          console.error(`Phone Number: ${createdUser.phone_number || "MISSING"}`);
+          console.error(`Full created user object:`, JSON.stringify(createdUser, null, 2));
+          console.log(`${"=".repeat(60)}\n`);
+          throw new Error("User row created but required data is missing");
+        }
+        
+        console.log(`✅ VERIFIED: All user data saved correctly`);
+        console.log(`   Email: ${createdUser.email}`);
+        console.log(`   Full Name: ${createdUser.full_name}`);
+        console.log(`   Phone Number: ${createdUser.phone_number}`);
+        console.log(`   Role: ${createdUser.role}`);
+        console.log(`   Verification Status: ${createdUser.verification_status}`);
+        console.log(`${"=".repeat(60)}\n`);
+        
+        // Double-check by querying the database (optional verification)
+        try {
+          const { data: verifyUserData, error: verifyErr } = await supabase
+            .from("users")
+            .select("*")
+            .eq("id", userId)
+            .maybeSingle(); // Use maybeSingle() to handle gracefully
+            
+          if (verifyErr && verifyErr.code !== 'PGRST116') {
+            console.error(`⚠️  WARNING: Could not verify user data after insert:`, verifyErr);
+          } else {
+            const verifyUser = verifyUserData;
+            if (verifyUser) {
+              console.log(`✅ VERIFICATION QUERY: User data confirmed in database`);
+              console.log(`   Email: ${verifyUser.email || "MISSING"}`);
+              console.log(`   Full Name: ${verifyUser.full_name || "MISSING"}`);
+              console.log(`   Phone Number: ${verifyUser.phone_number || "MISSING"}`);
+              if (!verifyUser.email || !verifyUser.full_name || !verifyUser.phone_number) {
+                console.error(`❌ CRITICAL: Data verification failed - fields are missing in database!`);
+              }
+            } else {
+              console.warn(`⚠️  Verification query returned no data (might be RLS issue, but insert may have succeeded)`);
+            }
+          }
+        } catch (verifyError) {
+          console.warn(`⚠️  Verification query failed (non-critical):`, verifyError);
+          // Don't throw - the insert may have succeeded even if verification query fails
+        }
+      }
+    }
 
     console.log(`\n${"=".repeat(60)}`);
     console.log(`✅ VERIFICATION SUCCESSFUL!`);
@@ -410,14 +627,35 @@ app.post("/verify/ic", upload.fields([{ name: "front", maxCount: 1 }, { name: "b
       status: finalStatus,
     });
   } catch (err: any) {
-    console.error("Verification error:", err);
+    console.error("\n❌ VERIFICATION ERROR CAUGHT:");
+    console.error("Error type:", err?.constructor?.name);
+    console.error("Error message:", err?.message);
+    console.error("Error code:", err?.code);
+    console.error("Full error:", JSON.stringify(err, null, 2));
+    console.log(`${"=".repeat(60)}\n`);
+    
+    // Provide more detailed error message
+    let errorMessage = err?.message || "Verification failed";
+    if (err?.code === 'PGRST205' || err?.message?.includes("Cannot coerce")) {
+      errorMessage = "Database query error: Unable to process verification. This may be due to Row Level Security (RLS) policies or database configuration issues.";
+    } else if (err?.code === 'PGRST116') {
+      errorMessage = "Database error: Expected data not found. Please try again.";
+    } else if (err?.code) {
+      errorMessage = `Database error (${err.code}): ${err.message || "Unknown database error"}`;
+    }
+    
     return res.status(500).json({ 
-      error: err?.message || "Verification failed",
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? {
+        code: err?.code,
+        message: err?.message,
+        stack: err?.stack,
+      } : undefined,
     });
   }
 });
 
-const PORT = Number(process.env.PORT) || 4000;
+const PORT = Number(process.env.PORT) || 5001;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`\n${"=".repeat(60)}`);
   console.log(`🚀 IC VERIFICATION SERVER STARTED`);
