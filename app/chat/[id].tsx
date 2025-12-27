@@ -19,9 +19,9 @@ import { maskSensitiveData, containsSensitiveData } from "@/utils/sensitiveDataM
 import { styles } from "@/styles/chat.styles";
 
 export default function ChatRoomScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { user } = useAuth();
-  const { conversations, getConversationMessages, sendMessage, markAsRead } =
+  const { id } = useLocalSearchParams<{ id: string }>();                          //get conversation id
+  const { user } = useAuth();                                                     //get current user                  
+  const { conversations, getConversationMessages, sendMessage, markAsRead } =     //get conversation data
     useMessages();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -32,12 +32,14 @@ export default function ChatRoomScreen() {
   const conversation = conversations.find((c) => c.id === id);
   const messages = getConversationMessages(id || "");
 
+  // Mark conversation as read when screen opens or ID changes
   useEffect(() => {
     if (id) {
       markAsRead(id);
     }
   }, [id, markAsRead]);
 
+  // Auto-scroll to the latest message whenever message count changes
   useEffect(() => {
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -49,6 +51,7 @@ export default function ChatRoomScreen() {
 
     const messageToSend = messageText.trim();
     
+    // If sensitive info is detected, show warning before sending
     if (containsSensitiveData(messageToSend)) {
       Alert.alert(
         "Sensitive Information Detected",
@@ -99,6 +102,7 @@ export default function ChatRoomScreen() {
     );
   }
 
+  // Determine who the "other person" is based on user role
   const otherPersonName =
     user.role === "tenant"
       ? conversation.landlordName
@@ -143,6 +147,7 @@ export default function ChatRoomScreen() {
         </View>
       </View>
 
+      {/* Property banner: navigates to property details */}
       <Pressable
         style={styles.propertyBanner}
         onPress={() => router.push(`/property/${conversation.propertyId}` as any)}
@@ -162,6 +167,7 @@ export default function ChatRoomScreen() {
         </View>
       </Pressable>
 
+      {/* Main chat area with keyboard handling */}
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}

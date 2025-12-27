@@ -93,6 +93,7 @@ export default function MessagesScreen() {
           </Text>
         </View>
       ) : (
+        // List of conversations
         <ScrollView style={styles.scrollView}>
           {filteredConversations.map((conversation) => {
             const otherPersonName =
@@ -103,6 +104,8 @@ export default function MessagesScreen() {
               user?.role === "tenant"
                 ? conversation.landlordPhoto
                 : conversation.tenantPhoto;
+
+            // Number of unread messages in this conversation
             const unreadCount = conversation.unreadCount || 0;
 
             return (
@@ -125,6 +128,7 @@ export default function MessagesScreen() {
                   </View>
                 )}
 
+                {/* Conversation content */}
                 <View style={styles.conversationContent}>
                   <View style={styles.topRow}>
                     <Text style={styles.personName} numberOfLines={1}>
