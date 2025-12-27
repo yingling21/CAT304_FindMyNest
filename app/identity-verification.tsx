@@ -12,11 +12,11 @@ import {
   Image,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { verificationStyles as styles } from "@/styles/auth";
 
 export default function IdentityVerificationScreen() {
   const { user } = useAuth();

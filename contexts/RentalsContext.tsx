@@ -1,8 +1,8 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { useState, useEffect, useCallback } from "react";
-import type { Rental } from "@/types";
+import type { Rental } from "@/src/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 export const [RentalsProvider, useRentals] = createContextHook(() => {
   const auth = useAuth();
@@ -18,16 +18,37 @@ export const [RentalsProvider, useRentals] = createContextHook(() => {
   const loadRentals = useCallback(async () => {
     try {
       setIsLoading(true);
-      const stored = await AsyncStorage.getItem("rentals");
-      const allRentals: Rental[] = stored ? JSON.parse(stored) : [];
       
-      if (user) {
-        const userRentals = allRentals.filter(
-          rental => rental.tenantId === user.id || rental.landlordId === user.id
-        );
-        setRentals(userRentals);
-      } else {
+      if (!user) {
         setRentals([]);
+        return;
+      }
+      
+      const { data, error } = await supabase
+        .from('rentals')
+        .select('*')
+        .or(`tenant_id.eq.${user.id},landlord_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (data) {
+        setRentals(data.map((rental: any) => ({
+          id: rental.id,
+          propertyId: rental.property_id,
+          propertyTitle: rental.property_title,
+          propertyImage: rental.property_image,
+          propertyAddress: rental.property_address,
+          tenantId: rental.tenant_id,
+          landlordId: rental.landlord_id,
+          monthlyRent: rental.monthly_rent,
+          securityDeposit: rental.security_deposit,
+          startDate: rental.start_date,
+          endDate: rental.end_date,
+          status: rental.status,
+          hasReview: rental.has_review,
+          createdAt: rental.created_at,
+        })));
       }
     } catch (error) {
       console.error("Failed to load rentals:", error);
@@ -55,28 +76,43 @@ export const [RentalsProvider, useRentals] = createContextHook(() => {
       const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + durationMonths);
 
+      const { data, error } = await supabase
+        .from('rentals')
+        .insert({
+          property_id: propertyId,
+          property_title: propertyTitle,
+          property_image: propertyImage,
+          property_address: propertyAddress,
+          tenant_id: user.id,
+          landlord_id: landlordId,
+          monthly_rent: monthlyRent,
+          security_deposit: securityDeposit,
+          start_date: startDate,
+          end_date: endDate.toISOString(),
+          status: 'active',
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
       const newRental: Rental = {
-        id: Date.now().toString(),
-        propertyId,
-        propertyTitle,
-        propertyImage,
-        propertyAddress,
-        tenantId: user.id,
-        landlordId,
-        monthlyRent,
-        securityDeposit,
-        startDate,
-        endDate: endDate.toISOString(),
-        status: "active",
-        createdAt: new Date().toISOString(),
+        id: data.id,
+        propertyId: data.property_id,
+        propertyTitle: data.property_title,
+        propertyImage: data.property_image,
+        propertyAddress: data.property_address,
+        tenantId: data.tenant_id,
+        landlordId: data.landlord_id,
+        monthlyRent: data.monthly_rent,
+        securityDeposit: data.security_deposit,
+        startDate: data.start_date,
+        endDate: data.end_date,
+        status: data.status,
+        createdAt: data.created_at,
       };
 
-      const stored = await AsyncStorage.getItem("rentals");
-      const allRentals: Rental[] = stored ? JSON.parse(stored) : [];
-      allRentals.push(newRental);
-      await AsyncStorage.setItem("rentals", JSON.stringify(allRentals));
-
-      setRentals(prev => [...prev, newRental]);
+      setRentals(prev => [newRental, ...prev]);
       return newRental;
     } catch (error) {
       console.error("Failed to create rental:", error);
@@ -86,23 +122,21 @@ export const [RentalsProvider, useRentals] = createContextHook(() => {
 
   const stopRental = async (rentalId: string) => {
     try {
-      const stored = await AsyncStorage.getItem("rentals");
-      const allRentals: Rental[] = stored ? JSON.parse(stored) : [];
+      const { error } = await supabase
+        .from('rentals')
+        .update({
+          status: 'completed',
+          end_date: new Date().toISOString(),
+        })
+        .eq('id', rentalId);
       
-      const updatedRentals = allRentals.map(rental =>
+      if (error) throw error;
+      
+      setRentals(prev => prev.map(rental =>
         rental.id === rentalId
           ? { ...rental, status: "completed" as const, endDate: new Date().toISOString() }
           : rental
-      );
-      
-      await AsyncStorage.setItem("rentals", JSON.stringify(updatedRentals));
-      
-      if (user) {
-        const userRentals = updatedRentals.filter(
-          rental => rental.tenantId === user.id || rental.landlordId === user.id
-        );
-        setRentals(userRentals);
-      }
+      ));
     } catch (error) {
       console.error("Failed to stop rental:", error);
       throw error;

@@ -1,4 +1,4 @@
-import type { Property, Review } from "@/types";
+/*import type { Property, Review } from "@/types";
 
 export const mockProperties: Property[] = [
   {
@@ -513,3 +513,4 @@ export const mockReviews: Review[] = [
     createdAt: "2025-11-10T00:00:00.000Z",
   },
 ];
+*/

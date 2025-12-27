@@ -1,8 +1,8 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { useState, useEffect, useCallback } from "react";
-import type { Review } from "@/types";
+import type { Review } from "@/src/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 export const [ReviewsProvider, useReviews] = createContextHook(() => {
   const auth = useAuth();
@@ -18,9 +18,34 @@ export const [ReviewsProvider, useReviews] = createContextHook(() => {
   const loadReviews = useCallback(async () => {
     try {
       setIsLoading(true);
-      const stored = await AsyncStorage.getItem("reviews");
-      const allReviews: Review[] = stored ? JSON.parse(stored) : [];
-      setReviews(allReviews);
+      
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (data) {
+        setReviews(data.map((review: any) => ({
+          id: review.id,
+          propertyId: review.property_id,
+          rentalId: review.rental_id,
+          tenantId: review.tenant_id,
+          tenantName: review.tenant_name,
+          tenantPhoto: review.tenant_photo,
+          tenantVerified: review.tenant_verified,
+          rating: review.rating,
+          locationRating: review.location_rating,
+          conditionRating: review.condition_rating,
+          valueRating: review.value_rating,
+          landlordRating: review.landlord_rating,
+          comment: review.comment,
+          rentalStartDate: review.rental_start_date,
+          rentalEndDate: review.rental_end_date,
+          createdAt: review.created_at,
+        })));
+      }
     } catch (error) {
       console.error("Failed to load reviews:", error);
     } finally {
@@ -45,38 +70,56 @@ export const [ReviewsProvider, useReviews] = createContextHook(() => {
         throw new Error("User not authenticated");
       }
 
+      const { data: reviewData, error: reviewError } = await supabase
+        .from('reviews')
+        .insert({
+          property_id: propertyId,
+          rental_id: rentalId,
+          tenant_id: user.id,
+          tenant_name: user.fullName,
+          tenant_photo: user.avatarUrl,
+          tenant_verified: user.verificationStatus === "approved",
+          rating,
+          location_rating: locationRating,
+          condition_rating: conditionRating,
+          value_rating: valueRating,
+          landlord_rating: landlordRating,
+          comment,
+          rental_start_date: rentalStartDate,
+          rental_end_date: rentalEndDate,
+        })
+        .select()
+        .single();
+      
+      if (reviewError) throw reviewError;
+
+      const { error: rentalError } = await supabase
+        .from('rentals')
+        .update({ has_review: true })
+        .eq('id', rentalId);
+      
+      if (rentalError) throw rentalError;
+
       const newReview: Review = {
-        id: Date.now().toString(),
-        propertyId,
-        rentalId,
-        tenantId: user.id,
-        tenantName: user.fullName,
-        tenantPhoto: user.profilePicture,
-        tenantVerified: user.verificationStatus === "approved",
-        rating,
-        locationRating,
-        conditionRating,
-        valueRating,
-        landlordRating,
-        comment,
-        rentalStartDate,
-        rentalEndDate,
-        createdAt: new Date().toISOString(),
+        id: reviewData.id,
+        propertyId: reviewData.property_id,
+        rentalId: reviewData.rental_id,
+        tenantId: reviewData.tenant_id,
+        tenantName: reviewData.tenant_name,
+        tenantPhoto: reviewData.tenant_photo,
+        tenantVerified: reviewData.tenant_verified,
+        rating: reviewData.rating,
+        locationRating: reviewData.location_rating,
+        conditionRating: reviewData.condition_rating,
+        valueRating: reviewData.value_rating,
+        landlordRating: reviewData.landlord_rating,
+        comment: reviewData.comment,
+        rentalStartDate: reviewData.rental_start_date,
+        rentalEndDate: reviewData.rental_end_date,
+        createdAt: reviewData.created_at,
       };
 
-      const stored = await AsyncStorage.getItem("reviews");
-      const allReviews: Review[] = stored ? JSON.parse(stored) : [];
-      allReviews.push(newReview);
-      await AsyncStorage.setItem("reviews", JSON.stringify(allReviews));
-
-      const rentalStored = await AsyncStorage.getItem("rentals");
-      const allRentals = rentalStored ? JSON.parse(rentalStored) : [];
-      const updatedRentals = allRentals.map((rental: any) =>
-        rental.id === rentalId ? { ...rental, hasReview: true } : rental
-      );
-      await AsyncStorage.setItem("rentals", JSON.stringify(updatedRentals));
-
-      setReviews(prev => [...prev, newReview]);
+      setReviews(prev => [newReview, ...prev]);
       return newReview;
     } catch (error) {
       console.error("Failed to create review:", error);

@@ -1,11 +1,11 @@
 import createContextHook from "@nkzw/create-context-hook";
-import { useState, useEffect } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { PropertyType, RoomType, FurnishingLevel, CookingPolicy } from "@/types";
+import { useState, useEffect, useCallback } from "react";
+import type { PropertyType, FurnishingLevel } from "@/src/types";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type ListingFormData = {
   propertyType: PropertyType | "";
-  roomType: RoomType | "";
   size: string;
   bedrooms: string;
   bathrooms: string;
@@ -35,7 +35,6 @@ export type ListingFormData = {
   estimatedMonthlyUtilities: string;
   internetSpeed: string;
   
-  cooking: CookingPolicy | "";
   guestsAllowed: boolean;
   smokingAllowed: boolean;
   petsAllowed: boolean;
@@ -54,7 +53,6 @@ export type ListingFormData = {
 
 const initialFormData: ListingFormData = {
   propertyType: "",
-  roomType: "",
   size: "",
   bedrooms: "",
   bathrooms: "",
@@ -84,7 +82,6 @@ const initialFormData: ListingFormData = {
   estimatedMonthlyUtilities: "",
   internetSpeed: "",
   
-  cooking: "",
   guestsAllowed: false,
   smokingAllowed: false,
   petsAllowed: false,
@@ -107,7 +104,6 @@ export type StoredListing = {
   title: string;
   description: string;
   propertyType: PropertyType | "";
-  roomType: RoomType | "";
   size: string;
   bedrooms: string;
   bathrooms: string;
@@ -121,6 +117,8 @@ export type StoredListing = {
 };
 
 export const [ListingProvider, useListing] = createContextHook(() => {
+  const auth = useAuth();
+  const user = auth?.user ?? null;
   const [formData, setFormData] = useState<ListingFormData>(initialFormData);
   const [currentStep, setCurrentStep] = useState(1);
   const [listings, setListings] = useState<StoredListing[]>([]);
@@ -146,46 +144,172 @@ export const [ListingProvider, useListing] = createContextHook(() => {
     setCurrentStep(Math.max(1, Math.min(step, 9)));
   };
 
-  useEffect(() => {
-    loadListings();
-  }, []);
-
-  const loadListings = async () => {
+  const loadListings = useCallback(async () => {
     try {
-      const stored = await AsyncStorage.getItem("listings");
-      if (stored) {
-        setListings(JSON.parse(stored));
+      if (!user) return;
+      
+      const { data: landlordData, error: landlordError } = await supabase
+        .from('landlord')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (landlordError || !landlordData) {
+        console.error('Failed to fetch landlord:', landlordError);
+        return;
+      }
+      
+      const { data, error } = await supabase
+        .from('listing')
+        .select('*')
+        .eq('landlord_id', landlordData.id)
+        .order('created_At', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (data) {
+        setListings(data.map((listing: any) => ({
+          id: listing.property_id?.toString() || '',
+          landlordId: landlordData.id.toString(),
+          title: listing.title || '',
+          description: listing.description || '',
+          propertyType: listing.propertyType || 'apartment',
+          size: listing.size?.toString() || '0',
+          bedrooms: listing.bedrooms?.toString() || '0',
+          bathrooms: listing.bathrooms?.toString() || '0',
+          price: listing.monthlyRent || 0,
+          address: listing.address || '',
+          status: listing.rentalStatus ? 'approved' : 'pending',
+          views: 0,
+          messages: 0,
+          createdAt: listing.created_At || new Date().toISOString(),
+          formData: {
+            ...initialFormData,
+            propertyType: listing.propertyType,
+            title: listing.title,
+            description: listing.description,
+            size: listing.size?.toString() || '',
+            bedrooms: listing.bedrooms?.toString() || '',
+            bathrooms: listing.bathrooms?.toString() || '',
+            furnishingLevel: listing.furnishingLevel,
+            monthlyRent: listing.monthlyRent?.toString() || '',
+            securityDeposit: listing.securityDeposit?.toString() || '',
+            utilitiesDeposit: listing.utilitiesDeposit?.toString() || '',
+            minimumRentalPeriod: listing.minimumRentalPeriod?.toString() || '',
+            moveInDate: listing.moveInDate || '',
+            address: listing.address,
+          },
+        })));
       }
     } catch (error) {
       console.error("Failed to load listings:", error);
     }
-  };
+  }, [user]);
 
-  const saveListing = async (landlordId: string) => {
+  useEffect(() => {
+    if (user) {
+      loadListings();
+    }
+  }, [user, loadListings]);
+
+  const saveListing = async (landlordUserId: string) => {
     try {
-      const newListing: StoredListing = {
-        id: Date.now().toString(),
-        landlordId,
-        title: formData.title,
-        description: formData.description,
-        propertyType: formData.propertyType,
-        roomType: formData.roomType,
-        size: formData.size,
-        bedrooms: formData.bedrooms,
-        bathrooms: formData.bathrooms,
-        price: parseFloat(formData.monthlyRent) || 0,
-        address: formData.address,
-        status: "pending",
-        views: 0,
-        messages: 0,
-        createdAt: new Date().toISOString(),
-        formData,
+      const { data: landlordData, error: landlordError } = await supabase
+        .from('landlord')
+        .select('id')
+        .eq('user_id', landlordUserId)
+        .single();
+      
+      if (landlordError || !landlordData) {
+        throw new Error('Landlord not found');
+      }
+
+      const amenities = {
+        bedType: formData.bedType,
+        deskAndChair: formData.deskAndChair,
+        wardrobe: formData.wardrobe,
+        airConditioning: formData.airConditioning,
+        waterHeater: formData.waterHeater,
+        wifi: formData.wifi,
+        kitchenAccess: formData.kitchenAccess,
+        washingMachine: formData.washingMachine,
+        refrigerator: formData.refrigerator,
+        parking: formData.parking,
+        security: formData.security,
+        balcony: formData.balcony,
       };
 
-      const updatedListings = [...listings, newListing];
-      await AsyncStorage.setItem("listings", JSON.stringify(updatedListings));
-      setListings(updatedListings);
-      console.log("Listing saved:", newListing.id);
+      const houseRules = {
+        guestsAllowed: formData.guestsAllowed,
+        smokingAllowed: formData.smokingAllowed,
+        petsAllowed: formData.petsAllowed,
+        quietHours: formData.quietHours,
+        cleaningRules: formData.cleaningRules,
+      };
+
+      const { data, error } = await supabase
+        .from('listing')
+        .insert({
+          landlord_id: landlordData.id,
+          title: formData.title,
+          description: formData.description,
+          propertyType: formData.propertyType,
+          size: parseInt(formData.size) || 0,
+          bedrooms: parseInt(formData.bedrooms) || 0,
+          bathrooms: parseInt(formData.bathrooms) || 0,
+          furnishingLevel: formData.furnishingLevel,
+          monthlyRent: parseFloat(formData.monthlyRent) || 0,
+          securityDeposit: parseFloat(formData.securityDeposit) || 0,
+          utilitiesDeposit: parseFloat(formData.utilitiesDeposit) || 0,
+          minimumRentalPeriod: parseInt(formData.minimumRentalPeriod) || 6,
+          moveInDate: formData.moveInDate || new Date().toISOString().split('T')[0],
+          amenities,
+          houseRules,
+          address: formData.address,
+          rentalStatus: true,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      if (data) {
+        if (formData.photos && formData.photos.length > 0) {
+          const photoInserts = formData.photos.map((photo, index) => ({
+            property_id: data.property_id,
+            photo_URL: photo,
+            is_cover: index === 0,
+          }));
+
+          const { error: photoError } = await supabase
+            .from('property_Photo')
+            .insert(photoInserts);
+
+          if (photoError) {
+            console.error('Failed to insert photos:', photoError);
+          }
+        }
+
+        const newListing: StoredListing = {
+          id: data.property_id?.toString() || '',
+          landlordId: landlordData.id.toString(),
+          title: data.title || '',
+          description: data.description || '',
+          propertyType: data.propertyType,
+          size: data.size?.toString() || '0',
+          bedrooms: data.bedrooms?.toString() || '0',
+          bathrooms: data.bathrooms?.toString() || '0',
+          price: data.monthlyRent || 0,
+          address: data.address,
+          status: data.rentalStatus ? 'approved' : 'pending',
+          views: 0,
+          messages: 0,
+          createdAt: data.created_At || new Date().toISOString(),
+          formData: formData,
+        };
+        setListings(prev => [newListing, ...prev]);
+        console.log("Listing saved:", newListing.id);
+      }
     } catch (error) {
       console.error("Failed to save listing:", error);
       throw error;
@@ -193,7 +317,7 @@ export const [ListingProvider, useListing] = createContextHook(() => {
   };
 
   const getListingsByLandlord = (landlordId: string) => {
-    return listings.filter((listing) => listing.landlordId === landlordId);
+    return listings;
   };
 
   const updateListingStatus = async (
@@ -201,11 +325,17 @@ export const [ListingProvider, useListing] = createContextHook(() => {
     status: "approved" | "pending" | "rejected"
   ) => {
     try {
-      const updatedListings = listings.map((listing) =>
+      const rentalStatus = status === 'approved';
+      const { error } = await supabase
+        .from('listing')
+        .update({ rentalStatus })
+        .eq('property_id', listingId);
+      
+      if (error) throw error;
+      
+      setListings(prev => prev.map((listing) =>
         listing.id === listingId ? { ...listing, status } : listing
-      );
-      await AsyncStorage.setItem("listings", JSON.stringify(updatedListings));
-      setListings(updatedListings);
+      ));
     } catch (error) {
       console.error("Failed to update listing status:", error);
       throw error;

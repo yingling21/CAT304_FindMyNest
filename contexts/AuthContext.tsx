@@ -2,8 +2,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import createContextHook from "@nkzw/create-context-hook";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import type { User } from "@/types";
+import type { User, UserRole, VerificationStatus } from "@/src/types";
 import { supabase } from "../lib/supabase";
+import { getUserById, updateUserRole as updateUserRoleAPI, updateUserVerification } from "@/src/api/users";
 import { AppState } from "react-native";
 
 // Tells Supabase Auth to continuously refresh the session automatically if
@@ -42,6 +43,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     return () => {
       data.subscription.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadAuthState = async () => {
@@ -66,18 +68,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     }
   };
 
-  // Load user profile from Supabase
   const loadUserProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", userId)
-        .single();
-
-      if (error) throw error;
-      if (data) {
-        setUser(data);
+      const userData = await getUserById(userId);
+      if (userData) {
+        setUser(userData);
       }
     } catch (error) {
       console.error("Failed to load user profile:", error);
@@ -163,8 +158,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           email: email,
           fullName: fullName,
           phoneNumber: phoneNumber,
-          role: "tenant",
-          verificationStatus: "pending",
+          role: "tenant" as UserRole,
+          verificationStatus: "pending" as VerificationStatus,
+          createdAt: new Date().toISOString(),
         };
         setUser(newUser);
         router.replace("/role-selection");
@@ -178,14 +174,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const updateUserRole = async (role: string) => {
     if (!user) return;
     try {
-      const { error } = await supabase
-        .from("users")
-        .update({ role: role })
-        .eq("id", user.id);
+      await updateUserRoleAPI(user.id, role as UserRole);
 
-      if (error) throw error;
-
-      const updatedUser = { ...user, role };
+      const updatedUser = { ...user, role: role as UserRole };
       setUser(updatedUser);
       router.replace("/identity-verification");
     } catch (error) {
@@ -200,29 +191,17 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   ) => {
     if (!user) return;
     try {
-      const updates: Record<string, any> = {
-        verification_status: "pending",
-      };
-
-      if (identityDoc !== undefined) {
-        updates.identity_document = identityDoc;
-      }
-      if (ownershipDoc !== undefined) {
-        updates.ownership_document = ownershipDoc;
-      }
-
-      const { error } = await supabase
-        .from("users")
-        .update(updates)
-        .eq("id", user.id);
-
-      if (error) throw error;
+      await updateUserVerification(user.id, {
+        identityDocument: identityDoc,
+        ownershipDocument: ownershipDoc,
+        verificationStatus: "pending",
+      });
 
       const updatedUser = {
         ...user,
         identityDocument: identityDoc,
         ownershipDocument: ownershipDoc,
-        verificationStatus: "pending",
+        verificationStatus: "pending" as VerificationStatus,
       };
       setUser(updatedUser);
       router.replace("/(tabs)/home");
