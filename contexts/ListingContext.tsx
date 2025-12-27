@@ -41,6 +41,9 @@ export type ListingFormData = {
   quietHours: string;
   cleaningRules: string;
   
+
+  latitude?: number;
+  longitude?: number;
   address: string;
   nearbyLandmarks: string;
   distanceToTransport: string;
@@ -147,62 +150,57 @@ export const [ListingProvider, useListing] = createContextHook(() => {
   const loadListings = useCallback(async () => {
     try {
       if (!user) return;
-      
-      const { data: landlordData, error: landlordError } = await supabase
-        .from('landlord')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (landlordError || !landlordData) {
-        console.error('Failed to fetch landlord:', landlordError);
-        return;
-      }
-      
+
+      // Use current user id as landlordId
+      const landlordId = user.id;
+
+      // Fetch listings for this landlord
       const { data, error } = await supabase
-        .from('listing')
+        .from('property')
         .select('*')
-        .eq('landlord_id', landlordData.id)
+        .eq('landlord_id', landlordId)
         .order('created_At', { ascending: false });
-      
+
       if (error) throw error;
-      
+
       if (data) {
-        setListings(data.map((listing: any) => ({
-          id: listing.property_id?.toString() || '',
-          landlordId: landlordData.id.toString(),
-          title: listing.title || '',
-          description: listing.description || '',
-          propertyType: listing.propertyType || 'apartment',
-          size: listing.size?.toString() || '0',
-          bedrooms: listing.bedrooms?.toString() || '0',
-          bathrooms: listing.bathrooms?.toString() || '0',
-          price: listing.monthlyRent || 0,
-          address: listing.address || '',
-          status: listing.rentalStatus ? 'approved' : 'pending',
-          views: 0,
-          messages: 0,
-          createdAt: listing.created_At || new Date().toISOString(),
-          formData: {
-            ...initialFormData,
-            propertyType: listing.propertyType,
-            title: listing.title,
-            description: listing.description,
-            size: listing.size?.toString() || '',
-            bedrooms: listing.bedrooms?.toString() || '',
-            bathrooms: listing.bathrooms?.toString() || '',
-            furnishingLevel: listing.furnishingLevel,
-            monthlyRent: listing.monthlyRent?.toString() || '',
-            securityDeposit: listing.securityDeposit?.toString() || '',
-            utilitiesDeposit: listing.utilitiesDeposit?.toString() || '',
-            minimumRentalPeriod: listing.minimumRentalPeriod?.toString() || '',
-            moveInDate: listing.moveInDate || '',
-            address: listing.address,
-          },
-        })));
+        setListings(
+          data.map((listing: any) => ({
+            id: listing.property_id?.toString() || '',
+            landlordId: landlordId.toString(),
+            title: listing.title || '',
+            description: listing.description || '',
+            propertyType: listing.propertyType || 'apartment',
+            size: listing.size?.toString() || '0',
+            bedrooms: listing.bedrooms?.toString() || '0',
+            bathrooms: listing.bathrooms?.toString() || '0',
+            price: listing.monthlyRent || 0,
+            address: listing.address || '',
+            status: listing.rentalStatus ? 'approved' : 'pending',
+            views: 0,
+            messages: 0,
+            createdAt: listing.created_At || new Date().toISOString(),
+            formData: {
+              ...initialFormData,
+              propertyType: listing.propertyType,
+              title: listing.title,
+              description: listing.description,
+              size: listing.size?.toString() || '',
+              bedrooms: listing.bedrooms?.toString() || '',
+              bathrooms: listing.bathrooms?.toString() || '',
+              furnishingLevel: listing.furnishingLevel,
+              monthlyRent: listing.monthlyRent?.toString() || '',
+              securityDeposit: listing.securityDeposit?.toString() || '',
+              utilitiesDeposit: listing.utilitiesDeposit?.toString() || '',
+              minimumRentalPeriod: listing.minimumRentalPeriod?.toString() || '',
+              moveInDate: listing.moveInDate || '',
+              address: listing.address,
+            },
+          }))
+        );
       }
     } catch (error) {
-      console.error("Failed to load listings:", error);
+      console.error('Failed to load listings:', error);
     }
   }, [user]);
 
@@ -212,109 +210,105 @@ export const [ListingProvider, useListing] = createContextHook(() => {
     }
   }, [user, loadListings]);
 
-  const saveListing = async (landlordUserId: string) => {
-    try {
-      const { data: landlordData, error: landlordError } = await supabase
-        .from('landlord')
-        .select('id')
-        .eq('user_id', landlordUserId)
-        .single();
-      
-      if (landlordError || !landlordData) {
-        throw new Error('Landlord not found');
-      }
 
-      const amenities = {
-        bedType: formData.bedType,
-        deskAndChair: formData.deskAndChair,
-        wardrobe: formData.wardrobe,
-        airConditioning: formData.airConditioning,
-        waterHeater: formData.waterHeater,
-        wifi: formData.wifi,
-        kitchenAccess: formData.kitchenAccess,
-        washingMachine: formData.washingMachine,
-        refrigerator: formData.refrigerator,
-        parking: formData.parking,
-        security: formData.security,
-        balcony: formData.balcony,
-      };
+const saveListing = async (landlordUserId: string) => {
+  try {
+    // Use current user ID as landlord ID
+    const landlordId = landlordUserId;
 
-      const houseRules = {
-        guestsAllowed: formData.guestsAllowed,
-        smokingAllowed: formData.smokingAllowed,
-        petsAllowed: formData.petsAllowed,
-        quietHours: formData.quietHours,
-        cleaningRules: formData.cleaningRules,
-      };
+    const amenities = {
+      bedType: formData.bedType,
+      deskAndChair: formData.deskAndChair,
+      wardrobe: formData.wardrobe,
+      airConditioning: formData.airConditioning,
+      waterHeater: formData.waterHeater,
+      wifi: formData.wifi,
+      kitchenAccess: formData.kitchenAccess,
+      washingMachine: formData.washingMachine,
+      refrigerator: formData.refrigerator,
+      parking: formData.parking,
+      security: formData.security,
+      balcony: formData.balcony,
+    };
 
-      const { data, error } = await supabase
-        .from('listing')
-        .insert({
-          landlord_id: landlordData.id,
-          title: formData.title,
-          description: formData.description,
-          propertyType: formData.propertyType,
-          size: parseInt(formData.size) || 0,
-          bedrooms: parseInt(formData.bedrooms) || 0,
-          bathrooms: parseInt(formData.bathrooms) || 0,
-          furnishingLevel: formData.furnishingLevel,
-          monthlyRent: parseFloat(formData.monthlyRent) || 0,
-          securityDeposit: parseFloat(formData.securityDeposit) || 0,
-          utilitiesDeposit: parseFloat(formData.utilitiesDeposit) || 0,
-          minimumRentalPeriod: parseInt(formData.minimumRentalPeriod) || 6,
-          moveInDate: formData.moveInDate || new Date().toISOString().split('T')[0],
-          amenities,
-          houseRules,
-          address: formData.address,
-          rentalStatus: true,
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      if (data) {
-        if (formData.photos && formData.photos.length > 0) {
-          const photoInserts = formData.photos.map((photo, index) => ({
-            property_id: data.property_id,
-            photo_URL: photo,
-            is_cover: index === 0,
-          }));
+    const houseRules = {
+      guestsAllowed: formData.guestsAllowed,
+      smokingAllowed: formData.smokingAllowed,
+      petsAllowed: formData.petsAllowed,
+      quietHours: formData.quietHours,
+      cleaningRules: formData.cleaningRules,
+    };
 
-          const { error: photoError } = await supabase
-            .from('property_Photo')
-            .insert(photoInserts);
+    // Insert listing
+    const { data, error } = await supabase
+      .from('property')
+      .insert({
+        landlord_id: landlordId,
+        title: formData.title,
+        description: formData.description,
+        propertyType: formData.propertyType,
+        size: parseInt(formData.size) || 0,
+        bedrooms: parseInt(formData.bedrooms) || 0,
+        bathrooms: parseInt(formData.bathrooms) || 0,
+        furnishingLevel: formData.furnishingLevel,
+        monthlyRent: parseFloat(formData.monthlyRent) || 0,
+        securityDeposit: parseFloat(formData.securityDeposit) || 0,
+        utilitiesDeposit: parseFloat(formData.utilitiesDeposit) || 0,
+        minimumRentalPeriod: parseInt(formData.minimumRentalPeriod) || 6,
+        moveInDate: formData.moveInDate || new Date().toISOString().split('T')[0],
+        amenities,
+        houseRules,
+        address: formData.address,
+        rentalStatus: true,
+      })
+      .select()
+      .single();
 
-          if (photoError) {
-            console.error('Failed to insert photos:', photoError);
-          }
-        }
+    if (error) throw error;
 
-        const newListing: StoredListing = {
-          id: data.property_id?.toString() || '',
-          landlordId: landlordData.id.toString(),
-          title: data.title || '',
-          description: data.description || '',
-          propertyType: data.propertyType,
-          size: data.size?.toString() || '0',
-          bedrooms: data.bedrooms?.toString() || '0',
-          bathrooms: data.bathrooms?.toString() || '0',
-          price: data.monthlyRent || 0,
-          address: data.address,
-          status: data.rentalStatus ? 'approved' : 'pending',
-          views: 0,
-          messages: 0,
-          createdAt: data.created_At || new Date().toISOString(),
-          formData: formData,
-        };
-        setListings(prev => [newListing, ...prev]);
-        console.log("Listing saved:", newListing.id);
-      }
-    } catch (error) {
-      console.error("Failed to save listing:", error);
-      throw error;
+    // Insert photos if any
+    if (data && formData.photos && formData.photos.length > 0) {
+      const photoInserts = formData.photos.map((photo, index) => ({
+        property_id: data.property_id,
+        photo_URL: photo,
+        is_cover: index === 0,
+      }));
+
+      const { error: photoError } = await supabase
+        .from('property_Photo')
+        .insert(photoInserts);
+
+      if (photoError) console.error('Failed to insert photos:', photoError);
     }
-  };
+
+    // Update local state
+    if (data) {
+      const newListing: StoredListing = {
+        id: data.property_id?.toString() || '',
+        landlordId: landlordId.toString(),
+        title: data.title || '',
+        description: data.description || '',
+        propertyType: data.propertyType,
+        size: data.size?.toString() || '0',
+        bedrooms: data.bedrooms?.toString() || '0',
+        bathrooms: data.bathrooms?.toString() || '0',
+        price: data.monthlyRent || 0,
+        address: data.address,
+        status: data.rentalStatus ? 'approved' : 'pending',
+        views: 0,
+        messages: 0,
+        createdAt: data.created_At || new Date().toISOString(),
+        formData: formData,
+      };
+      setListings(prev => [newListing, ...prev]);
+      console.log("Listing saved:", newListing.id);
+    }
+  } catch (error) {
+    console.error("Failed to save listing:", error);
+    throw error;
+  }
+};
+
 
   const getListingsByLandlord = (landlordId: string) => {
     return listings;

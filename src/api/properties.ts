@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { Property } from '@/src/types/property';
+import type { Property, PropertyInput, PropertyInsert } from '@/src/types/property';
 import { normalizeProperty, normalizeProperties } from '@/src/utils/normalizeProperty';
 
 async function enrichPropertiesWithData(properties: any[]): Promise<any[]> {
@@ -123,13 +123,15 @@ export async function getPropertiesByLandlord(landlordId: string): Promise<Prope
   return normalizeProperties(enrichedData);
 }
 
-export async function createProperty(propertyData: Partial<Property>): Promise<Property> {
+export async function createProperty(propertyData: Partial<PropertyInput>): Promise<Property> {
   const { data, error } = await supabase
-    .from('property')
+    .from("property")
     .insert({
-      landlord_id: propertyData.landlordId,
+      landlord_id: propertyData.landlord_id,
       propertyType: propertyData.propertyType,
       description: propertyData.description,
+      latitude: propertyData.latitude,
+      longitude: propertyData.longitude,
       address: propertyData.address,
       size: propertyData.size,
       bedrooms: propertyData.bedrooms,
@@ -147,30 +149,26 @@ export async function createProperty(propertyData: Partial<Property>): Promise<P
     .select()
     .single();
 
-  if (error) {
-    console.error('Failed to create property:', error);
-    throw error;
-  }
+  if (error) throw error;
 
-  if (propertyData.photos && propertyData.photos.length > 0) {
+  if (propertyData.photos?.length) {
     const photoInserts = propertyData.photos.map((photo, index) => ({
       property_id: data.property_id,
-      photo_URL: typeof photo === 'string' ? photo : photo.url,
+      photo_url: typeof photo === "string" ? photo : photo.url,
       is_cover: index === 0,
     }));
 
     const { error: photoError } = await supabase
-      .from('property_Photo')
+      .from("property_photo")
       .insert(photoInserts);
 
-    if (photoError) {
-      console.error('Failed to insert photos:', photoError);
-    }
+    if (photoError) throw photoError;
   }
 
   const enrichedData = await enrichPropertiesWithData([data]);
   return normalizeProperty(enrichedData[0]);
 }
+
 
 export async function updateProperty(id: string, propertyData: Partial<Property>): Promise<Property> {
   const { data, error } = await supabase

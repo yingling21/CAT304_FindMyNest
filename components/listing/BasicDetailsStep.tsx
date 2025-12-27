@@ -139,6 +139,8 @@ export default function BasicDetailsStep({ formData, onUpdate }: Props) {
   );
 }
 
+
+
 const styles = StyleSheet.create({
   section: {
     backgroundColor: "#FFFFFF",

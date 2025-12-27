@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   Switch,
+  Platform
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -14,6 +15,10 @@ import { useListing } from "@/contexts/ListingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import type { PropertyType, FurnishingLevel } from "@/src/types";
 import { styles } from "@/styles/listing";
+import MapPicker from "@/components/maps/MapPicker";
+import DateTimePicker from '@react-native-community/datetimepicker';
+import AddressAutocomplete from "@/components/maps/AddressAutoComplete";
+import * as Location from "expo-location";
 
 const TOTAL_STEPS = 9;
 
@@ -35,8 +40,39 @@ export default function AddListingScreen() {
   const { formData, updateFormData, resetFormData, saveListing } = useListing();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [moveInDate, setMoveInDate] = React.useState<Date>(formData.moveInDate ? new Date(formData.moveInDate) : new Date());
+  const [showDatePicker, setShowDatePicker] = React.useState(false);
 
   const progress = (currentStep / TOTAL_STEPS) * 100;
+
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios'); // keep open on iOS
+    if (selectedDate) {
+      setMoveInDate(selectedDate);
+      const formattedDate = selectedDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      updateFormData({ moveInDate: formattedDate });
+    }
+  };
+
+  async function geocodeAddress(address: string) {
+    try {
+      const results = await Location.geocodeAsync(address);
+      if (results.length > 0) {
+        const { latitude, longitude } = results[0];
+        return { latitude, longitude };
+      }
+    } catch (error) {
+      console.error("Failed to geocode address:", error);
+    }
+    return null;
+  }
+
+  const [region, setRegion] = React.useState<{
+    latitude: number;
+    longitude: number;
+    latitudeDelta: number;
+    longitudeDelta: number;
+  } | undefined>(undefined);
 
   const handleNext = async () => {
     if (currentStep < TOTAL_STEPS) {
@@ -234,12 +270,21 @@ export default function AddListingScreen() {
             />
 
             <Text style={styles.label}>Move-in Date Available</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., Immediately, January 2025"
-              value={formData.moveInDate}
-              onChangeText={(text) => updateFormData({ moveInDate: text })}
-            />
+              <TouchableOpacity
+                style={styles.input}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Text>{formData.moveInDate || 'Select move-in date'}</Text>
+              </TouchableOpacity>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={moveInDate}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChange}
+                />
+              )}
           </View>
         );
 
@@ -467,38 +512,56 @@ export default function AddListingScreen() {
           </View>
         );
 
-      case 6:
-        return (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Location Information</Text>
+        case 6:
+          return (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Location Information</Text>
 
-            <Text style={styles.label}>Address <Text style={styles.requiredStar}>*</Text></Text>
-            <TextInput
-              style={[styles.input, styles.inputMultiline]}
-              placeholder="Enter full address"
-              multiline
-              value={formData.address}
-              onChangeText={(text) => updateFormData({ address: text })}
-            />
+              {/* Map Picker */}
+              <MapPicker
+                region={region}
+                setRegion={setRegion}
+                onLocationSelect={({ latitude, longitude, address }) => {
+                  updateFormData({ latitude, longitude, address });
+                }}
+              />
 
-            <Text style={styles.label}>Nearby Landmarks</Text>
-            <TextInput
-              style={[styles.input, styles.inputMultiline]}
-              placeholder="e.g., Near shopping mall, university..."
-              multiline
-              value={formData.nearbyLandmarks}
-              onChangeText={(text) => updateFormData({ nearbyLandmarks: text })}
-            />
+              {/* Manual address input */}
+              <Text style={styles.label}>
+                Address <Text style={styles.requiredStar}>*</Text>
+              </Text>
+              <TextInput
+                style={[styles.input, styles.inputMultiline]}
+                multiline
+                placeholder="Type address or adjust pin on map"
+                value={formData.address}
+                onChangeText={async (text) => {
+                  updateFormData({ address: text });
 
-            <Text style={styles.label}>Distance to Public Transport</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 5 min walk to LRT station"
-              value={formData.distanceToTransport}
-              onChangeText={(text) => updateFormData({ distanceToTransport: text })}
-            />
-          </View>
-        );
+                  try {
+                    // geocodeAddress should return { latitude, longitude } if valid
+                    const coords = await geocodeAddress(text);
+                    if (coords) {
+                      updateFormData({ latitude: coords.latitude, longitude: coords.longitude });
+                      setRegion({
+                        latitude: coords.latitude,
+                        longitude: coords.longitude,
+                        latitudeDelta: 0.01,
+                        longitudeDelta: 0.01,
+                      });
+                    }
+                  } catch (err) {
+                    console.warn("Failed to geocode address:", err);
+                  }
+                }}
+              />
+
+              <Text style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>
+                Tap on the map to select the exact property location or type the address manually
+              </Text>
+            </View>
+          );
+
 
       case 7:
         return (

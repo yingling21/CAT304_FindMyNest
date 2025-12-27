@@ -40,3 +40,36 @@ export interface Property {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface PropertyInsert {
+  landlord_id: string;
+
+  propertyType: PropertyType;
+  furnishingLevel: FurnishingLevel;
+
+  title: string;
+  description: string;
+  address: string;
+
+  latitude?: number;
+  longitude?: number;
+
+  size: number;
+  bedrooms: number;
+  bathrooms: number;
+
+  monthlyRent: number;
+  securityDeposit: number;
+  utilitiesDeposit: number;
+  minimumRentalPeriod: number;
+
+  moveInDate: string | null;
+  rentalStatus: boolean;
+
+  amenities: Record<string, boolean>;
+  houseRules: Record<string, any>;
+}
+
+export interface PropertyInput extends PropertyInsert {
+  photos?: { url: string }[] | string[];
+}

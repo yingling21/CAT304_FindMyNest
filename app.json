@@ -16,12 +16,17 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.rork.house-rent-app-qxhb4lq",
-      "usesIcloudStorage": true
+      "usesIcloudStorage": true,
+      "infoPlist": {
+            "NSLocationWhenInUseUsageDescription": "Allow location access for maps"
+      }
     },
+    
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#ffffff",
+        "permissions": ["ACCESS_FINE_LOCATION"]
       },
       "package": "app.rork.house_rent_app_qxhb4lq"
     },

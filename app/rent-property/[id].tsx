@@ -21,7 +21,6 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "@/styles/rental";
 import { styles } from "../../styles/rent-property.styles";
 
 type PaymentMethod = "fpx" | "card" | "ewallet";

@@ -12,7 +12,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "@/styles/rental";
+import { styles } from "../styles/rent-property.styles";
 
 export default function MyRentalsScreen() {
   const router = useRouter();
