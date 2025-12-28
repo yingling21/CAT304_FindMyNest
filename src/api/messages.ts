@@ -81,41 +81,63 @@ export async function createOrGetConversation(params: {
   landlordPhoto?: string;
 }): Promise<string> {
 
-  // Check if conversation already exists
+  // 1️⃣ Get authenticated user
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("User not authenticated");
+  }
+
+  const authUserId = user.id;
+
+  // 2️⃣ Check if conversation already exists (per property + tenant)
   const { data: existingConv, error: searchError } = await supabase
-    .from('conversations')
-    .select('*')
-    .eq('property_id', params.propertyId)
-    .eq('tenant_id', params.tenantId)
+    .from("conversations")
+    .select("*")
+    .eq("property_id", params.propertyId)
+    .eq("tenant_id", params.tenantId)
     .single();
 
-  // If found, reuse existing conversation
   if (!searchError && existingConv) {
     return existingConv.id;
   }
 
-  // Otherwise, create a new conversation
+  // 3️⃣ Determine role of creator
+  const isTenant = authUserId === params.tenantId;
+  const isLandlord = authUserId === params.landlordId;
+
+  if (!isTenant && !isLandlord) {
+    throw new Error("Authenticated user is not part of this conversation");
+  }
+
+  // 4️⃣ INSERT with auth.uid() forced into row (RLS REQUIRED)
   const { data, error } = await supabase
-    .from('conversations')
+    .from("conversations")
     .insert({
       property_id: params.propertyId,
       property_address: params.propertyAddress,
       property_image: params.propertyImage,
       property_price: params.propertyPrice,
-      tenant_id: params.tenantId,
+
+      tenant_id: isTenant ? authUserId : params.tenantId,
       tenant_name: params.tenantName,
       tenant_photo: params.tenantPhoto,
-      landlord_id: params.landlordId,
+
+      landlord_id: isLandlord ? authUserId : params.landlordId,
       landlord_name: params.landlordName,
       landlord_photo: params.landlordPhoto,
-      last_message: '',
+
+      last_message: "",
       unread_count: 0,
     })
     .select()
     .single();
 
   if (error) {
-    console.error('Failed to create conversation:', error);
+    console.error("Failed to create conversation:", error);
     throw error;
   }
 
