@@ -47,17 +47,19 @@ export default function TenantHomeScreen() {
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [properties, setProperties] = useState<Property[]>([]);
 
-  useEffect(() => {
+  React.useEffect(() => {
+    const loadProperties = async () => {
+      try {
+        const { getAvailableProperties } = await import('@/src/api/properties');
+        const data = await getAvailableProperties();
+        setProperties(data);
+      } catch (error) {
+        console.error('Failed to load properties:', error);
+      }
+    };
+    
     loadProperties();
   }, []);
-
-  const loadProperties = async () => {
-    try {
-      setProperties([]);
-    } catch (error) {
-      console.error('Failed to load properties:', error);
-    }
-  };
 
   const filteredProperties = useMemo(() => {
     return properties.filter((property) => {

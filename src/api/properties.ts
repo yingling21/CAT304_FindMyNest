@@ -107,6 +107,25 @@ export async function getPropertyById(id: string): Promise<Property | null> {
   return enrichedData.length > 0 ? normalizeProperty(enrichedData[0]) : null;
 }
 
+export async function getPropertiesByIds(
+  ids: string[]
+): Promise<Property[]> {
+  if (ids.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("property")
+    .select("*")
+    .in("property_id", ids);
+
+  if (error) {
+    console.error("Failed to fetch favorite properties:", error);
+    throw error;
+  }
+
+  const enrichedData = await enrichPropertiesWithData(data || []);
+  return normalizeProperties(enrichedData);
+}
+
 export async function getPropertiesByLandlord(landlordId: string): Promise<Property[]> {
   const { data, error } = await supabase
     .from('property')

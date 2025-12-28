@@ -12,6 +12,8 @@ export interface Property {
   propertyType: PropertyType;
   description: string;
   address: string;
+  latitude: number;
+  longitude: number;
   
   size: number;
   bedrooms: number;

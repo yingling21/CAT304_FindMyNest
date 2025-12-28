@@ -67,12 +67,23 @@ export default function AddListingScreen() {
     return null;
   }
 
-  const [region, setRegion] = React.useState<{
+  // const [region, setRegion] = React.useState<{
+  //   latitude: number;
+  //   longitude: number;
+  //   latitudeDelta: number;
+  //   longitudeDelta: number;
+  // } | undefined>(undefined);
+  const [region, setRegion] = useState<{
     latitude: number;
     longitude: number;
     latitudeDelta: number;
     longitudeDelta: number;
-  } | undefined>(undefined);
+  } | undefined>({
+    latitude: 3.1390,
+    longitude: 101.6869,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
+  });
 
   const handleNext = async () => {
     if (currentStep < TOTAL_STEPS) {
@@ -522,7 +533,16 @@ export default function AddListingScreen() {
                 region={region}
                 setRegion={setRegion}
                 onLocationSelect={({ latitude, longitude, address }) => {
+                  // Update formData with coordinates + address
                   updateFormData({ latitude, longitude, address });
+
+                  // Move map marker
+                  setRegion({
+                    latitude,
+                    longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  });
                 }}
               />
 
@@ -539,13 +559,18 @@ export default function AddListingScreen() {
                   updateFormData({ address: text });
 
                   try {
-                    // geocodeAddress should return { latitude, longitude } if valid
-                    const coords = await geocodeAddress(text);
-                    if (coords) {
-                      updateFormData({ latitude: coords.latitude, longitude: coords.longitude });
+                    // Geocode typed address
+                    const results = await Location.geocodeAsync(text);
+                    if (results.length > 0) {
+                      const { latitude, longitude } = results[0];
+
+                      // Update formData coordinates
+                      updateFormData({ latitude, longitude });
+
+                      // Move map marker
                       setRegion({
-                        latitude: coords.latitude,
-                        longitude: coords.longitude,
+                        latitude,
+                        longitude,
                         latitudeDelta: 0.01,
                         longitudeDelta: 0.01,
                       });
@@ -561,7 +586,6 @@ export default function AddListingScreen() {
               </Text>
             </View>
           );
-
 
       case 7:
         return (
