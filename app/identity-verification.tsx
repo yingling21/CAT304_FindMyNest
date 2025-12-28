@@ -145,19 +145,19 @@ export default function IdentityVerificationScreen() {
       // Reload user profile from database (user row was just created/updated)
       await reloadUserProfile();
 
-      Alert.alert(
-        "Verification Successful",
-        "Your identity has been verified successfully. You can now use all features.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              // Navigate to home page (shopping/browsing page)
-              router.replace("/(tabs)/home");
-            },
+    Alert.alert(
+      "Verification Successful",
+      "Your identity has been verified successfully. You can now use all features.",
+      [
+        {
+          text: "OK",
+          onPress: () => {
+            router.replace("/(tabs)/home");
           },
-        ]
-      );
+        },
+      ]
+    );
+
     } catch (err: any) {
       console.error("Submit error:", err);
       let errorMessage = err?.message || "Unknown error occurred";

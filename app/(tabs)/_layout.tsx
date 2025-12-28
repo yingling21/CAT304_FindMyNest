@@ -113,18 +113,6 @@ export default function TabLayout() {
           href: null, // Hide from tab bar
         }}
       />
-      <Tabs.Screen
-        name="TenantHomeScreen"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="LandlordHomeScreen"
-        options={{
-          href: null,
-        }}
-      />
     </Tabs>
   );
 }
