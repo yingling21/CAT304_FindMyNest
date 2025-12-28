@@ -121,16 +121,13 @@ export default function RentPropertyScreen() {
     try {
       await createRental(
         property.id,
-        property.address,
-        property.photos[0]?.url || '',
         property.title,
-        property.photos && property.photos.length > 0 ? property.photos[0] : "",
+        property.photos[0]?.url || '',
         property.address,
         property.landlordId,
         property.monthlyRent,
         property.securityDeposit,
-        moveInDate,
-        duration
+        moveInDate
       );
 
       Alert.alert(
@@ -171,7 +168,7 @@ export default function RentPropertyScreen() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.propertyCard}>
             <Image
-              source={{ uri: property.photos && property.photos.length > 0 ? property.photos[0] : "" }}
+              source={{ uri: property.photos && property.photos.length > 0 ? (typeof property.photos[0] === 'string' ? property.photos[0] : property.photos[0].url) : "" }}
               style={styles.propertyImage}
               contentFit="cover"
             />
