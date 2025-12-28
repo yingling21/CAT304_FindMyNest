@@ -32,8 +32,11 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
+google-key.json
 
 # typescript
 *.tsbuildinfo
 .vercel
+

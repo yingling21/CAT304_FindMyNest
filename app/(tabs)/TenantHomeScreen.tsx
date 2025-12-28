@@ -82,26 +82,32 @@ export default function TenantHomeScreen() {
         return false;
       }
 
-      if (
-        filters.priceMin &&
-        property.monthlyRent < parseInt(filters.priceMin)
-      ) {
-        return false;
+      if (filters.priceMin) {
+        const priceMinNum = parseInt(filters.priceMin, 10);
+        if (!isNaN(priceMinNum) && property.monthlyRent < priceMinNum) {
+          return false;
+        }
       }
 
-      if (
-        filters.priceMax &&
-        property.monthlyRent > parseInt(filters.priceMax)
-      ) {
-        return false;
+      if (filters.priceMax) {
+        const priceMaxNum = parseInt(filters.priceMax, 10);
+        if (!isNaN(priceMaxNum) && property.monthlyRent > priceMaxNum) {
+          return false;
+        }
       }
 
-      if (filters.sizeMin && property.size < parseInt(filters.sizeMin)) {
-        return false;
+      if (filters.sizeMin) {
+        const sizeMinNum = parseInt(filters.sizeMin, 10);
+        if (!isNaN(sizeMinNum) && property.size < sizeMinNum) {
+          return false;
+        }
       }
 
-      if (filters.sizeMax && property.size > parseInt(filters.sizeMax)) {
-        return false;
+      if (filters.sizeMax) {
+        const sizeMaxNum = parseInt(filters.sizeMax, 10);
+        if (!isNaN(sizeMaxNum) && property.size > sizeMaxNum) {
+          return false;
+        }
       }
 
       if (filters.bedrooms && property.bedrooms < filters.bedrooms) {

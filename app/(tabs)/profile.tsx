@@ -1,8 +1,8 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useReviews } from "@/contexts/ReviewsContext";
 import { User, Mail, Phone, LogOut, Star, MessageCircle, Home, ChevronRight, Info } from "lucide-react-native";
-import React, { useMemo } from "react";
-import { Pressable, Text, View, ScrollView } from "react-native";
+import React, { useMemo, useEffect } from "react";
+import { Pressable, Text, View, ScrollView, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { profileStyles as styles } from "@/styles/tabs";
@@ -10,10 +10,15 @@ import { profileStyles as styles } from "@/styles/tabs";
 
 
 export default function ProfileScreen() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isLoading, reloadUserProfile } = useAuth();
   const { reviews } = useReviews();
   const router = useRouter();
   const isLandlord = user?.role === "landlord";
+
+  // Reload user data when profile page mounts
+  useEffect(() => {
+    reloadUserProfile();
+  }, []);
 
   const landlordReviews = useMemo(() => {
     if (!user || !isLandlord) return [];
@@ -36,6 +41,9 @@ export default function ProfileScreen() {
       <ScrollView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Profile</Text>
+          {user?.fullName && (
+            <Text style={{ fontSize: 16, color: "#6B7280", marginTop: 4 }}>Hello, {user.fullName}</Text>
+          )}
         </View>
 
         <View style={styles.profileCard}>
@@ -44,7 +52,9 @@ export default function ProfileScreen() {
               <User size={40} color="#FFFFFF" />
             </View>
           </View>
-          <Text style={styles.name}>{user?.fullName || "Guest User"}</Text>
+          <Text style={styles.name}>
+            {user?.fullName || (isLoading ? "Loading..." : "User")}
+          </Text>
           <Text style={styles.role}>
             {isLandlord ? "Landlord" : "Tenant"}
           </Text>
@@ -57,7 +67,9 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Email</Text>
-              <Text style={styles.infoValue}>{user?.email || "No email"}</Text>
+              <Text style={styles.infoValue}>
+                {user?.email || (isLoading ? "Loading..." : "No email")}
+              </Text>
             </View>
           </View>
 
@@ -68,7 +80,7 @@ export default function ProfileScreen() {
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Phone Number</Text>
               <Text style={styles.infoValue}>
-                {user?.phoneNumber || "No phone number"}
+                {user?.phoneNumber || (isLoading ? "Loading..." : "No phone number")}
               </Text>
             </View>
           </View>
@@ -201,5 +213,3 @@ export default function ProfileScreen() {
     </SafeAreaView>
   );
 }
-
-
