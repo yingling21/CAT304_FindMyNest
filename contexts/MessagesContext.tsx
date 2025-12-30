@@ -9,6 +9,7 @@ import {
   sendMessage as sendMessageAPI,
   markMessagesAsRead as markMessagesAsReadAPI 
 } from "@/src/api/messages";
+import { getUserPushToken, sendPushNotification } from "@/src/api/notifications";
 
 export const [MessagesProvider, useMessages] = createContextHook(() => {
   const auth = useAuth();
@@ -26,11 +27,9 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
         return;
       }
 
-      // Fetch all conversations for the user
       const conversationsData = await getConversationsByUser(user.id);
       setConversations(conversationsData);
 
-      // Fetch messages for each conversation
       const conversationIds = conversationsData.map(c => c.id);
       if (conversationIds.length > 0) {
         const messagesByConversation = await getMessagesByConversations(conversationIds);
@@ -46,9 +45,7 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
   useEffect(() => {
     loadData();
   }, [loadData]);
-  
-  // Create or get conversation
-  // Ensures only one conversation exists per property + tenant + landlord
+
   const createOrGetConversation = async (
     propertyId: string,
     propertyAddress: string,
@@ -60,7 +57,6 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
   ): Promise<string> => {
     if (!user) throw new Error("User not authenticated");
 
-    // Call backend to create or retrieve conversation
     const conversationId = await createOrGetConversationAPI({
       propertyId,
       propertyAddress,
@@ -79,7 +75,6 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
     return conversationId;
   };
 
-  // Send a message
   const sendMessage = async (
     conversationId: string,
     content: string
@@ -89,7 +84,6 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
     const conversation = conversations.find((c) => c.id === conversationId);
     if (!conversation) throw new Error("Conversation not found");
 
-    // Determine receiver based on user role
     const receiverId = user.role === "tenant" ? conversation.landlordId : conversation.tenantId;
 
     const newMessage = await sendMessageAPI({
@@ -104,7 +98,6 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
       [conversationId]: [...(prev[conversationId] || []), newMessage],
     }));
 
-    // Update conversation preview (last message & time)
     setConversations(prev => prev.map((c) =>
       c.id === conversationId
         ? {
@@ -115,14 +108,25 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
           }
         : c
     ));
+
+    const receiverPushToken = await getUserPushToken(receiverId);
+    if (receiverPushToken) {
+      await sendPushNotification({
+        pushToken: receiverPushToken,
+        title: `New message from ${user.fullName}`,
+        body: content,
+        data: {
+          conversationId,
+          type: 'message',
+        },
+      });
+    }
   };
 
-  // Mark messages as read
   const markAsRead = async (conversationId: string): Promise<void> => {
     if (!user) return;
 
     try {
-      // Update read status
       await markMessagesAsReadAPI(conversationId, user.id);
 
       setMessages(prev => ({
@@ -140,7 +144,6 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
     }
   };
 
-  // Derived: conversations for current user
   const userConversations = useMemo(() => {
     if (!user) return [];
 

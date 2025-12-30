@@ -418,6 +418,9 @@ export const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: "center",
   },
+  payButtonDisabled: {
+    opacity: 0.6,
+  },
   payButtonText: {
     fontSize: 14,
     fontWeight: "600" as const,

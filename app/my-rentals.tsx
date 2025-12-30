@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRentals } from "@/contexts/RentalsContext";
+import { usePayments } from "@/contexts/PaymentsContext";
 import { Image } from "expo-image";
 import { Stack, useRouter } from "expo-router";
 import { ChevronLeft, Home as HomeIcon } from "lucide-react-native";
@@ -12,13 +13,15 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "../styles/rent-property.styles";
+import { styles } from "@/styles/rent-property.styles";
 
 export default function MyRentalsScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { getTenantRentals, stopRental } = useRentals();
+  const { createPayment, initiateRazorpayPayment } = usePayments();
   const [stoppingRentalId, setStoppingRentalId] = useState<string | null>(null);
+  const [payingRentalId, setPayingRentalId] = useState<string | null>(null);
 
   const rentals = getTenantRentals();
   const activeRentals = rentals.filter(r => r.status === "active");
@@ -58,16 +61,46 @@ export default function MyRentalsScreen() {
     );
   };
 
-  const handlePayRent = (rental: any) => {
+  const handlePayRent = async (rental: any) => {
     Alert.alert(
       "Pay Rent",
-      `Pay RM ${rental.monthlyRent} for property at ${rental.propertyAddress}?`,
+      `Pay RM ${rental.monthlyRent} for ${rental.propertyAddress}?`,
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Pay Now",
-          onPress: () => {
-            Alert.alert("Success", "Payment processed successfully!");
+          onPress: async () => {
+            try {
+              setPayingRentalId(rental.id);
+              
+              const nextDueDate = new Date();
+              nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+              
+              const payment = await createPayment(
+                rental.id,
+                rental.propertyId,
+                rental.landlordId,
+                'recurring',
+                rental.monthlyRent,
+                rental.monthlyRent,
+                0,
+                0,
+                nextDueDate.toISOString()
+              );
+
+              await initiateRazorpayPayment(
+                payment.id,
+                rental.monthlyRent,
+                `Monthly rent for ${rental.propertyAddress.split(',')[0]}`
+              );
+
+              Alert.alert("Payment Initiated", "Please complete the payment.");
+            } catch (error) {
+              console.error("Payment failed:", error);
+              Alert.alert("Error", "Failed to process payment. Please try again.");
+            } finally {
+              setPayingRentalId(null);
+            }
           },
         },
       ]
@@ -156,10 +189,16 @@ export default function MyRentalsScreen() {
                         </View>
                         <View style={styles.actionButtons}>
                           <Pressable
-                            style={styles.payButton}
+                            style={[
+                              styles.payButton,
+                              payingRentalId === rental.id && styles.payButtonDisabled,
+                            ]}
                             onPress={() => handlePayRent(rental)}
+                            disabled={payingRentalId === rental.id}
                           >
-                            <Text style={styles.payButtonText}>Pay Rent</Text>
+                            <Text style={styles.payButtonText}>
+                              {payingRentalId === rental.id ? "Processing..." : "Pay Rent"}
+                            </Text>
                           </Pressable>
                           <Pressable
                             style={[

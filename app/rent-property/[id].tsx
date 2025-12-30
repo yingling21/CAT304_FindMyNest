@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRentals } from "@/contexts/RentalsContext";
+import { usePayments } from "@/contexts/PaymentsContext";
 import type { Property } from "@/src/types";
 import { Image } from "expo-image";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -21,7 +22,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "../../styles/rent-property.styles";
+import { styles } from "@/styles/rent-property.styles";
 
 type PaymentMethod = "fpx" | "card" | "ewallet";
 
@@ -30,6 +31,7 @@ export default function RentPropertyScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { createRental } = useRentals();
+  const { createPayment, initiateRazorpayPayment } = usePayments();
 
   const [property, setProperty] = React.useState<Property | null>(null);
   const [isLoadingProperty, setIsLoadingProperty] = React.useState(true);
@@ -85,7 +87,8 @@ export default function RentPropertyScreen() {
 
   const firstMonthRent = property.monthlyRent;
   const securityDeposit = property.securityDeposit;
-  const totalUpfront = firstMonthRent + securityDeposit;
+  const utilitiesDeposit = property.utilitiesDeposit || 0;
+  const totalUpfront = firstMonthRent + securityDeposit + utilitiesDeposit;
 
   const handleDurationSelect = (months: number) => {
     setDuration(months);
@@ -119,20 +122,38 @@ export default function RentPropertyScreen() {
 
     setIsProcessing(true);
     try {
-      await createRental(
+      const rental = await createRental(
         property.id,
-        property.title,
-        property.photos[0]?.url || '',
         property.address,
+        property.photos[0]?.url || '',
         property.landlordId,
         property.monthlyRent,
         property.securityDeposit,
+        moveInDate,
+        duration
+      );
+
+      const payment = await createPayment(
+        rental.id,
+        property.id,
+        property.landlordId,
+        'initial',
+        totalUpfront,
+        property.monthlyRent,
+        property.securityDeposit,
+        utilitiesDeposit,
         moveInDate
       );
 
+      await initiateRazorpayPayment(
+        payment.id,
+        totalUpfront,
+        `Initial payment for ${property.address.split(',')[0]} - First month rent + Security deposit${utilitiesDeposit > 0 ? ' + Utilities deposit' : ''}`
+      );
+
       Alert.alert(
-        "Payment Successful",
-        "Your rental has been confirmed! You can view it in My Rentals.",
+        "Payment Initiated",
+        "Please complete the payment to confirm your rental.",
         [
           {
             text: "OK",
@@ -168,7 +189,7 @@ export default function RentPropertyScreen() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.propertyCard}>
             <Image
-              source={{ uri: property.photos && property.photos.length > 0 ? (typeof property.photos[0] === 'string' ? property.photos[0] : property.photos[0].url) : "" }}
+              source={{ uri: property.photos[0]?.url || 'https://via.placeholder.com/400' }}
               style={styles.propertyImage}
               contentFit="cover"
             />
@@ -294,6 +315,12 @@ export default function RentPropertyScreen() {
                     <Text style={styles.summaryLabel}>Security Deposit</Text>
                     <Text style={styles.summaryValue}>RM {securityDeposit}</Text>
                   </View>
+                  {utilitiesDeposit > 0 && (
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>Utilities Deposit</Text>
+                      <Text style={styles.summaryValue}>RM {utilitiesDeposit}</Text>
+                    </View>
+                  )}
                   <View style={styles.summaryDivider} />
                   <View style={styles.summaryRow}>
                     <Text style={styles.summaryTotalLabel}>Total Upfront Payment</Text>
@@ -388,6 +415,12 @@ export default function RentPropertyScreen() {
                     <Text style={styles.summaryLabel}>Security Deposit</Text>
                     <Text style={styles.summaryValue}>RM {securityDeposit}</Text>
                   </View>
+                  {utilitiesDeposit > 0 && (
+                    <View style={styles.summaryRow}>
+                      <Text style={styles.summaryLabel}>Utilities Deposit</Text>
+                      <Text style={styles.summaryValue}>RM {utilitiesDeposit}</Text>
+                    </View>
+                  )}
                   <View style={styles.summaryDivider} />
                   <View style={styles.summaryRow}>
                     <Text style={styles.summaryTotalLabel}>Total to Pay</Text>

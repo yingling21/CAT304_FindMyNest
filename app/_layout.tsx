@@ -4,11 +4,13 @@ import { MessagesProvider } from "@/contexts/MessagesContext";
 import { ListingProvider } from "@/contexts/ListingContext";
 import { RentalsProvider } from "@/contexts/RentalsContext";
 import { ReviewsProvider } from "@/contexts/ReviewsContext";
+import { PaymentsProvider } from "@/contexts/PaymentsContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { setupNotificationListeners } from "@/utils/notifications";
 
 
 SplashScreen.preventAutoHideAsync();
@@ -41,9 +43,27 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const router = useRouter();
+  
   useEffect(() => {
     SplashScreen.hideAsync();
   }, []);
+
+  useEffect(() => {
+    const cleanup = setupNotificationListeners(
+      (notification) => {
+        console.log('Notification received in foreground:', notification);
+      },
+      (response) => {
+        const data = response.notification.request.content.data;
+        if (data.conversationId) {
+          router.push(`/chat/${data.conversationId}` as any);
+        }
+      }
+    );
+
+    return cleanup;
+  }, [router]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -53,9 +73,11 @@ export default function RootLayout() {
               <ListingProvider>
                 <RentalsProvider>
                   <ReviewsProvider>
-                    <GestureHandlerRootView style={{ flex: 1 }}>
-                      <RootLayoutNav />
-                    </GestureHandlerRootView>
+                    <PaymentsProvider>
+                      <GestureHandlerRootView style={{ flex: 1 }}>
+                        <RootLayoutNav />
+                      </GestureHandlerRootView>
+                    </PaymentsProvider>
                   </ReviewsProvider>
                 </RentalsProvider>
               </ListingProvider>
