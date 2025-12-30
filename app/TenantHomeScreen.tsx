@@ -60,6 +60,19 @@ export default function TenantHomeScreen() {
       setProperties([]);
     }
   };
+  React.useEffect(() => {
+    const loadProperties = async () => {
+      try {
+        const { getAvailableProperties } = await import('@/src/api/properties');
+        const data = await getAvailableProperties();
+        setProperties(data);
+      } catch (error) {
+        console.error('Failed to load properties:', error);
+      }
+    };
+    
+    loadProperties();
+  }, []);
 
   const filteredProperties = useMemo(() => {
     return properties.filter((property) => {
