@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { ScrollView, Text, View, Pressable, Alert } from "react-native";
+import { ScrollView, Text, View, Pressable, Alert, Button } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import MapComponent from "@/components/maps/MapComponent";
+import MapComponent, { ExtraMarker } from "@/components/maps/MapComponent";
 import NearbyPlaces from "@/components/maps/NearbyPlaces";
+import { NearbyPlace, NearbyCounts, PlaceCategory } from "@/src/types/nearby";
 import { styles } from "@/styles/property.styles";
 import { Image } from "expo-image";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,30 +19,20 @@ import {
   Maximize2,
   Heart,
   MapPin,
-  Calendar,
-  DollarSign,
-  Clock,
-  Wifi,
-  Car,
-  Shield,
+  Armchair,
   Wind,
+  Droplet,
+  Wifi,
   Utensils,
   WashingMachine,
   Refrigerator,
-  Star,
-  MessageCircle,
+  Car,
+  Shield,
   CheckCircle2,
-  Armchair,
-  Droplet,
+  MessageCircle,
 } from "lucide-react-native";
-
-interface NearbyPlace {
-  id: string;
-  name: string;
-  types?: string[];
-  latitude: number;
-  longitude: number;
-}
+import { calculateWorthiness, type WorthinessResult } 
+  from "@/src/utils/worthinessCalculator";
 
 export default function PropertyDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -57,8 +48,42 @@ export default function PropertyDetailScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [nearbyResults, setNearbyResults] = useState<NearbyPlace[]>([]);
-  const [nearbyCounts, setNearbyCounts] = useState<Record<string, number>>({});
+  const [nearbyCounts, setNearbyCounts] = useState<NearbyCounts | null>({
+    transport: 0,
+    food: 0,
+    shopping: 0,
+    facility: 0,
+    environment: 0,
+    education: 0,
+  });
+
   const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.googleMapsApiKey;
+
+  const DEFAULT_WEIGHTS: Record<keyof NearbyCounts, number> = {
+    transport: 25,
+    food: 20,
+    shopping: 15,
+    facility: 20,
+    environment: 10,
+    education: 10,
+  };
+
+  const [userWeights, setUserWeights] = useState<Record<keyof NearbyCounts, number>>(
+    DEFAULT_WEIGHTS
+  );
+
+  const [worthiness, setWorthiness] =
+    useState<WorthinessResult | null>(null);
+
+  useEffect(() => {
+    if (nearbyResults.length > 0) {
+      const result = calculateWorthiness(nearbyResults);
+      setWorthiness(result); 
+    }
+  }, [nearbyResults]);
+  const totalScore = worthiness?.totalScore ?? 0;
+  const categoryScores = worthiness?.categoryScores;
+
   // Load property
   useEffect(() => {
     const loadProperty = async () => {
@@ -361,37 +386,116 @@ export default function PropertyDetailScreen() {
 
           <View style={styles.divider} />
 
+          {/* Nearby Places */}
           <NearbyPlaces
             markerPosition={{ lat: property.latitude, lng: property.longitude }}
             radius={1000}
-            types={["restaurant", "shopping_mall", "bus_station"]}
+            categories={["transport","food","shopping","facility","environment","education"]}
             apiKey={GOOGLE_MAPS_API_KEY}
-            onResults={(places, counts) => {
-              setNearbyResults(places);
+            onResults={(places:NearbyPlace[], counts: NearbyCounts) => {
+              const normalized: NearbyPlace[] = places.map(p => ({
+                id: p.id,
+                name: p.name,
+                lat: p.lat,   // map lat -> latitude
+                lng: p.lng,  // map lng ->  longitude
+                distance: p.distance,
+                category: p.category || "other",
+              }));
+
+              setNearbyResults(normalized);
               setNearbyCounts(counts);
             }}
           />
 
-          {/* Map */}
-          <View style={{ height: 300 }}>
-            <MapComponent
-              initialPosition={{ lat: property.latitude, lng: property.longitude }}
-              extraMarkers={nearbyResults.map(place => ({
-                id: place.id,
-                lat: place.latitude,
-                lng: place.longitude,
-                title: place.name,
-              }))}
-            />
-          </View>
+          <MapComponent
+            initialPosition={{ lat: property.latitude, lng: property.longitude }}
+            extraMarkers={nearbyResults
+              .filter(p => ["transport","food","shopping","facility","environment","education"].includes(p.category))
+              .map(p => ({
+                id: p.id,
+                name: p.name,
+                lat: p.lat,
+                lng: p.lng,
+                category: p.category as PlaceCategory, // assert type
+              }))
+            }
+          />
 
-          {/* Counts display */}
-          <View style={{ flexDirection: "row", justifyContent: "space-around", marginTop: 8 }}>
-            {Object.entries(nearbyCounts).map(([type, count]) => (
-              <Text key={type}>{`${type}: ${count}`}</Text>
-            ))}
+          {/* Nearby Counts */}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
+            {nearbyCounts &&
+              Object.entries(nearbyCounts).map(([type, count]) => (
+                <View
+                  key={type}
+                  style={{
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                    borderRadius: 16,
+                    backgroundColor: "#EEF2FF",
+                    borderWidth: 1,
+                    borderColor: "#C7D2FE",
+                    minWidth: 60,
+                  }}
+                >
+                  <Text style={{ fontSize: 10, fontWeight: "600", color: "#3730A3", marginBottom: 2 }}>
+                    {type.toUpperCase()}
+                  </Text>
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#1E40AF" }}>
+                    {count}
+                  </Text>
+                </View>
+              ))}
           </View>
+          
+          <View style={styles.divider} />
 
+          {/* Worthiness Card */}
+          <View style={{
+            backgroundColor: "#fff",
+            borderRadius: 12,
+            padding: 16,
+            shadowColor: "#000",
+            shadowOpacity: 0.1,
+            shadowRadius: 10,
+            elevation: 5,
+            marginBottom: 24,
+          }}>
+            <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 8 }}>
+              House Worthiness
+            </Text>
+            <Text style={{ fontSize: 18, fontWeight: "600", color: "#4caf50" }}>
+              {totalScore.toFixed(1)} / 100
+            </Text>
+
+          {/* Category Scores */}
+          {categoryScores && (
+            <View style={{ marginTop: 16 }}>
+              {Object.entries(categoryScores).map(([category, score]) => (
+                <View key={category} style={{ marginBottom: 12 }}>
+                  <Text style={{ textTransform: "capitalize", fontWeight: "600", marginBottom: 4 }}>
+                    {category}: {score.toFixed(1)}
+                  </Text>
+                  <View style={{
+                    height: 8,
+                    backgroundColor: "#eee",
+                    borderRadius: 4,
+                    overflow: "hidden"
+                  }}>
+                    <View style={{
+                      width: `${score}%`,
+                      height: "100%",
+                      backgroundColor: "#6366F1", // same color as footer buttons
+                      borderRadius: 4,
+                    }} />
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+          </View>
 
           <View style={styles.divider} />
 

@@ -17,7 +17,6 @@ import type { PropertyType, FurnishingLevel } from "@/src/types";
 import { styles } from "@/styles/listing";
 import MapPicker from "@/components/maps/MapPicker";
 import DateTimePicker from '@react-native-community/datetimepicker';
-import AddressAutocomplete from "@/components/maps/AddressAutoComplete";
 import * as Location from "expo-location";
 
 const TOTAL_STEPS = 9;

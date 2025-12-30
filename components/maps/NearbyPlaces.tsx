@@ -1,66 +1,121 @@
 import { useEffect } from "react";
+import { NearbyPlace, NearbyCounts, PlaceCategory } from "@/src/types/nearby";
 
 interface NearbyPlacesProps {
   markerPosition: { lat: number; lng: number };
-  radius?: number; // meters
-  types?: string[]; // e.g., ["restaurant", "shopping_mall"]
-  apiKey: string; // Google Places API key
-  onResults?: (places: any[], counts: Record<string, number>) => void;
+  radius: number;
+  categories: PlaceCategory[];
+  apiKey: string;
+  onResults: (places: NearbyPlace[], counts: NearbyCounts) => void;
 }
 
-const NearbyPlaces: React.FC<NearbyPlacesProps> = ({
+/* -----------------------------------
+   Google Places type mapping
+------------------------------------ */
+
+const CATEGORY_MAP: Record<PlaceCategory, string[]> = {
+  transport: ["bus_station", "subway_station", "train_station"],
+  food: ["restaurant", "cafe", "bakery"],
+  shopping: ["shopping_mall", "supermarket"],
+  facility: ["hospital", "pharmacy", "police"],
+  environment: ["park"],
+  education: ["school", "university"],
+};
+
+/* -----------------------------------
+   Helper: Haversine formula
+------------------------------------ */
+
+function getDistance(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+): number {
+  const R = 6371e3; // Earth radius in meters
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lng2 - lng1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // distance in meters
+}
+
+/* -----------------------------------
+   Component
+------------------------------------ */
+
+export default function NearbyPlaces({
   markerPosition,
-  radius = 1000,
-  types = ["restaurant", "shopping_mall", "bus_station"],
+  radius,
+  categories,
   apiKey,
   onResults,
-}) => {
+}: NearbyPlacesProps) {
   useEffect(() => {
-    if (!markerPosition || !apiKey) return;
+    async function fetchPlaces() {
+      const allPlaces: NearbyPlace[] = [];
+      const counts: NearbyCounts = {
+        transport: 0,
+        food: 0,
+        shopping: 0,
+        facility: 0,
+        environment: 0,
+        education: 0,
+      };
 
-    const fetchNearbyPlaces = async () => {
-      try {
-        // fetch all types in parallel
-        const results = await Promise.all(
-          types.map(async (type) => {
-            const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${markerPosition.lat},${markerPosition.lng}&radius=${radius}&type=${type}&key=${apiKey}`;
+      for (const category of categories) {
+        const types = CATEGORY_MAP[category];
+
+        for (const type of types) {
+          const url =
+            `https://maps.googleapis.com/maps/api/place/nearbysearch/json` +
+            `?location=${markerPosition.lat},${markerPosition.lng}` +
+            `&radius=${radius}` +
+            `&type=${type}` +
+            `&key=${apiKey}`;
+
+          try {
             const res = await fetch(url);
             const json = await res.json();
 
-            if (json.status === "OK" && json.results) {
-              return json.results.map((place: any) => ({
-                id: place.place_id,
-                name: place.name,
-                lat: place.geometry.location.lat,
-                lng: place.geometry.location.lng,
-                type: type,
-              }));
-            } else {
-              console.warn(`NearbyPlaces API error for type "${type}": ${json.status}`);
-              return [];
-            }
-          })
-        );
+            if (!json.results) continue;
 
-        // flatten all results into a single array
-        const allResults = results.flat();
+            json.results.forEach((p: any) => {
+              const distance = getDistance(
+                markerPosition.lat,
+                markerPosition.lng,
+                p.geometry.location.lat,
+                p.geometry.location.lng
+              );
 
-        // compute counts per type
-        const counts = allResults.reduce((acc: Record<string, number>, place) => {
-          acc[place.type] = (acc[place.type] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
+              allPlaces.push({
+                id: p.place_id,
+                name: p.name,
+                lat: p.geometry.location.lat,
+                lng: p.geometry.location.lng,
+                category,
+                distance,
+              });
+            });
 
-        if (onResults) onResults(allResults, counts);
-      } catch (err) {
-        console.error("NearbyPlaces fetch error:", err);
+            counts[category] += json.results.length;
+          } catch (err) {
+            console.error("NearbyPlaces error:", err);
+          }
+        }
       }
-    };
 
-    fetchNearbyPlaces();
-  }, [markerPosition, types, radius, apiKey, onResults]);
+      onResults(allPlaces, counts);
+    }
 
-  return null; // This component does not render anything
-};
+    fetchPlaces();
+  }, [markerPosition.lat, markerPosition.lng, radius, categories, apiKey]);
 
-export default NearbyPlaces;
+  return null; // logic-only component
+}
