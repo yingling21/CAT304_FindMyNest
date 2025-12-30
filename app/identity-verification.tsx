@@ -89,25 +89,15 @@ export default function IdentityVerificationScreen() {
       
       // Use backend to OCR both front and back IC images, extract IC numbers,
       // validate that they match, and validate Malaysia IC format (12 digits, DOB, checksum).
-      // Ensure email and phoneNumber are always passed to backend for storage in users table
-      if (!user || !user.email || !user.phoneNumber) {
-        Alert.alert(
-          "Missing Information",
-          "Email and phone number are required for verification. Please ensure your account information is complete."
-        );
-        setIsLoading(false);
-        return;
-      }
-
       const result = await verifyIcWithBackend(
         frontIcUri, 
         backIcUri,
-        { // Pass user info to backend - email and phoneNumber are required
+        user ? { // Pass user info to backend
           email: user.email,
-          fullName: user.fullName || user.email.split("@")[0], // Fallback to email prefix if fullName missing
+          fullName: user.fullName,
           phoneNumber: user.phoneNumber,
-          role: user.role || "tenant",
-        }
+          role: user.role,
+        } : undefined
       );
       
       console.log("Verification result:", result);

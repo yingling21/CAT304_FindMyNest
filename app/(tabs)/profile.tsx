@@ -55,6 +55,18 @@ export default function ProfileScreen() {
           <Text style={styles.name}>
             {user?.fullName || (isLoading ? "Loading..." : "User")}
           </Text>
+          <Pressable
+            style={{
+              marginTop: 12,
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+              borderRadius: 10,
+              backgroundColor: "#6366F1",
+            }}
+            onPress={() => router.push("/(tabs)/edit-profile")}
+          >
+            <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>Edit Profile</Text>
+          </Pressable>
           <Text style={styles.role}>
             {isLandlord ? "Landlord" : "Tenant"}
           </Text>

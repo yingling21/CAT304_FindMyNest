@@ -130,6 +130,13 @@ async function extractIcNumberFromImage(
   console.log(`${"=".repeat(60)}`);
   
   try {
+    // Validate buffer before API call
+    if (!buffer || buffer.length === 0) {
+      console.error(`❌ Invalid buffer: buffer is empty or null`);
+      return null;
+    }
+    console.log(`📊 Buffer size: ${buffer.length} bytes`);
+    
     // Step 1: Get full OCR text from Vision API
     console.log(`\n[Step 1] Calling Google Vision API for ${side}...`);
     const [result] = await withTimeout(
@@ -137,6 +144,12 @@ async function extractIcNumberFromImage(
       25_000,
       isBack ? "Back OCR" : "Front OCR"
     );
+    
+    // Check if result is valid
+    if (!result) {
+      console.error(`❌ No result returned from Vision API`);
+      return null;
+    }
     
     const text = result.fullTextAnnotation?.text || "";
     
@@ -228,7 +241,28 @@ async function extractIcNumberFromImage(
     console.log(`${"=".repeat(60)}\n`);
     return null;
   } catch (error: any) {
-    console.error(`\n❌ OCR extraction error for ${side}:`, error?.message);
+    console.error(`\n❌ OCR extraction error for ${side}:`);
+    console.error(`Error message: ${error?.message || "Unknown error"}`);
+    console.error(`Error code: ${error?.code || "N/A"}`);
+    console.error(`Error status: ${error?.status || "N/A"}`);
+    
+    // Log Google Vision API specific errors
+    if (error?.code === 7) {
+      console.error(`❌ PERMISSION DENIED: Check if the service account has Vision API enabled`);
+    } else if (error?.code === 8) {
+      console.error(`❌ RESOURCE EXHAUSTED: Google Vision API quota exceeded`);
+    } else if (error?.code === 16) {
+      console.error(`❌ UNAUTHENTICATED: Invalid credentials or key file`);
+    }
+    
+    // Log full error details for debugging
+    if (error?.response) {
+      console.error(`API Response:`, JSON.stringify(error.response, null, 2));
+    }
+    if (error?.details) {
+      console.error(`Error details:`, JSON.stringify(error.details, null, 2));
+    }
+    console.error(`Full error object:`, JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
     console.log(`${"=".repeat(60)}\n`);
     return null;
   }
@@ -423,7 +457,6 @@ app.post("/verify/ic", upload.fields([{ name: "front", maxCount: 1 }, { name: "b
       // User already exists - update all fields
       console.log(`⚠️  User ${userId} already exists in users table, updating all user data`);
       
-      // Ensure email and phone_number are always stored when updating
       const updateData = {
         email: email.trim(),
         full_name: fullName.trim(),
@@ -431,15 +464,6 @@ app.post("/verify/ic", upload.fields([{ name: "front", maxCount: 1 }, { name: "b
         role: role.trim(),
         verification_status: userVerificationStatus,
       };
-
-      // Validate that email and phone_number are present before update
-      if (!updateData.email || !updateData.phone_number) {
-        console.error(`\n❌ CRITICAL: Missing required fields for user update`);
-        console.error(`Email: ${updateData.email || "MISSING"}`);
-        console.error(`Phone Number: ${updateData.phone_number || "MISSING"}`);
-        console.log(`${"=".repeat(60)}\n`);
-        throw new Error("Email and phone number are required for user update");
-      }
       
       console.log(`📤 Attempting to update user data:`, JSON.stringify(updateData, null, 2));
       
@@ -489,7 +513,6 @@ app.post("/verify/ic", upload.fields([{ name: "front", maxCount: 1 }, { name: "b
       console.log(`Verification Status: ${userVerificationStatus}`);
       
       // Prepare user data for insertion
-      // Ensure email and phone_number are always stored
       const userData = {
         id: userId,
         email: email.trim(),
@@ -498,15 +521,6 @@ app.post("/verify/ic", upload.fields([{ name: "front", maxCount: 1 }, { name: "b
         role: role.trim(),
         verification_status: userVerificationStatus,
       };
-
-      // Validate that email and phone_number are present before insertion
-      if (!userData.email || !userData.phone_number) {
-        console.error(`\n❌ CRITICAL: Missing required fields for user creation`);
-        console.error(`Email: ${userData.email || "MISSING"}`);
-        console.error(`Phone Number: ${userData.phone_number || "MISSING"}`);
-        console.log(`${"=".repeat(60)}\n`);
-        throw new Error("Email and phone number are required for user creation");
-      }
 
       console.log(`📤 Attempting to insert user data:`, JSON.stringify(userData, null, 2));
 
