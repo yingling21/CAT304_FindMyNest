@@ -39,9 +39,8 @@ export async function createPayment(params: CreatePaymentParams): Promise<Paymen
       monthlyRent: data.monthly_rent,
       securityDeposit: data.security_deposit,
       utilitiesDeposit: data.utilities_deposit,
-      razorpayOrderId: data.razorpay_order_id,
-      razorpayPaymentId: data.razorpay_payment_id,
-      razorpaySignature: data.razorpay_signature,
+      stripePaymentIntentId: data.stripe_payment_intent_id,
+      stripeCustomerId: data.stripe_customer_id,
       paymentStatus: data.payment_status,
       paymentMethod: data.payment_method,
       paymentDate: data.payment_date,
@@ -58,8 +57,7 @@ export async function createPayment(params: CreatePaymentParams): Promise<Paymen
 export async function updatePaymentStatus(
   paymentId: string,
   status: 'success' | 'failed',
-  razorpayPaymentId?: string,
-  razorpaySignature?: string,
+  stripePaymentIntentId?: string,
   paymentMethod?: string
 ): Promise<void> {
   try {
@@ -68,11 +66,8 @@ export async function updatePaymentStatus(
       payment_date: status === 'success' ? new Date().toISOString() : undefined,
     };
 
-    if (razorpayPaymentId) {
-      updateData.razorpay_payment_id = razorpayPaymentId;
-    }
-    if (razorpaySignature) {
-      updateData.razorpay_signature = razorpaySignature;
+    if (stripePaymentIntentId) {
+      updateData.stripe_payment_intent_id = stripePaymentIntentId;
     }
     if (paymentMethod) {
       updateData.payment_method = paymentMethod;
@@ -111,9 +106,8 @@ export async function getPaymentsByRental(rentalId: string): Promise<Payment[]> 
       monthlyRent: payment.monthly_rent,
       securityDeposit: payment.security_deposit,
       utilitiesDeposit: payment.utilities_deposit,
-      razorpayOrderId: payment.razorpay_order_id,
-      razorpayPaymentId: payment.razorpay_payment_id,
-      razorpaySignature: payment.razorpay_signature,
+      stripePaymentIntentId: payment.stripe_payment_intent_id,
+      stripeCustomerId: payment.stripe_customer_id,
       paymentStatus: payment.payment_status,
       paymentMethod: payment.payment_method,
       paymentDate: payment.payment_date,
@@ -148,9 +142,8 @@ export async function getPaymentsByTenant(tenantId: string): Promise<Payment[]> 
       monthlyRent: payment.monthly_rent,
       securityDeposit: payment.security_deposit,
       utilitiesDeposit: payment.utilities_deposit,
-      razorpayOrderId: payment.razorpay_order_id,
-      razorpayPaymentId: payment.razorpay_payment_id,
-      razorpaySignature: payment.razorpay_signature,
+      stripePaymentIntentId: payment.stripe_payment_intent_id,
+      stripeCustomerId: payment.stripe_customer_id,
       paymentStatus: payment.payment_status,
       paymentMethod: payment.payment_method,
       paymentDate: payment.payment_date,
@@ -164,58 +157,62 @@ export async function getPaymentsByTenant(tenantId: string): Promise<Payment[]> 
   }
 }
 
-export async function createRazorpayOrder(amount: number, receipt: string): Promise<string> {
+export async function createStripePaymentIntent(
+  amount: number,
+  paymentId: string,
+  customerEmail?: string
+): Promise<{ clientSecret: string; paymentIntentId: string }> {
   try {
-    const response = await fetch(`${process.env.EXPO_PUBLIC_RORK_API_BASE_URL || ''}/api/razorpay/create-order`, {
+    const response = await fetch(`${process.env.EXPO_PUBLIC_RORK_API_BASE_URL || ''}/api/stripe/create-payment-intent`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         amount: Math.round(amount * 100),
-        currency: 'MYR',
-        receipt,
+        currency: 'myr',
+        metadata: {
+          paymentId,
+        },
+        receipt_email: customerEmail,
       }),
     });
 
     if (!response.ok) {
-      throw new Error('Failed to create Razorpay order');
+      throw new Error('Failed to create Stripe payment intent');
     }
 
     const data = await response.json();
-    return data.id;
+    return {
+      clientSecret: data.clientSecret,
+      paymentIntentId: data.paymentIntentId,
+    };
   } catch (error) {
-    console.error('Failed to create Razorpay order:', error);
+    console.error('Failed to create Stripe payment intent:', error);
     throw error;
   }
 }
 
-export async function verifyRazorpayPayment(
-  orderId: string,
-  paymentId: string,
-  signature: string
-): Promise<boolean> {
+export async function confirmStripePayment(paymentIntentId: string): Promise<boolean> {
   try {
-    const response = await fetch(`${process.env.EXPO_PUBLIC_RORK_API_BASE_URL || ''}/api/razorpay/verify-payment`, {
+    const response = await fetch(`${process.env.EXPO_PUBLIC_RORK_API_BASE_URL || ''}/api/stripe/confirm-payment`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        orderId,
-        paymentId,
-        signature,
+        paymentIntentId,
       }),
     });
 
     if (!response.ok) {
-      throw new Error('Payment verification failed');
+      throw new Error('Payment confirmation failed');
     }
 
     const data = await response.json();
-    return data.verified === true;
+    return data.success === true;
   } catch (error) {
-    console.error('Failed to verify payment:', error);
+    console.error('Failed to confirm payment:', error);
     return false;
   }
 }

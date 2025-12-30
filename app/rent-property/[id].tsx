@@ -31,7 +31,7 @@ export default function RentPropertyScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { createRental } = useRentals();
-  const { createPayment, initiateRazorpayPayment } = usePayments();
+  const { createPayment, initiateStripePayment } = usePayments();
 
   const [property, setProperty] = React.useState<Property | null>(null);
   const [isLoadingProperty, setIsLoadingProperty] = React.useState(true);
@@ -145,7 +145,7 @@ export default function RentPropertyScreen() {
         moveInDate
       );
 
-      await initiateRazorpayPayment(
+      await initiateStripePayment(
         payment.id,
         totalUpfront,
         `Initial payment for ${property.address.split(',')[0]} - First month rent + Security deposit${utilitiesDeposit > 0 ? ' + Utilities deposit' : ''}`

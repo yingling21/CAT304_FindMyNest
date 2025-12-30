@@ -7,15 +7,17 @@ import {
   getPaymentsByRental,
   createPayment as createPaymentAPI,
   updatePaymentStatus as updatePaymentStatusAPI,
-  createRazorpayOrder,
+  createStripePaymentIntent,
 } from "@/src/api/payments";
-import { Linking, Platform } from "react-native";
+import { Platform, Alert } from "react-native";
+import { useStripe } from '@stripe/stripe-react-native';
 
 export const [PaymentsProvider, usePayments] = createContextHook(() => {
   const auth = useAuth();
   const user = auth?.user ?? null;
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const stripe = Platform.OS !== 'web' ? useStripe() : null;
 
   useEffect(() => {
     loadPayments();
@@ -76,63 +78,66 @@ export const [PaymentsProvider, usePayments] = createContextHook(() => {
     }
   };
 
-  const initiateRazorpayPayment = async (
+  const initiateStripePayment = async (
     paymentId: string,
     amount: number,
     description: string
   ): Promise<void> => {
     try {
-      const orderId = await createRazorpayOrder(amount, paymentId);
-
-      const razorpayKey = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID;
-      if (!razorpayKey) {
-        throw new Error("Razorpay key not configured");
-      }
+      const { clientSecret } = await createStripePaymentIntent(
+        amount,
+        paymentId,
+        user?.email
+      );
 
       if (Platform.OS === 'web') {
-        const options = {
-          key: razorpayKey,
-          amount: Math.round(amount * 100),
-          currency: 'MYR',
-          name: 'Property Rental',
-          description,
-          order_id: orderId,
-          handler: async function (response: any) {
-            try {
-              await updatePaymentStatusAPI(
-                paymentId,
-                'success',
-                response.razorpay_payment_id,
-                response.razorpay_signature,
-                'razorpay'
-              );
-              await loadPayments();
-            } catch (error) {
-              console.error('Payment update failed:', error);
-            }
-          },
-          prefill: {
-            name: user?.fullName || '',
-            email: user?.email || '',
-            contact: user?.phoneNumber || '',
-          },
-          theme: {
-            color: '#6366F1',
-          },
-        };
+        const stripePublishableKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+        if (!stripePublishableKey) {
+          throw new Error("Stripe key not configured");
+        }
 
-        const rzp = new (window as any).Razorpay(options);
-        rzp.on('payment.failed', async function (response: any) {
-          await updatePaymentStatusAPI(paymentId, 'failed');
-          await loadPayments();
-        });
-        rzp.open();
+        const stripeCheckoutUrl = `${process.env.EXPO_PUBLIC_RORK_API_BASE_URL || ''}/api/stripe/checkout?clientSecret=${clientSecret}&paymentId=${paymentId}`;
+        
+        const width = 600;
+        const height = 700;
+        const left = window.screen.width / 2 - width / 2;
+        const top = window.screen.height / 2 - height / 2;
+        
+        const popup = window.open(
+          stripeCheckoutUrl,
+          'stripe-checkout',
+          `width=${width},height=${height},left=${left},top=${top}`
+        );
+
+        const checkPaymentStatus = setInterval(async () => {
+          if (popup?.closed) {
+            clearInterval(checkPaymentStatus);
+            await loadPayments();
+          }
+        }, 1000);
       } else {
-        const paymentUrl = `https://api.razorpay.com/v1/checkout/embedded?key_id=${razorpayKey}&order_id=${orderId}&amount=${Math.round(amount * 100)}&currency=MYR&name=Property%20Rental&description=${encodeURIComponent(description)}`;
+        if (!stripe) {
+          throw new Error('Stripe not initialized');
+        }
+
+        const { error, paymentIntent } = await stripe.confirmPayment(clientSecret, {
+          paymentMethodType: 'Card',
+        });
+
+        if (error) {
+          console.error('Payment failed:', error);
+          await updatePaymentStatusAPI(paymentId, 'failed');
+          Alert.alert('Payment Failed', error.message);
+        } else if (paymentIntent) {
+          await updatePaymentStatusAPI(
+            paymentId,
+            'success',
+            paymentIntent.id,
+            'card'
+          );
+          Alert.alert('Success', 'Payment completed successfully!');
+        }
         
-        await Linking.openURL(paymentUrl);
-        
-        await new Promise(resolve => setTimeout(resolve, 2000));
         await loadPayments();
       }
     } catch (error) {
@@ -144,16 +149,14 @@ export const [PaymentsProvider, usePayments] = createContextHook(() => {
   const updatePaymentStatus = async (
     paymentId: string,
     status: 'success' | 'failed',
-    razorpayPaymentId?: string,
-    razorpaySignature?: string,
+    stripePaymentIntentId?: string,
     paymentMethod?: string
   ): Promise<void> => {
     try {
       await updatePaymentStatusAPI(
         paymentId,
         status,
-        razorpayPaymentId,
-        razorpaySignature,
+        stripePaymentIntentId,
         paymentMethod
       );
 
@@ -163,8 +166,7 @@ export const [PaymentsProvider, usePayments] = createContextHook(() => {
               ...payment, 
               paymentStatus: status,
               paymentDate: status === 'success' ? new Date().toISOString() : payment.paymentDate,
-              razorpayPaymentId,
-              razorpaySignature,
+              stripePaymentIntentId,
               paymentMethod,
             }
           : payment
@@ -205,7 +207,7 @@ export const [PaymentsProvider, usePayments] = createContextHook(() => {
     payments,
     isLoading,
     createPayment,
-    initiateRazorpayPayment,
+    initiateStripePayment,
     updatePaymentStatus,
     getPaymentsByRentalId,
     getNextPaymentDueDate,

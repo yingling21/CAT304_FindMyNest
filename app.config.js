@@ -2,8 +2,8 @@ import 'dotenv/config';
 
 export default {
   expo: {
-    name: "House Rent App",
-    slug: "house-rent-app-qxhb4lq",
+    name: "Find My Nest",
+    slug: "Find My Nest",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
@@ -19,13 +19,11 @@ export default {
 
     ios: {
       supportsTablet: false,
-      bundleIdentifier: "app.rork.house-rent-app-qxhb4lq",
+      bundleIdentifier: "app.rork.house-rent-app-clone",
       usesIcloudStorage: true,
       infoPlist: {
-        NSLocationWhenInUseUsageDescription: "Allow location access for maps"
-      },
-      config: {
-        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
+        CFBundleAllowMixedLocalizations: true,
+        CFBundleLocalizations: ["fr"]
       }
     },
 
@@ -34,31 +32,36 @@ export default {
         foregroundImage: "./assets/images/adaptive-icon.png",
         backgroundColor: "#ffffff"
       },
-      package: "app.rork.house_rent_app_qxhb4lq",
-      permissions: ["ACCESS_FINE_LOCATION"]
+      package: "app.rork.house_rent_app_clone",
+      permissions: [
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM"
+      ]
     },
 
     web: {
       favicon: "./assets/images/favicon.png"
     },
 
-    extra: {
-      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
-    },
-
     plugins: [
       [
         "expo-router",
-        {
-          origin: "https://rork.com/"
-        }
+        { origin: "https://rork.com/" }
       ],
       "expo-font",
       "expo-web-browser",
       [
         "expo-document-picker",
+        { iCloudContainerEnvironment: "Production" }
+      ],
+      [
+        "expo-notifications",
         {
-          iCloudContainerEnvironment: "Production"
+          icon: "./local/assets/notification_icon.png",
+          color: "#ffffff",
+          defaultChannel: "default",
+          sounds: ["./local/assets/notification_sound.wav"],
+          enableBackgroundRemoteNotifications: false
         }
       ]
     ],

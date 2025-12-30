@@ -19,7 +19,7 @@ export default function MyRentalsScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { getTenantRentals, stopRental } = useRentals();
-  const { createPayment, initiateRazorpayPayment } = usePayments();
+  const { createPayment, initiateStripePayment } = usePayments();
   const [stoppingRentalId, setStoppingRentalId] = useState<string | null>(null);
   const [payingRentalId, setPayingRentalId] = useState<string | null>(null);
 
@@ -88,7 +88,7 @@ export default function MyRentalsScreen() {
                 nextDueDate.toISOString()
               );
 
-              await initiateRazorpayPayment(
+              await initiateStripePayment(
                 payment.id,
                 rental.monthlyRent,
                 `Monthly rent for ${rental.propertyAddress.split(',')[0]}`

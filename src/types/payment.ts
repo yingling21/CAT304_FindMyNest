@@ -16,9 +16,8 @@ export interface Payment {
   securityDeposit: number;
   utilitiesDeposit: number;
   
-  razorpayOrderId?: string;
-  razorpayPaymentId?: string;
-  razorpaySignature?: string;
+  stripePaymentIntentId?: string;
+  stripeCustomerId?: string;
   
   paymentStatus: PaymentStatus;
   paymentMethod?: string;
