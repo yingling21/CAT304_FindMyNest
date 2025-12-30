@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { Property, PropertyInput, PropertyInsert } from '@/src/types/property';
+import type { Property, PropertyInput, roomType, PropertyInsert } from '@/src/types/property';
 import { normalizeProperty, normalizeProperties } from '@/src/utils/normalizeProperty';
 
 async function enrichPropertiesWithData(properties: any[]): Promise<any[]> {
@@ -148,6 +148,7 @@ export async function createProperty(propertyData: Partial<PropertyInput>): Prom
     .insert({
       landlord_id: propertyData.landlord_id,
       propertyType: propertyData.propertyType,
+      title: propertyData.title,
       description: propertyData.description,
       latitude: propertyData.latitude,
       longitude: propertyData.longitude,
@@ -155,6 +156,8 @@ export async function createProperty(propertyData: Partial<PropertyInput>): Prom
       size: propertyData.size,
       bedrooms: propertyData.bedrooms,
       bathrooms: propertyData.bathrooms,
+      room_type: propertyData.roomType, // ADD THIS
+      floorLevel: propertyData.floorLevel, // ADD THIS
       furnishingLevel: propertyData.furnishingLevel,
       monthlyRent: propertyData.monthlyRent,
       securityDeposit: propertyData.securityDeposit,
@@ -194,11 +197,14 @@ export async function updateProperty(id: string, propertyData: Partial<Property>
     .from('property')
     .update({
       propertyType: propertyData.propertyType,
+      title: propertyData.title,
       description: propertyData.description,
       address: propertyData.address,
       size: propertyData.size,
       bedrooms: propertyData.bedrooms,
       bathrooms: propertyData.bathrooms,
+      room_type: propertyData.roomType,
+      floorLevel: propertyData.floorLevel, 
       furnishingLevel: propertyData.furnishingLevel,
       monthlyRent: propertyData.monthlyRent,
       securityDeposit: propertyData.securityDeposit,

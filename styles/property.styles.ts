@@ -486,4 +486,271 @@ export const styles = StyleSheet.create({
     fontWeight: "600" as const,
     color: "#FFFFFF",
   },
+  // Deposit Cards
+  depositsContainer: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 16,
+    justifyContent: "space-between",
+  },
+  depositCard: {
+    flex: 1,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    alignItems: "center",
+  },
+  depositIcon: {
+    marginBottom: 8,
+  },
+  depositLabel: {
+    fontSize: 11,
+    color: "#6B7280",
+    marginTop: 8,
+    fontWeight: "500" as const,
+  },
+  depositValue: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: "#1F2937",
+    marginTop: 4,
+  },
+
+  // Property Details - Date & Period
+  detailsInfoRow: {
+    flexDirection: "row",
+    gap: 16,
+    marginTop: 16,
+  },
+  detailsInfoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  detailsInfoContent: {
+    flex: 1,
+  },
+  detailsInfoLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  detailsInfoValue: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "#1F2937",
+  },
+  // Utilities Info
+  utilitiesItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  utilitiesText: {
+    fontSize: 14,
+    color: "#1F2937",
+  },
+
+  // House Rules
+  houseRulesContainer: {
+    gap: 10,
+  },
+  houseRuleCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  houseRuleCardAllowed: {
+    borderColor: "#D1FAE5",
+  },
+  houseRuleCardNotAllowed: {
+    borderColor: "#FEE2E2",
+  },
+  houseRuleIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#EEF2FF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  houseRuleIconContainerAllowed: {
+    backgroundColor: "#D1FAE5",
+  },
+  houseRuleIconContainerNotAllowed: {
+    backgroundColor: "#FEE2E2",
+  },
+  houseRuleContent: {
+    flex: 1,
+  },
+  houseRuleLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginBottom: 2,
+  },
+  houseRuleValue: {
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: "#1F2937",
+  },
+  houseRuleValueAllowed: {
+    color: "#10B981",
+  },
+  houseRuleValueNotAllowed: {
+    color: "#EF4444",
+  },
+  houseRuleCardMultiline: {
+    alignItems: "flex-start",
+  },
+  houseRuleIconContainerMultiline: {
+    marginTop: 2,
+  },
+
+  // Landlord Info
+  landlordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  landlordPhotoPlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#E5E7EB",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  landlordPhotoPlaceholderText: {
+    fontSize: 20,
+    fontWeight: "600" as const,
+    color: "#6B7280",
+  },
+  landlordInfoContainer: {
+    flex: 1,
+  },
+  landlordStatus: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+
+  // Reviews Summary
+  reviewsSummaryContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  reviewsRating: {
+    fontSize: 32,
+    fontWeight: "700" as const,
+    color: "#1F2937",
+  },
+  reviewsInfo: {
+    flex: 1,
+  },
+  reviewsCount: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  reviewsStars: {
+    flexDirection: "row",
+    gap: 2,
+    marginTop: 4,
+  },
+  reviewsStar: {
+    fontSize: 16,
+  },
+
+  // Nearby Counts
+  nearbyCountsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 16,
+  },
+  nearbyCountCard: {
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: "#EEF2FF",
+    borderWidth: 1,
+    borderColor: "#C7D2FE",
+    minWidth: 60,
+  },
+  nearbyCountType: {
+    fontSize: 10,
+    fontWeight: "600" as const,
+    color: "#3730A3",
+    marginBottom: 2,
+  },
+  nearbyCountValue: {
+    fontSize: 14,
+    fontWeight: "700" as const,
+    color: "#1E40AF",
+  },
+
+  // Worthiness Card
+  worthinessCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+    marginBottom: 24,
+  },
+  worthinessTitle: {
+    fontSize: 20,
+    fontWeight: "bold" as const,
+    marginBottom: 8,
+  },
+  worthinessScore: {
+    fontSize: 18,
+    fontWeight: "600" as const,
+    color: "#4caf50",
+  },
+  worthinessCategoryContainer: {
+    marginTop: 16,
+  },
+  worthinessCategoryItem: {
+    marginBottom: 12,
+  },
+  worthinessCategoryLabel: {
+    textTransform: "capitalize" as const,
+    fontWeight: "600" as const,
+    marginBottom: 4,
+  },
+  worthinessProgressBar: {
+    height: 8,
+    backgroundColor: "#eee",
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  worthinessProgressFill: {
+    height: "100%",
+    backgroundColor: "#6366F1",
+    borderRadius: 4,
+  },
+
+  // Map
+  mapView: {
+    width: "100%",
+    height: 400,
+    marginTop: 16,
+  },
+
+  // Spacer
+  contentSpacer: {
+    height: 120,
+  },
 });

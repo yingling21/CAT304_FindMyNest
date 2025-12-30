@@ -20,6 +20,8 @@ export type ListingFormData = {
   moveInDate: string;
 
   bedType: string;
+  roomType: string; // for "room" propertyType
+  cooking: string; // "allowed" | "light_cooking" | "no_cooking"
   deskAndChair: boolean;
   wardrobe: boolean;
   airConditioning: boolean;
@@ -70,6 +72,8 @@ const initialFormData: ListingFormData = {
   moveInDate: "",
 
   bedType: "",
+  roomType: "",
+  cooking: "",
   deskAndChair: false,
   wardrobe: false,
   airConditioning: false,
@@ -202,11 +206,16 @@ export const [ListingProvider, useListing] = createContextHook(() => {
   const saveListing = async (landlordId: string) => {
     try {
       const amenities = {
-        bedType: formData.bedType,
+        // In-room amenities (only for room/studio)
+        ...(formData.propertyType === "room" || formData.propertyType === "studio" 
+          ? { bedType: formData.bedType || null } 
+          : {}),
         deskAndChair: formData.deskAndChair,
         wardrobe: formData.wardrobe,
         airConditioning: formData.airConditioning,
         waterHeater: formData.waterHeater,
+        
+        // Shared facilities
         wifi: formData.wifi,
         kitchenAccess: formData.kitchenAccess,
         washingMachine: formData.washingMachine,
@@ -214,16 +223,24 @@ export const [ListingProvider, useListing] = createContextHook(() => {
         parking: formData.parking,
         security: formData.security,
         balcony: formData.balcony,
+        
+        // Utilities (moved from Case 4)
+        utilitiesIncluded: formData.utilitiesIncluded,
+        estimatedMonthlyUtilities: formData.estimatedMonthlyUtilities 
+          ? parseFloat(formData.estimatedMonthlyUtilities) 
+          : null,
+        internetSpeed: formData.internetSpeed || null,
       };
-
+  
       const houseRules = {
+        cooking: formData.cooking || "allowed", // ADD THIS
         guestsAllowed: formData.guestsAllowed,
         smokingAllowed: formData.smokingAllowed,
         petsAllowed: formData.petsAllowed,
-        quietHours: formData.quietHours,
-        cleaningRules: formData.cleaningRules,
+        quietHours: formData.quietHours || null,
+        cleaningRules: formData.cleaningRules || null,
       };
-
+  
       const { data, error } = await supabase
         .from("property")
         .insert({
@@ -231,9 +248,15 @@ export const [ListingProvider, useListing] = createContextHook(() => {
           title: formData.title,
           description: formData.description,
           propertyType: formData.propertyType,
+          room_type: formData.propertyType === "room" ? formData.roomType : null, // ADD THIS
           size: parseInt(formData.size) || 0,
           bedrooms: parseInt(formData.bedrooms) || 0,
           bathrooms: parseInt(formData.bathrooms) || 0,
+          floorLevel: (formData.propertyType === "apartment" || 
+                        formData.propertyType === "studio" || 
+                        formData.propertyType === "room") 
+            ? parseInt(formData.floorLevel) || null 
+            : null, // ADD THIS
           furnishingLevel: formData.furnishingLevel,
           monthlyRent: parseFloat(formData.monthlyRent) || 0,
           securityDeposit: parseFloat(formData.securityDeposit) || 0,
@@ -245,7 +268,7 @@ export const [ListingProvider, useListing] = createContextHook(() => {
           address: formData.address,
           latitude: formData.latitude ?? null,
           longitude: formData.longitude ?? null,
-          rentalStatus: true,
+          rentalStatus: false,
         })
         .select()
         .single();
@@ -308,6 +331,123 @@ export const [ListingProvider, useListing] = createContextHook(() => {
     }
   };
 
+  const deleteListing = async (listingId: string) => {
+    try {
+      const { error } = await supabase
+        .from("property")
+        .delete()
+        .eq("property_id", listingId);
+      
+      if (error) throw error;
+  
+      // Remove from local state
+      setListings(prev => prev.filter(listing => listing.id !== listingId));
+    } catch (err) {
+      console.error("Failed to delete listing:", err);
+      throw err;
+    }
+  };
+
+  const updateListing = async (listingId: string, landlordId: string) => {
+    try {
+      const amenities = {
+        ...(formData.propertyType === "room" || formData.propertyType === "studio" 
+          ? { bedType: formData.bedType || null } 
+          : {}),
+        deskAndChair: formData.deskAndChair,
+        wardrobe: formData.wardrobe,
+        airConditioning: formData.airConditioning,
+        waterHeater: formData.waterHeater,
+        wifi: formData.wifi,
+        kitchenAccess: formData.kitchenAccess,
+        washingMachine: formData.washingMachine,
+        refrigerator: formData.refrigerator,
+        parking: formData.parking,
+        security: formData.security,
+        balcony: formData.balcony,
+        utilitiesIncluded: formData.utilitiesIncluded,
+        estimatedMonthlyUtilities: formData.estimatedMonthlyUtilities 
+          ? parseFloat(formData.estimatedMonthlyUtilities) 
+          : null,
+        internetSpeed: formData.internetSpeed || null,
+      };
+  
+      const houseRules = {
+        cooking: formData.cooking || "allowed",
+        guestsAllowed: formData.guestsAllowed,
+        smokingAllowed: formData.smokingAllowed,
+        petsAllowed: formData.petsAllowed,
+        quietHours: formData.quietHours || null,
+        cleaningRules: formData.cleaningRules || null,
+      };
+  
+      // Build update object conditionally
+      const updateData: any = {
+        title: formData.title,
+        description: formData.description,
+        propertyType: formData.propertyType,
+        room_type: formData.propertyType === "room" ? formData.roomType : null,
+        size: parseInt(formData.size) || 0,
+        bedrooms: parseInt(formData.bedrooms) || 0,
+        bathrooms: parseInt(formData.bathrooms) || 0,
+        furnishingLevel: formData.furnishingLevel,
+        monthlyRent: parseFloat(formData.monthlyRent) || 0,
+        securityDeposit: parseFloat(formData.securityDeposit) || 0,
+        utilitiesDeposit: parseFloat(formData.utilitiesDeposit) || 0,
+        minimumRentalPeriod: parseInt(formData.minimumRentalPeriod) || 6,
+        moveInDate: formData.moveInDate || new Date().toISOString().split("T")[0],
+        amenities,
+        houseRules,
+        address: formData.address,
+        latitude: formData.latitude ?? null,
+        longitude: formData.longitude ?? null,
+        // Keep existing rentalStatus - don't change it on update
+      };
+  
+      // Only include floor_level if the column exists and value is provided
+      // Check if formData has floorLevel and it's not empty
+      if (formData.floorLevel && formData.floorLevel.trim() !== "") {
+        const floorLevelValue = parseInt(formData.floorLevel);
+        if (!isNaN(floorLevelValue)) {
+          updateData.floorLevel = floorLevelValue;
+        }
+      }
+  
+      const { data, error } = await supabase
+        .from("property")
+        .update(updateData)
+        .eq("property_id", listingId)
+        .select()
+        .single();
+  
+      if (error) throw error;
+  
+      // Update photos if changed
+      if (formData.photos?.length > 0) {
+        // Delete old photos
+        await supabase
+          .from("property_Photo")
+          .delete()
+          .eq("property_id", listingId);
+  
+        // Insert new photos
+        const photoInserts = formData.photos.map((photo, index) => ({
+          property_id: listingId,
+          photo_url: photo,
+          is_cover: index === 0,
+        }));
+        const { error: photoError } = await supabase.from("property_Photo").insert(photoInserts);
+        if (photoError) console.error("Failed to update photos:", photoError);
+      }
+  
+      // Reload listings
+      await loadListings();
+    } catch (err) {
+      console.error("Failed to update listing:", err);
+      throw err;
+    }
+  };
+
   return {
     formData,
     currentStep,
@@ -320,5 +460,7 @@ export const [ListingProvider, useListing] = createContextHook(() => {
     saveListing,
     getListingsByLandlord,
     updateListingStatus,
+    deleteListing,
+    updateListing,
   };
 });

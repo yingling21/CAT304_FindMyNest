@@ -25,7 +25,7 @@ export default {
         NSLocationWhenInUseUsageDescription: "Allow location access for maps"
       },
       config: {
-        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
       }
     },
 
@@ -43,7 +43,7 @@ export default {
     },
 
     extra: {
-      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
+      googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
     },
 
     plugins: [

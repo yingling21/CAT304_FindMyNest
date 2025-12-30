@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { ScrollView, Text, View, Pressable, Alert, Button } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import MapComponent, { ExtraMarker } from "@/components/maps/MapComponent";
+import MapComponent from "@/components/maps/MapComponent";
 import NearbyPlaces from "@/components/maps/NearbyPlaces";
 import { NearbyPlace, NearbyCounts, PlaceCategory } from "@/src/types/nearby";
 import { styles } from "@/styles/property.styles";
@@ -30,6 +30,14 @@ import {
   Shield,
   CheckCircle2,
   MessageCircle,
+  Calendar,
+  DollarSign,
+  Ban,
+  Dog,
+  Sparkles,
+  Volume2,
+  Users,
+  Clock,
 } from "lucide-react-native";
 import { calculateWorthiness, type WorthinessResult } 
   from "@/src/utils/worthinessCalculator";
@@ -57,15 +65,15 @@ export default function PropertyDetailScreen() {
     environment: 0,
     education: 0,
   });
-  // const CATEGORY_COLORS: Record<string, string> = {
-  //   transport: "#6366F1",  // blue
-  //   food: "#F59E0B",       // yellow
-  //   shopping: "#10B981",   // green
-  //   facility: "#EF4444",   // red
-  //   environment: "#22D3EE", // teal
-  //   education: "#A78BFA",   // purple
-  //   other: "#9CA3AF",       // gray
-  // };
+  const CATEGORY_COLORS: Record<string, string> = {
+    transport: "#6366F1",  // blue
+    food: "#F59E0B",       // yellow
+    shopping: "#10B981",   // green
+    facility: "#EF4444",   // red
+    environment: "#22D3EE", // teal
+    education: "#A78BFA",   // purple
+    other: "#9CA3AF",       // gray
+  };
 
   const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.googleMapsApiKey;
 
@@ -261,19 +269,31 @@ export default function PropertyDetailScreen() {
                   {property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)}
                 </Text>
               </View>
+              {property.roomType && (
+                <View style={styles.typeBadge}>
+                  <Text style={styles.typeBadgeText}>
+                    {property.roomType === "master_room" ? "Master Room" : 
+                     property.roomType === "single_room" ? "Single Room" : 
+                     "Shared Room"}
+                  </Text>
+                </View>
+              )}
               {property.rentalStatus && (
                 <View style={styles.availableBadge}>
                   <Text style={styles.availableBadgeText}>Available Now</Text>
                 </View>
               )}
             </View>
-            <Text style={styles.title}>
-              {`${property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)} at ${property.address.split(',')[0]}`}
-            </Text>
+            <Text style={styles.title}>{property.title}</Text>
             <View style={styles.locationRow}>
               <MapPin size={18} color="#6B7280" />
               <Text style={styles.address}>{property.address}</Text>
             </View>
+            {property.floorLevel && (
+              <Text style={[styles.address, { marginTop: 4 }]}>
+                Floor: {property.floorLevel}
+              </Text>
+            )}
           </View>
 
           {/* Price */}
@@ -281,6 +301,22 @@ export default function PropertyDetailScreen() {
             <View style={styles.priceRow}>
               <Text style={styles.price}>RM {property.monthlyRent}</Text>
               <Text style={styles.priceLabel}>/month</Text>
+            </View>
+            <View style={styles.depositsContainer}>
+              <View style={styles.depositCard}>
+                <DollarSign size={20} color="#6366F1" />
+                <Text style={styles.depositLabel}>Security Deposit</Text>
+                <Text style={styles.depositValue}>
+                  RM {property.securityDeposit.toLocaleString()}
+                </Text>
+              </View>
+              <View style={styles.depositCard}>
+                <DollarSign size={20} color="#6366F1" />
+                <Text style={styles.depositLabel}>Utilities Deposit</Text>
+                <Text style={styles.depositValue}>
+                  RM {property.utilitiesDeposit.toLocaleString()}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -305,13 +341,68 @@ export default function PropertyDetailScreen() {
                 <Text style={styles.detailLabel}>Size</Text>
                 <Text style={styles.detailValue}>{property.size} sqft</Text>
               </View>
-              <View style={styles.detailItem}>
+              <View style={[styles.detailItem, { alignItems: "center" }]}>
                 <Armchair size={20} color="#6366F1" />
-                <Text style={styles.detailLabel}>Furnishing</Text>
-                <Text style={styles.detailValue}>{formatFurnishing(property.furnishingLevel)}</Text>
+                <Text style={[styles.detailLabel, { textAlign: "center" }]}>Furnishing</Text>
+                <Text style={[styles.detailValue, { textAlign: "center" }]}>
+                  {formatFurnishing(property.furnishingLevel)}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.detailsInfoRow}>
+              <View style={styles.detailsInfoItem}>
+                <Calendar size={18} color="#6366F1" />
+                <View style={styles.detailsInfoContent}>
+                  <Text style={styles.detailsInfoLabel}>Move-in Date</Text>
+                  <Text style={styles.detailsInfoValue}>
+                    {new Date(property.moveInDate).toLocaleDateString()}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.detailsInfoItem}>
+                <Clock size={18} color="#6366F1" />
+                <View style={styles.detailsInfoContent}>
+                  <Text style={styles.detailsInfoLabel}>Min. Period</Text>
+                  <Text style={styles.detailsInfoValue}>
+                    {property.minimumRentalPeriod} months
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
+
+          <View style={styles.divider} />
+
+          {/* Utilities Information */}
+          {(property.amenities?.utilitiesIncluded !== undefined || 
+            property.amenities?.estimatedMonthlyUtilities || 
+            property.amenities?.internetSpeed) && (
+            <>
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Utilities & Internet</Text>
+                <View style={styles.utilitiesContainer}>
+                  <View style={styles.utilitiesItem}>
+                    <DollarSign size={18} color="#6366F1" />
+                    <Text style={styles.utilitiesText}>
+                      Utilities: {property.amenities?.utilitiesIncluded 
+                        ? "Included in rent" 
+                        : property.amenities?.estimatedMonthlyUtilities 
+                          ? `RM ${property.amenities.estimatedMonthlyUtilities}/month (estimated)`
+                          : "Not included"}
+                    </Text>
+                  </View>
+                  {property.amenities?.internetSpeed && (
+                    <View style={styles.utilitiesItem}>
+                      <Wifi size={18} color="#6366F1" />
+                      <Text style={styles.utilitiesText}>
+                        Internet: {property.amenities.internetSpeed}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </>
+          )}
 
           <View style={styles.divider} />
 
@@ -394,6 +485,127 @@ export default function PropertyDetailScreen() {
             </View>
           </View>
 
+          {/* House Rules */}
+          {property.houseRules && (
+            <>
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>House Rules</Text>
+                <View style={styles.houseRulesContainer}>
+                  {/* Cooking Policy */}
+                  <View style={styles.houseRuleCard}>
+                    <View style={styles.houseRuleIconContainer}>
+                      <Utensils size={20} color="#6366F1" />
+                    </View>
+                    <View style={styles.houseRuleContent}>
+                      <Text style={styles.houseRuleLabel}>Cooking Policy</Text>
+                      <Text style={styles.houseRuleValue}>
+                        {property.houseRules.cooking === "allowed" ? "Allowed" :
+                        property.houseRules.cooking === "light_cooking" ? "Light Cooking Only" :
+                        "No Cooking"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Guests */}
+                  <View style={[
+                    styles.houseRuleCard,
+                    property.houseRules.guestsAllowed ? styles.houseRuleCardAllowed : styles.houseRuleCardNotAllowed
+                  ]}>
+                    <View style={[
+                      styles.houseRuleIconContainer,
+                      property.houseRules.guestsAllowed ? styles.houseRuleIconContainerAllowed : styles.houseRuleIconContainerNotAllowed
+                    ]}>
+                      <Users size={20} color={property.houseRules.guestsAllowed ? "#10B981" : "#EF4444"} />
+                    </View>
+                    <View style={styles.houseRuleContent}>
+                      <Text style={styles.houseRuleLabel}>Guests</Text>
+                      <Text style={[
+                        styles.houseRuleValue,
+                        property.houseRules.guestsAllowed ? styles.houseRuleValueAllowed : styles.houseRuleValueNotAllowed
+                      ]}>
+                        {property.houseRules.guestsAllowed ? "Allowed" : "Not Allowed"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Smoking */}
+                  <View style={[
+                    styles.houseRuleCard,
+                    property.houseRules.smokingAllowed ? styles.houseRuleCardAllowed : styles.houseRuleCardNotAllowed
+                  ]}>
+                    <View style={[
+                      styles.houseRuleIconContainer,
+                      property.houseRules.smokingAllowed ? styles.houseRuleIconContainerAllowed : styles.houseRuleIconContainerNotAllowed
+                    ]}>
+                      <Ban size={20} color={property.houseRules.smokingAllowed ? "#10B981" : "#EF4444"} />
+                    </View>
+                    <View style={styles.houseRuleContent}>
+                      <Text style={styles.houseRuleLabel}>Smoking</Text>
+                      <Text style={[
+                        styles.houseRuleValue,
+                        property.houseRules.smokingAllowed ? styles.houseRuleValueAllowed : styles.houseRuleValueNotAllowed
+                      ]}>
+                        {property.houseRules.smokingAllowed ? "Allowed" : "Not Allowed"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Pets */}
+                  <View style={[
+                    styles.houseRuleCard,
+                    property.houseRules.petsAllowed ? styles.houseRuleCardAllowed : styles.houseRuleCardNotAllowed
+                  ]}>
+                    <View style={[
+                      styles.houseRuleIconContainer,
+                      property.houseRules.petsAllowed ? styles.houseRuleIconContainerAllowed : styles.houseRuleIconContainerNotAllowed
+                    ]}>
+                      <Dog size={20} color={property.houseRules.petsAllowed ? "#10B981" : "#EF4444"} />
+                    </View>
+                    <View style={styles.houseRuleContent}>
+                      <Text style={styles.houseRuleLabel}>Pets</Text>
+                      <Text style={[
+                        styles.houseRuleValue,
+                        property.houseRules.petsAllowed ? styles.houseRuleValueAllowed : styles.houseRuleValueNotAllowed
+                      ]}>
+                        {property.houseRules.petsAllowed ? "Allowed" : "Not Allowed"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Quiet Hours */}
+                  {property.houseRules.quietHours && (
+                    <View style={styles.houseRuleCard}>
+                      <View style={styles.houseRuleIconContainer}>
+                        <Volume2 size={20} color="#6366F1" />
+                      </View>
+                      <View style={styles.houseRuleContent}>
+                        <Text style={styles.houseRuleLabel}>Quiet Hours</Text>
+                        <Text style={styles.houseRuleValue}>
+                          {property.houseRules.quietHours}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Cleaning Rules */}
+                  {property.houseRules.cleaningRules && (
+                    <View style={[styles.houseRuleCard, styles.houseRuleCardMultiline]}>
+                      <View style={[styles.houseRuleIconContainer, styles.houseRuleIconContainerMultiline]}>
+                        <Sparkles size={20} color="#6366F1" />
+                      </View>
+                      <View style={styles.houseRuleContent}>
+                        <Text style={styles.houseRuleLabel}>Cleaning Rules</Text>
+                        <Text style={[styles.houseRuleValue, { lineHeight: 20 }]}>
+                          {property.houseRules.cleaningRules}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </>
+          )}
+
           <View style={styles.divider} />
 
           {/* Nearby Places */}
@@ -417,23 +629,9 @@ export default function PropertyDetailScreen() {
             }}
           />
 
-          <MapComponent
-            initialPosition={{ lat: property.latitude, lng: property.longitude }}
-            extraMarkers={nearbyResults
-              .filter(p => ["transport","food","shopping","facility","environment","education"].includes(p.category))
-              .map(p => ({
-                id: p.id,
-                name: p.name,
-                lat: p.lat,
-                lng: p.lng,
-                category: p.category as PlaceCategory, // assert type
-              }))
-            }
-          />
-
-            {/* Show Nearby Places with difference category color  */}
-          {/* <MapView
-            style={{ flex: 1 }}
+          Show Nearby Places with difference category color 
+          <MapView
+            style={styles.mapView}
             initialRegion={{
               latitude: property.latitude,
               longitude: property.longitude,
@@ -441,16 +639,17 @@ export default function PropertyDetailScreen() {
               longitudeDelta: 0.02,
             }}
           >
-            {/* Property location */}
-            {/* <Marker
-              coordinate={{ latitude: property.latitude, longitude: property.longitude }}
-              title={property.title}
-              description="Property Location"
-              pinColor="#6366F1" // main property color
-            />
+
+          {/* Property location */}
+          <Marker
+            coordinate={{ latitude: property.latitude, longitude: property.longitude }}
+            title={property.title}
+            description="Property Location"
+            pinColor="#6366F1" 
+          />
 
             {/* Nearby places */}
-            {/* {nearbyResults.map((place) => (
+            {nearbyResults.map((place) => (
               <Marker
                 key={place.id}
                 coordinate={{ latitude: place.lat, longitude: place.lng }}
@@ -459,82 +658,44 @@ export default function PropertyDetailScreen() {
                 pinColor={CATEGORY_COLORS[place.category]} // color by category
               />
             ))}
-          </MapView> */}
+          </MapView>
 
           {/* Nearby Counts */}
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
+          <View style={styles.nearbyCountsContainer}>
             {nearbyCounts &&
               Object.entries(nearbyCounts).map(([type, count]) => (
-                <View
-                  key={type}
-                  style={{
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                    borderRadius: 16,
-                    backgroundColor: "#EEF2FF",
-                    borderWidth: 1,
-                    borderColor: "#C7D2FE",
-                    minWidth: 60,
-                  }}
-                >
-                  <Text style={{ fontSize: 10, fontWeight: "600", color: "#3730A3", marginBottom: 2 }}>
+                <View key={type} style={styles.nearbyCountCard}>
+                  <Text style={styles.nearbyCountType}>
                     {type.toUpperCase()}
                   </Text>
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#1E40AF" }}>
+                  <Text style={styles.nearbyCountValue}>
                     {count}
                   </Text>
                 </View>
               ))}
           </View>
-          
-          <View style={styles.divider} />
-
+        
           {/* Worthiness Card */}
-          <View style={{
-            backgroundColor: "#fff",
-            borderRadius: 12,
-            padding: 16,
-            shadowColor: "#000",
-            shadowOpacity: 0.1,
-            shadowRadius: 10,
-            elevation: 5,
-            marginBottom: 24,
-          }}>
-            <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 8 }}>
-              House Worthiness
-            </Text>
-            <Text style={{ fontSize: 18, fontWeight: "600", color: "#4caf50" }}>
+          <View style={styles.worthinessCard}>
+            <Text style={styles.worthinessTitle}>House Worthiness</Text>
+            <Text style={styles.worthinessScore}>
               {totalScore.toFixed(1)} / 100
             </Text>
 
-          {/* Category Scores */}
-          {categoryScores && (
-            <View style={{ marginTop: 16 }}>
-              {Object.entries(categoryScores).map(([category, score]) => (
-                <View key={category} style={{ marginBottom: 12 }}>
-                  <Text style={{ textTransform: "capitalize", fontWeight: "600", marginBottom: 4 }}>
-                    {category}: {score.toFixed(1)}
-                  </Text>
-                  <View style={{
-                    height: 8,
-                    backgroundColor: "#eee",
-                    borderRadius: 4,
-                    overflow: "hidden"
-                  }}>
-                    <View style={{
-                      width: `${score}%`,
-                      height: "100%",
-                      backgroundColor: "#6366F1", // same color as footer buttons
-                      borderRadius: 4,
-                    }} />
+            {categoryScores && (
+              <View style={styles.worthinessCategoryContainer}>
+                {Object.entries(categoryScores).map(([category, score]) => (
+                  <View key={category} style={styles.worthinessCategoryItem}>
+                    <Text style={styles.worthinessCategoryLabel}>
+                      {category}: {score.toFixed(1)}
+                    </Text>
+                    <View style={styles.worthinessProgressBar}>
+                      <View style={[styles.worthinessProgressFill, { width: `${score}%` }]} />
+                    </View>
                   </View>
-                </View>
-              ))}
-            </View>
-          )}
+                ))}
+              </View>
+            )}
           </View>
 
           <View style={styles.divider} />
@@ -545,7 +706,66 @@ export default function PropertyDetailScreen() {
             <Text style={styles.description}>{property.description}</Text>
           </View>
 
-          {/* You can continue adding Reviews and Landlord info here as before */}
+          {/* Landlord Information */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Landlord</Text>
+            <View style={styles.landlordContainer}>
+              {property.landlordPhoto ? (
+                <Image
+                  source={{ uri: property.landlordPhoto }}
+                  style={{ width: 50, height: 50, borderRadius: 25 }}
+                />
+              ) : (
+                <View style={styles.landlordPhotoPlaceholder}>
+                  <Text style={styles.landlordPhotoPlaceholderText}>
+                    {property.landlordName.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.landlordInfoContainer}>
+                <View style={styles.landlordNameRow}>
+                  <Text style={styles.landlordName}>{property.landlordName}</Text>
+                  {property.landlordVerified && (
+                    <Shield size={16} color="#10B981" fill="#10B981" />
+                  )}
+                </View>
+                <Text style={styles.landlordStatus}>
+                  {property.landlordVerified ? "Verified Landlord" : "Unverified"}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.contentSpacer} />
+
+          {/* Reviews Summary */}
+          {property.totalReviews > 0 && (
+            <>
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Reviews</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                  <Text style={{ fontSize: 32, fontWeight: "700", color: "#1F2937" }}>
+                    {property.averageRating.toFixed(1)}
+                  </Text>
+                  <View>
+                    <Text style={{ fontSize: 14, color: "#6B7280" }}>
+                      {property.totalReviews} {property.totalReviews === 1 ? "review" : "reviews"}
+                    </Text>
+                    <View style={{ flexDirection: "row", gap: 2, marginTop: 4 }}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Text key={star} style={{ fontSize: 16 }}>
+                          {star <= Math.round(property.averageRating) ? "⭐" : "☆"}
+                        </Text>
+                      ))}
+                    </View>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.divider} />
+            </>
+          )}
+          
+          <View style={styles.divider} />
 
           <View style={{ height: 120 }} />
         </View>

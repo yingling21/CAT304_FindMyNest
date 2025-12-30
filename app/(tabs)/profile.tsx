@@ -7,8 +7,6 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { profileStyles as styles } from "@/styles/tabs";
 
-
-
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { reviews } = useReviews();
