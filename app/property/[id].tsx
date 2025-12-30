@@ -33,6 +33,7 @@ import {
 } from "lucide-react-native";
 import { calculateWorthiness, type WorthinessResult } 
   from "@/src/utils/worthinessCalculator";
+import MapView, { Marker } from "react-native-maps";
 
 export default function PropertyDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -56,6 +57,15 @@ export default function PropertyDetailScreen() {
     environment: 0,
     education: 0,
   });
+  // const CATEGORY_COLORS: Record<string, string> = {
+  //   transport: "#6366F1",  // blue
+  //   food: "#F59E0B",       // yellow
+  //   shopping: "#10B981",   // green
+  //   facility: "#EF4444",   // red
+  //   environment: "#22D3EE", // teal
+  //   education: "#A78BFA",   // purple
+  //   other: "#9CA3AF",       // gray
+  // };
 
   const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.googleMapsApiKey;
 
@@ -420,6 +430,36 @@ export default function PropertyDetailScreen() {
               }))
             }
           />
+
+            {/* Show Nearby Places with difference category color  */}
+          {/* <MapView
+            style={{ flex: 1 }}
+            initialRegion={{
+              latitude: property.latitude,
+              longitude: property.longitude,
+              latitudeDelta: 0.02,
+              longitudeDelta: 0.02,
+            }}
+          >
+            {/* Property location */}
+            {/* <Marker
+              coordinate={{ latitude: property.latitude, longitude: property.longitude }}
+              title={property.title}
+              description="Property Location"
+              pinColor="#6366F1" // main property color
+            />
+
+            {/* Nearby places */}
+            {/* {nearbyResults.map((place) => (
+              <Marker
+                key={place.id}
+                coordinate={{ latitude: place.lat, longitude: place.lng }}
+                title={place.name}
+                description={place.category.toUpperCase()}
+                pinColor={CATEGORY_COLORS[place.category]} // color by category
+              />
+            ))}
+          </MapView> */}
 
           {/* Nearby Counts */}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 16 }}>

@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 
 export type ListingFormData = {
+  propertyId: string;
   propertyType: PropertyType | "";
   size: string;
   bedrooms: string;
@@ -54,6 +55,7 @@ export type ListingFormData = {
 };
 
 const initialFormData: ListingFormData = {
+  propertyId: "",
   propertyType: "",
   size: "",
   bedrooms: "",
@@ -253,10 +255,10 @@ export const [ListingProvider, useListing] = createContextHook(() => {
       if (data && formData.photos?.length > 0) {
         const photoInserts = formData.photos.map((photo, index) => ({
           property_id: data.property_id,
-          photo_URL: photo,
+          photo_url: photo,
           is_cover: index === 0,
         }));
-        const { error: photoError } = await supabase.from("property_photo").insert(photoInserts);
+        const { error: photoError } = await supabase.from("property_Photo").insert(photoInserts);
         if (photoError) console.error("Failed to insert photos:", photoError);
       }
 

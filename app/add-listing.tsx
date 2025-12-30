@@ -18,6 +18,9 @@ import { styles } from "@/styles/listing";
 import MapPicker from "@/components/maps/MapPicker";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Location from "expo-location";
+import { pickImages } from '@/src/utils/imagePicker';
+import { uploadPropertyPhoto } from '@/src/service/photoService';
+import { Keyboard } from 'react-native';
 
 const TOTAL_STEPS = 9;
 
@@ -66,12 +69,36 @@ export default function AddListingScreen() {
     return null;
   }
 
-  // const [region, setRegion] = React.useState<{
-  //   latitude: number;
-  //   longitude: number;
-  //   latitudeDelta: number;
-  //   longitudeDelta: number;
-  // } | undefined>(undefined);
+  const [selectedImages, setSelectedImages] = useState<any[]>([]);
+
+  async function handleAddPhoto() {
+    try {
+      Keyboard.dismiss();
+      await new Promise(r => setTimeout(r, 300));
+
+      const images = await pickImages();
+      if (!images.length) return;
+
+      const uploadedUrls: string[] = [];
+
+      for (const img of images) {
+        try {
+          const url = await uploadPropertyPhoto(img);
+          uploadedUrls.push(url);
+        } catch (err) {
+          console.warn('Failed to upload image:', img.uri, err);
+        }
+      }
+
+      updateFormData({
+        photos: [...formData.photos, ...uploadedUrls],
+      });
+
+    } catch (err) {
+      console.error('Failed to pick or upload image:', err);
+    }
+  }
+
   const [region, setRegion] = useState<{
     latitude: number;
     longitude: number;
@@ -608,21 +635,26 @@ export default function AddListingScreen() {
             />
 
             <Text style={styles.label}>Photos</Text>
-            <View style={{
-              borderWidth: 2,
-              borderColor: "#D1D5DB",
-              borderStyle: "dashed",
-              borderRadius: 12,
-              padding: 32,
-              alignItems: "center",
-            }}>
-              <Text style={{ fontSize: 14, color: "#6B7280", marginBottom: 8 }}>
-                Photo upload coming soon
+
+            <TouchableOpacity
+              style={{
+                borderWidth: 2,
+                borderColor: "#6366F1",
+                borderRadius: 12,
+                padding: 16,
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+              onPress={handleAddPhoto}
+            >
+              <Text style={{ color: "#6366F1", fontWeight: "600" }}>
+                Add Photo
               </Text>
-              <Text style={{ fontSize: 12, color: "#9CA3AF" }}>
-                For now, photos can be added after submission
-              </Text>
-            </View>
+            </TouchableOpacity>
+
+            <Text style={{ fontSize: 12, color: "#6B7280" }}>
+              {selectedImages.length} photo(s) selected
+            </Text>
           </View>
         );
 
