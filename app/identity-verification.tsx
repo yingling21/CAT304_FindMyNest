@@ -4,8 +4,8 @@ import { verifyIcWithBackend } from "@/lib/verifyIcApi";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { AlertCircle, CheckCircle, FileText, Upload, X } from "lucide-react-native";
-import React, { useState } from "react";
+import { AlertCircle, ArrowLeft, CheckCircle, FileText, Upload, X } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -25,6 +25,56 @@ export default function IdentityVerificationScreen() {
   const [backIcUri, setBackIcUri] = useState<string | null>(null);
   const [ownershipDoc, setOwnershipDoc] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Check authentication when component mounts
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error getting session:", error);
+          // Don't redirect immediately - might be a temporary error
+          // Wait a bit and try again
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const { data: { session: retrySession } } = await supabase.auth.getSession();
+          if (!retrySession?.user) {
+            console.error("Still not authenticated after retry, redirecting to login");
+            router.replace("/login");
+            return;
+          }
+        } else if (!session?.user) {
+          console.error("Not authenticated, redirecting to login");
+          router.replace("/login");
+          return;
+        }
+        
+        console.log("User authenticated, session exists:", !!session);
+        
+        // If user object is not loaded, try to reload it
+        if (!user) {
+          console.log("User object not loaded, attempting to reload...");
+          await reloadUserProfile();
+        }
+        
+        setIsCheckingAuth(false);
+      } catch (err) {
+        console.error("Error checking auth:", err);
+        // Don't redirect immediately - might be a temporary error during signup
+        // Give it a moment and check again
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const { data: { session: finalSession } } = await supabase.auth.getSession();
+        if (!finalSession?.user) {
+          router.replace("/login");
+        } else {
+          setIsCheckingAuth(false);
+        }
+      }
+    };
+    
+    checkAuth();
+  }, [user, reloadUserProfile, router]);
 
   const handlePickIcImage = async (side: "front" | "back") => {
     try {
@@ -66,6 +116,22 @@ export default function IdentityVerificationScreen() {
   };
 
   const handleSubmit = async () => {
+    // Check if user is authenticated
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session?.user) {
+      Alert.alert(
+        "Authentication Error",
+        "You are not authenticated. Please sign in again.",
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace("/login"),
+          },
+        ]
+      );
+      return;
+    }
+
     if (!frontIcUri) {
       Alert.alert("Missing Document", "Please upload the front side of your IC");
       return;
@@ -81,23 +147,64 @@ export default function IdentityVerificationScreen() {
       return;
     }
 
+    // Ensure we have user info - if user object is not loaded, try to get from session
+    let userInfo = user ? {
+      email: user.email,
+      fullName: user.fullName,
+      phoneNumber: user.phoneNumber,
+      role: user.role,
+    } : undefined;
+
+    // If user object is not available, try to get from database
+    if (!userInfo && session?.user) {
+      try {
+        const { data: userData } = await supabase
+          .from("users")
+          .select("email, full_name, phone_number, role")
+          .eq("id", session.user.id)
+          .single();
+        
+        if (userData) {
+          userInfo = {
+            email: userData.email,
+            fullName: userData.full_name,
+            phoneNumber: userData.phone_number,
+            role: userData.role,
+          };
+        }
+      } catch (err) {
+        console.error("Failed to fetch user data:", err);
+      }
+    }
+
+    if (!userInfo) {
+      Alert.alert(
+        "Error",
+        "Unable to retrieve user information. Please try signing in again.",
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace("/login"),
+          },
+        ]
+      );
+      return;
+    }
+
     setIsLoading(true);
     try {
       console.log("Starting verification...");
       console.log("Front IC URI:", frontIcUri);
       console.log("Back IC URI:", backIcUri);
+      console.log("User info:", userInfo);
+      console.log("User ID:", session?.user?.id);
       
       // Use backend to OCR both front and back IC images, extract IC numbers,
       // validate that they match, and validate Malaysia IC format (12 digits, DOB, checksum).
       const result = await verifyIcWithBackend(
         frontIcUri, 
         backIcUri,
-        user ? { // Pass user info to backend
-          email: user.email,
-          fullName: user.fullName,
-          phoneNumber: user.phoneNumber,
-          role: user.role,
-        } : undefined
+        userInfo
       );
       
       console.log("Verification result:", result);
@@ -134,7 +241,28 @@ export default function IdentityVerificationScreen() {
 
       // Reload user profile from database (user row was just created/updated)
       await reloadUserProfile();
+      
+      // Wait a moment for the state to update
+      await new Promise(resolve => setTimeout(resolve, 500));
 
+      // Verify that verification status is now approved
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: updatedUser } = await supabase
+          .from("users")
+          .select("verification_status")
+          .eq("id", session.user.id)
+          .single();
+        
+        if (updatedUser?.verification_status === "approved") {
+          console.log("Verification confirmed as approved. Navigating to home.");
+          // Navigate directly to home page without showing alert
+          router.replace("/(tabs)/home");
+          return;
+        }
+      }
+
+      // If verification status check fails, show success message and navigate
       Alert.alert(
         "Verification Successful",
         "Your identity has been verified successfully. You can now use all features.",
@@ -175,8 +303,34 @@ export default function IdentityVerificationScreen() {
     );
   };
 
+  const handleBack = async () => {
+    // Sign out user when going back to login (since they're not verified yet)
+    await supabase.auth.signOut();
+    router.replace("/login");
+  };
+
+  // Show loading while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color="#6366F1" />
+          <Text style={{ marginTop: 16, color: "#6B7280" }}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+      {/* Back Button */}
+      <View style={styles.backButtonContainer}>
+        <Pressable style={styles.backButton} onPress={handleBack}>
+          <ArrowLeft size={24} color="#374151" />
+          <Text style={styles.backButtonText}>Back to Sign In</Text>
+        </Pressable>
+      </View>
+      
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <View style={styles.iconCircle}>
@@ -308,9 +462,6 @@ export default function IdentityVerificationScreen() {
           )}
         </Pressable>
 
-        <Pressable style={styles.skipButton} onPress={handleSkip}>
-          <Text style={styles.skipText}>Skip for now</Text>
-        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -320,6 +471,23 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#FFFFFF",
+  },
+  backButtonContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: "#374151",
+    fontWeight: "500" as const,
   },
   container: {
     flex: 1,

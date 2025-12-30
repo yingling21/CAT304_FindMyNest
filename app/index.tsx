@@ -15,7 +15,19 @@ export default function IndexScreen() {
     } else if (!user) {
       router.replace("/login");
     } else {
-      router.replace("/(tabs)/home");
+      // Check verification status - only allow access if approved
+      // NULL, undefined, "pending", "rejected", "unverified" all require IC verification
+      // If approved, go directly to home (IC verification already completed)
+      const verificationStatus = user.verificationStatus;
+      if (!verificationStatus || verificationStatus === null || verificationStatus !== "approved") {
+        const statusDisplay = verificationStatus === null ? "NULL (not verified)" : verificationStatus || "undefined";
+        console.log(`[Index] User verification status is "${statusDisplay}", redirecting to IC verification.`);
+        router.replace("/identity-verification");
+      } else {
+        // User is approved - go directly to home (no IC verification needed)
+        console.log(`[Index] User verification status is "approved". Going directly to home page.`);
+        router.replace("/(tabs)/home");
+      }
     }
   }, [user, hasCompletedOnboarding, isLoading, router]);
 

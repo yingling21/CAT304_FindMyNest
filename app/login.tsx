@@ -31,14 +31,23 @@ export default function LoginScreen() {
     setIsLoading(true);
     try {
       await signIn(email, password);
+      // If signIn succeeds, it will handle navigation internally
+      // No need to do anything here
     } catch (error: any) {
       console.error("Login error:", error);
       let errorMessage = "Failed to sign in. Please try again.";
       
-      if (error?.message) {
-        errorMessage = error.message;
-      } else if (error?.error_description) {
-        errorMessage = error.error_description;
+      // Safely extract error message
+      if (error && typeof error === 'object') {
+        if (error.message && typeof error.message === 'string') {
+          errorMessage = error.message;
+        } else if (error.error_description && typeof error.error_description === 'string') {
+          errorMessage = error.error_description;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        }
+      } else if (typeof error === 'string') {
+        errorMessage = error;
       }
       
       Alert.alert("Error", errorMessage);
@@ -98,9 +107,6 @@ export default function LoginScreen() {
                 autoComplete="email"
               />
             </View>
-            <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
-              Enter your email and the password you used when registering
-            </Text>
           </View>
 
           <View style={styles.inputGroup}>

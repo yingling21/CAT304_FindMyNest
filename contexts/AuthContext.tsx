@@ -98,7 +98,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           phoneNumber: data.phone_number || "",
           role: data.role || "tenant",
           profilePicture: data.profile_picture || undefined,
-          verificationStatus: data.verification_status || "pending",
+          verificationStatus: (data.verification_status === null ? "pending" : data.verification_status || "pending") as VerificationStatus,
           identityDocument: data.identity_document || undefined,
           ownershipDocument: data.ownership_document || undefined,
           createdAt: data.created_at || new Date().toISOString(),
@@ -163,10 +163,10 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const signIn = async (email: string, password: string, role?: "tenant" | "landlord") => {
     try {
-      // Check which roles exist for this email
+      // Check which roles exist for this email, including verification status
       const { data: existingUsers, error: checkError } = await supabase
         .from("users")
-        .select("role, id")
+        .select("role, id, verification_status")
         .eq("email", email.trim());
 
       if (checkError && checkError.code !== 'PGRST116') {
@@ -179,13 +179,21 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       const hasTenant = availableRoles.includes("tenant");
       const hasLandlord = availableRoles.includes("landlord");
       
-      console.log(`[SignIn] Available roles: tenant=${hasTenant}, landlord=${hasLandlord}, requested role=${role || "auto"}`);
+      // Get verification status for each role
+      const tenantUser = existingUsers?.find(u => u.role === "tenant");
+      const landlordUser = existingUsers?.find(u => u.role === "landlord");
+      const tenantVerified = tenantUser?.verification_status === "approved";
+      const landlordVerified = landlordUser?.verification_status === "approved";
+      
+      console.log(`[SignIn] Available roles: tenant=${hasTenant} (verified=${tenantVerified}), landlord=${hasLandlord} (verified=${landlordVerified}), requested role=${role || "auto"}`);
 
       // If both roles exist and no role specified, we need role selection
       if (hasTenant && hasLandlord && !role) {
-        // Store email and password temporarily for role selection
+        // Store email, password, and verification statuses for role selection
         await AsyncStorage.setItem("pending_login_email", email);
         await AsyncStorage.setItem("pending_login_password", password);
+        await AsyncStorage.setItem("pending_login_tenant_verified", JSON.stringify(tenantVerified));
+        await AsyncStorage.setItem("pending_login_landlord_verified", JSON.stringify(landlordVerified));
         router.replace("/login-role-selection");
         return;
       }
@@ -272,7 +280,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           id: userData.id,
           email: userData.email,
           role: userData.role,
-          full_name: userData.full_name
+          full_name: userData.full_name,
+          verification_status: userData.verification_status
         } : "NOT FOUND");
 
         if (userError && userError.code !== 'PGRST116') {
@@ -284,6 +293,50 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         if (userData && userData.role !== selectedRole) {
           console.error(`[SignIn] ROLE MISMATCH! Database has role="${userData.role}" but expected "${selectedRole}"`);
           console.error(`[SignIn] This might indicate a data inconsistency. Auth user ID: ${data.user.id}`);
+        }
+        
+        // Check verification status immediately if userData exists
+        // CRITICAL: Users CANNOT sign in until verification_status is "approved"
+        // NULL, "pending", "rejected", "unverified" all require IC verification
+        // If not approved, redirect to IC verification page (keep authenticated)
+        // If approved, proceed directly to home page (skip IC verification)
+        if (userData) {
+          const verificationStatus = userData.verification_status;
+          console.log(`[SignIn] User found in database. Verification status: "${verificationStatus}" (type: ${typeof verificationStatus}, is null: ${verificationStatus === null})`);
+          
+          // Check if verification_status is NULL, undefined, or not "approved"
+          // NULL means user registered but never completed IC verification
+          if (!verificationStatus || verificationStatus === null || verificationStatus !== "approved") {
+            const statusDisplay = verificationStatus === null ? "NULL (not verified)" : verificationStatus;
+            console.log(`[SignIn] User verification status is "${statusDisplay}", not approved. Redirecting to IC verification.`);
+            // Load user profile and keep authenticated so they can submit verification
+            await loadUserProfile(data.user.id);
+            router.replace("/identity-verification");
+            // CRITICAL: Return early to prevent any further processing
+            return;
+          }
+          
+          // User is approved - map userData to User type and set it, then go to home
+          console.log(`[SignIn] User verification status is "approved". Proceeding directly to home page.`);
+          
+          // Map userData to User type and set it directly
+          const mappedUser: User = {
+            id: userData.id,
+            email: userData.email || "",
+            fullName: userData.full_name || "",
+            phoneNumber: userData.phone_number || "",
+            role: userData.role || "tenant",
+            profilePicture: userData.profile_picture || undefined,
+            verificationStatus: (userData.verification_status === null ? "pending" : userData.verification_status || "pending") as VerificationStatus,
+            identityDocument: userData.identity_document || undefined,
+            ownershipDocument: userData.ownership_document || undefined,
+            createdAt: userData.created_at || new Date().toISOString(),
+          };
+          setUser(mappedUser);
+          
+          // Go directly to home page (no need to load profile again, we already have the data)
+          router.replace("/(tabs)/home");
+          return;
         }
 
         if (!userData) {
@@ -359,18 +412,24 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
                   phoneNumber: newUserData.phone_number || "",
                   role: newUserData.role || "tenant",
                   profilePicture: newUserData.profile_picture || undefined,
-                  verificationStatus: newUserData.verification_status || "pending",
+                  verificationStatus: (newUserData.verification_status === null ? "pending" : newUserData.verification_status || "pending") as VerificationStatus,
                   identityDocument: newUserData.identity_document || undefined,
                   ownershipDocument: newUserData.ownership_document || undefined,
                   createdAt: newUserData.created_at || new Date().toISOString(),
                 };
                 setUser(mappedUser);
                 
-                if (mappedUser.verificationStatus === "pending" || mappedUser.verificationStatus === "unverified") {
+                // Only allow sign-in if verification status is "approved"
+                // Check if verification_status is NULL, undefined, or not "approved"
+                if (!mappedUser.verificationStatus || mappedUser.verificationStatus === null || mappedUser.verificationStatus !== "approved") {
+                  const statusDisplay = mappedUser.verificationStatus === null ? "NULL (not verified)" : mappedUser.verificationStatus || "undefined";
+                  console.log(`[SignIn] User verification status is "${statusDisplay}", redirecting to IC verification.`);
                   router.replace("/identity-verification");
-                } else {
-                  router.replace("/(tabs)/home");
+                  return;
                 }
+                
+                // User is approved - proceed to home
+                router.replace("/(tabs)/home");
                 return;
               }
             } else {
@@ -383,18 +442,24 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
                 phoneNumber: updatedUser.phone_number || "",
                 role: updatedUser.role || "tenant",
                 profilePicture: updatedUser.profile_picture || undefined,
-                verificationStatus: updatedUser.verification_status || "pending",
+                verificationStatus: (updatedUser.verification_status === null ? "pending" : updatedUser.verification_status || "pending") as VerificationStatus,
                 identityDocument: updatedUser.identity_document || undefined,
                 ownershipDocument: updatedUser.ownership_document || undefined,
                 createdAt: updatedUser.created_at || new Date().toISOString(),
               };
               setUser(mappedUser);
               
-              if (mappedUser.verificationStatus === "pending" || mappedUser.verificationStatus === "unverified") {
+              // Only allow sign-in if verification status is "approved"
+              // Check if verification_status is NULL, undefined, or not "approved"
+              if (!mappedUser.verificationStatus || mappedUser.verificationStatus === null || mappedUser.verificationStatus !== "approved") {
+                const statusDisplay = mappedUser.verificationStatus === null ? "NULL (not verified)" : mappedUser.verificationStatus || "undefined";
+                console.log(`[SignIn] User verification status is "${statusDisplay}", redirecting to IC verification.`);
                 router.replace("/identity-verification");
-              } else {
-                router.replace("/(tabs)/home");
+                return;
               }
+              
+              // User is approved - proceed to home
+              router.replace("/(tabs)/home");
               return;
             }
           }
@@ -412,35 +477,111 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
                   email: pendingUser.email,
                   full_name: pendingUser.fullName,
                   phone_number: pendingUser.phoneNumber,
-                  role: pendingUser.role || "tenant",
-                  verification_status: "pending",
+                  role: pendingUser.role || selectedRole, // CRITICAL: Use the role from signup (AsyncStorage) or selectedRole from sign-in
+                  verification_status: null, // Set to NULL when user hasn't done IC verification yet
                 });
 
               if (createError && createError.code !== '23505') { // Ignore if already exists
                 console.error("Failed to create user from AsyncStorage:", createError);
+              } else {
+                // User created successfully, now fetch it to check verification status
+                const { data: newUserData } = await supabase
+                  .from("users")
+                  .select("*")
+                  .eq("id", data.user.id)
+                  .maybeSingle();
+                
+                if (newUserData) {
+                  const mappedUser: User = {
+                    id: newUserData.id,
+                    email: newUserData.email || "",
+                    fullName: newUserData.full_name || "",
+                    phoneNumber: newUserData.phone_number || "",
+                    role: newUserData.role || "tenant",
+                    profilePicture: newUserData.profile_picture || undefined,
+                    verificationStatus: (newUserData.verification_status === null ? "pending" : newUserData.verification_status || "pending") as VerificationStatus,
+                    identityDocument: newUserData.identity_document || undefined,
+                    ownershipDocument: newUserData.ownership_document || undefined,
+                    createdAt: newUserData.created_at || new Date().toISOString(),
+                  };
+                  setUser(mappedUser);
+                  
+                  // Check if verification_status is NULL, undefined, or not "approved"
+                  if (!mappedUser.verificationStatus || mappedUser.verificationStatus === null || mappedUser.verificationStatus !== "approved") {
+                    const statusDisplay = mappedUser.verificationStatus === null ? "NULL (not verified)" : mappedUser.verificationStatus || "undefined";
+                    console.log(`[SignIn] User verification status is "${statusDisplay}", redirecting to IC verification.`);
+                    router.replace("/identity-verification");
+                    return;
+                  }
+                  
+                  router.replace("/(tabs)/home");
+                  return;
+                }
               }
             } catch (err) {
               console.error("Error creating user from AsyncStorage:", err);
             }
-          } else {
-            // No user data found - redirect to identity verification
-            await supabase.auth.signOut();
-            throw new Error("Account not found. Please complete registration and IC verification.");
           }
+          
+          // No user data found in database or AsyncStorage - redirect to verification (keep authenticated)
+          console.log(`[SignIn] User not found in database. Redirecting to IC verification to complete registration.`);
+          // Try to load user profile (might create a basic user record)
+          try {
+            await loadUserProfile(data.user.id);
+          } catch (profileError) {
+            console.error("Error loading user profile:", profileError);
+          }
+          router.replace("/identity-verification");
+          return;
         }
 
         // Load user profile (will load from database or AsyncStorage)
         await loadUserProfile(data.user.id);
         
-        // Check verification status and redirect accordingly
-        const currentUser = user;
-        if (currentUser?.verificationStatus === "pending" || currentUser?.verificationStatus === "unverified") {
-          // User exists but not verified - redirect to verification
-          router.replace("/identity-verification");
-        } else {
-          // User is verified - proceed to home
+        // Wait a moment for state to update, then check verification status
+        // Use a small delay to ensure state has updated
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Double-check verification status after loading profile
+        // Fetch directly from database to ensure we have the latest status
+        const { data: latestUserData, error: latestUserError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", data.user.id)
+          .maybeSingle();
+        
+        if (latestUserData) {
+          const mappedUser: User = {
+            id: latestUserData.id,
+            email: latestUserData.email || "",
+            fullName: latestUserData.full_name || "",
+            phoneNumber: latestUserData.phone_number || "",
+            role: latestUserData.role || "tenant",
+            profilePicture: latestUserData.profile_picture || undefined,
+            verificationStatus: (latestUserData.verification_status === null ? "pending" : latestUserData.verification_status || "pending") as VerificationStatus,
+            identityDocument: latestUserData.identity_document || undefined,
+            ownershipDocument: latestUserData.ownership_document || undefined,
+            createdAt: latestUserData.created_at || new Date().toISOString(),
+          };
+          setUser(mappedUser);
+          
+          // Check if verification_status is NULL, undefined, or not "approved"
+          if (!mappedUser.verificationStatus || mappedUser.verificationStatus === null || mappedUser.verificationStatus !== "approved") {
+            const statusDisplay = mappedUser.verificationStatus === null ? "NULL (not verified)" : mappedUser.verificationStatus || "undefined";
+            console.log(`[SignIn] User verification status is "${statusDisplay}", redirecting to IC verification.`);
+            router.replace("/identity-verification");
+            return;
+          }
+          
+          console.log(`[SignIn] User is approved. Redirecting to home.`);
           router.replace("/(tabs)/home");
+          return;
         }
+        
+        // User not found in database - redirect to verification (keep authenticated)
+        console.log(`[SignIn] User profile not found in database. Redirecting to IC verification.`);
+        router.replace("/identity-verification");
+        return;
       }
     } catch (error: any) {
       console.error("Failed to sign in:", error);
@@ -481,11 +622,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         // Each account will have its own password stored in Supabase Auth
       }
 
-      // Ensure we're signed out before creating new account (in case of any lingering session)
-      // This prevents session conflicts when creating the second account
-      await supabase.auth.signOut();
-      console.log(`[SignUp] Ensured clean session state before creating account`);
-
       // Use email+role as the auth identifier to allow same email with different roles
       // Format: "email+role@domain.com" -> "email+tenant@example.com"
       const [emailLocal, emailDomain] = email.split("@");
@@ -495,6 +631,12 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.log(`  Auth email: ${authEmail}`);
       console.log(`  Role: ${role}`);
       console.log(`  Original email: ${email}`);
+
+      // Ensure we're signed out before creating new account (in case of any lingering session)
+      // This prevents session conflicts when creating the second account
+      // But do it right before signup to minimize the gap
+      await supabase.auth.signOut();
+      console.log(`[SignUp] Ensured clean session state before creating account`);
 
       const {
         data: { user, session },
@@ -531,14 +673,62 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         console.error("[SignUp] No user ID returned from signup!");
         console.error("[SignUp] User object:", user);
         console.error("[SignUp] Session object:", session);
+        console.error("[SignUp] Error (if any):", error);
+        
+        // Check if email confirmation is required
+        if (!user && !session && !error) {
+          throw new Error("Account creation may require email confirmation. Please check your email and confirm your account, then try signing in.");
+        }
+        
         throw new Error("Failed to create account. Please try again.");
       }
       
       console.log(`[SignUp] Successfully created Supabase Auth account with ID: ${userId}`);
+      console.log(`[SignUp] Session exists: ${!!session}`);
+      console.log(`[SignUp] User object exists: ${!!user}`);
+      
+      // Verify we have a session - if not, try to get it
+      let finalSession = session;
+      if (!finalSession) {
+        console.log(`[SignUp] No session after signup, attempting to get session...`);
+        const { data: { session: newSession }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          console.error("[SignUp] Error getting session:", sessionError);
+        } else if (newSession) {
+          console.log(`[SignUp] Successfully retrieved session after signup`);
+          finalSession = newSession;
+        } else {
+          console.warn(`[SignUp] No session available after signup. This might require email confirmation.`);
+          // If no session, try to sign in with the credentials to establish session
+          try {
+            const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+              email: authEmail,
+              password: password,
+            });
+            if (!signInError && signInData?.session) {
+              console.log(`[SignUp] Successfully signed in after signup to establish session`);
+              finalSession = signInData.session;
+            }
+          } catch (signInErr) {
+            console.error("[SignUp] Failed to sign in after signup:", signInErr);
+          }
+        }
+      }
+      
+      // Note: If email confirmation is required, session might not be available immediately
+      // We'll still proceed with account creation and let the identity verification page handle auth
+      if (!finalSession) {
+        console.warn(`[SignUp] No session available after signup. This might require email confirmation.`);
+        console.warn(`[SignUp] Proceeding with account creation - user can sign in later to complete verification.`);
+        // Don't throw error - still proceed with creating database record
+        // User will need to sign in to access identity verification
+      }
       
       if (userId) {
-        // Create user row in users table immediately with email and phone number
-        // Verification status will be "pending" until IC verification is completed
+        // Create user row in users table immediately with email, phone number, and role
+        // CRITICAL: Role must be saved immediately during registration, even before IC verification
+        // Verification status will be NULL (or "pending") until IC verification is completed
+        // NULL means user registered but never completed IC verification
         try {
           const { data: createdUser, error: createError } = await supabase
             .from("users")
@@ -547,8 +737,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
               email: email.trim(), // Store original email (not email+role)
               full_name: fullName.trim(),
               phone_number: phoneNumber.trim(),
-              role: role, // Use the selected role
-              verification_status: "pending",
+              role: role, // CRITICAL: Save the selected role immediately, even before IC verification
+              verification_status: null, // Set to NULL when user hasn't done IC verification yet
             })
             .select()
             .single();
@@ -557,12 +747,16 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
             // If user already exists (e.g., from a previous attempt), update it
             if (createError.code === '23505') { // Unique violation
               console.log("User already exists, updating...");
+              // CRITICAL: Always update role to ensure it's saved even if user exists
               const { data: updatedUser, error: updateError } = await supabase
                 .from("users")
                 .update({
                   email: email.trim(),
                   full_name: fullName.trim(),
                   phone_number: phoneNumber.trim(),
+                  role: role, // CRITICAL: Always save the role, even when updating existing user
+                  // Don't update verification_status if it's already set (might be NULL or "pending")
+                  // Only set to NULL if it doesn't exist yet
                 })
                 .eq("id", userId)
                 .select()
@@ -580,7 +774,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
                 fullName: updatedUser.full_name || fullName,
                 phoneNumber: updatedUser.phone_number || phoneNumber,
                 role: (updatedUser.role || role) as UserRole,
-                verificationStatus: (updatedUser.verification_status || "pending") as VerificationStatus,
+                verificationStatus: (updatedUser.verification_status === null ? "pending" : updatedUser.verification_status || "pending") as VerificationStatus,
                 createdAt: updatedUser.created_at || new Date().toISOString(),
               };
               
@@ -601,12 +795,21 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
               fullName: createdUser.full_name || fullName,
               phoneNumber: createdUser.phone_number || phoneNumber,
               role: (createdUser.role || role) as UserRole,
-              verificationStatus: (createdUser.verification_status || "pending") as VerificationStatus,
+              verificationStatus: (createdUser.verification_status === null ? "pending" : createdUser.verification_status || "pending") as VerificationStatus,
               createdAt: createdUser.created_at || new Date().toISOString(),
             };
             
             setUser(mappedUser);
-            router.replace("/identity-verification");
+            
+            // If we have a session, go to identity verification
+            // If not, redirect to login
+            if (finalSession) {
+              router.replace("/identity-verification");
+            } else {
+              console.log(`[SignUp] No session available, redirecting to login.`);
+              await supabase.auth.signOut();
+              router.replace("/login");
+            }
             return;
           }
         } catch (dbError: any) {
@@ -632,10 +835,20 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         );
         
         setUser(pendingUser);
-        router.replace("/identity-verification");
+        
+        // If we have a session, go to identity verification
+        // If not, redirect to login so user can sign in first
+        if (finalSession) {
+          router.replace("/identity-verification");
+        } else {
+          // No session - user needs to sign in first
+          console.log(`[SignUp] No session available, redirecting to login. User should sign in to complete verification.`);
+          await supabase.auth.signOut(); // Ensure clean state
+          router.replace("/login");
+        }
       } else {
-        // No user and no session - this shouldn't happen if signup succeeded
-        throw new Error("Account created but unable to proceed. Please check your email for confirmation.");
+        // No user ID - this shouldn't happen if signup succeeded
+        throw new Error("Failed to create account. No user ID returned from signup.");
       }
     } catch (error) {
       console.error("Failed to sign up:", error);

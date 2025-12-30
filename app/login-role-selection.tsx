@@ -19,14 +19,21 @@ export default function LoginRoleSelectionScreen() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [tenantVerified, setTenantVerified] = useState<boolean>(false);
+  const [landlordVerified, setLandlordVerified] = useState<boolean>(false);
 
   useEffect(() => {
-    // Load stored email and password
+    // Load stored email, password, and verification statuses
     const loadCredentials = async () => {
       const storedEmail = await AsyncStorage.getItem("pending_login_email");
       const storedPassword = await AsyncStorage.getItem("pending_login_password");
+      const storedTenantVerified = await AsyncStorage.getItem("pending_login_tenant_verified");
+      const storedLandlordVerified = await AsyncStorage.getItem("pending_login_landlord_verified");
+      
       if (storedEmail) setEmail(storedEmail);
       if (storedPassword) setPassword(storedPassword);
+      if (storedTenantVerified) setTenantVerified(JSON.parse(storedTenantVerified) === true);
+      if (storedLandlordVerified) setLandlordVerified(JSON.parse(storedLandlordVerified) === true);
     };
     loadCredentials();
   }, []);
@@ -49,6 +56,8 @@ export default function LoginRoleSelectionScreen() {
       // Only clear credentials on success
       await AsyncStorage.removeItem("pending_login_email");
       await AsyncStorage.removeItem("pending_login_password");
+      await AsyncStorage.removeItem("pending_login_tenant_verified");
+      await AsyncStorage.removeItem("pending_login_landlord_verified");
     } catch (error: any) {
       console.error(`[LoginRoleSelection] Login error for ${role}:`, error);
       console.error(`  Full error:`, JSON.stringify(error, null, 2));
@@ -78,9 +87,16 @@ export default function LoginRoleSelectionScreen() {
           <Text style={styles.subtitle}>
             You have accounts registered as both tenant and landlord. Which account would you like to sign in to?
           </Text>
-          <Text style={{ fontSize: 13, color: "#6366F1", marginTop: 12, textAlign: "center", paddingHorizontal: 20 }}>
-            ℹ️ Use the same password you used when registering. Select which account you want to access.
-          </Text>
+          {!tenantVerified && !landlordVerified && (
+            <Text style={{ fontSize: 13, color: "#F59E0B", marginTop: 12, textAlign: "center", paddingHorizontal: 20, fontWeight: "600" }}>
+              ⚠️ Both accounts require IC verification. Please select which account you want to continue/finish the IC verification process for.
+            </Text>
+          )}
+          {(tenantVerified || landlordVerified) && (
+            <Text style={{ fontSize: 13, color: "#6366F1", marginTop: 12, textAlign: "center", paddingHorizontal: 20 }}>
+              ℹ️ Use the same password you used when registering. Select which account you want to access.
+            </Text>
+          )}
         </View>
 
         <View style={styles.optionsContainer}>
@@ -94,8 +110,20 @@ export default function LoginRoleSelectionScreen() {
             </View>
             <Text style={styles.optionTitle}>Sign in as Tenant</Text>
             <Text style={styles.optionSubtitle}>
-              Access your tenant account to search for properties and manage rentals
+              {tenantVerified 
+                ? "Access your tenant account to search for properties and manage rentals"
+                : "Continue/finish IC verification for your tenant account"}
             </Text>
+            {!tenantVerified && (
+              <Text style={{ fontSize: 12, color: "#F59E0B", marginTop: 8, textAlign: "center", fontWeight: "600" }}>
+                ⚠️ IC verification required - You will be redirected to complete verification
+              </Text>
+            )}
+            {tenantVerified && (
+              <Text style={{ fontSize: 12, color: "#10B981", marginTop: 8, textAlign: "center" }}>
+                ✅ Verified - Ready to use
+              </Text>
+            )}
             {isLoading && (
               <ActivityIndicator color="#6366F1" style={{ marginTop: 12 }} />
             )}
@@ -111,8 +139,20 @@ export default function LoginRoleSelectionScreen() {
             </View>
             <Text style={styles.optionTitle}>Sign in as Landlord</Text>
             <Text style={styles.optionSubtitle}>
-              Access your landlord account to manage properties and tenants
+              {landlordVerified 
+                ? "Access your landlord account to manage properties and tenants"
+                : "Continue/finish IC verification for your landlord account"}
             </Text>
+            {!landlordVerified && (
+              <Text style={{ fontSize: 12, color: "#F59E0B", marginTop: 8, textAlign: "center", fontWeight: "600" }}>
+                ⚠️ IC verification required - You will be redirected to complete verification
+              </Text>
+            )}
+            {landlordVerified && (
+              <Text style={{ fontSize: 12, color: "#10B981", marginTop: 8, textAlign: "center" }}>
+                ✅ Verified - Ready to use
+              </Text>
+            )}
             {isLoading && (
               <ActivityIndicator color="#10B981" style={{ marginTop: 12 }} />
             )}
@@ -124,6 +164,8 @@ export default function LoginRoleSelectionScreen() {
           onPress={() => {
             AsyncStorage.removeItem("pending_login_email");
             AsyncStorage.removeItem("pending_login_password");
+            AsyncStorage.removeItem("pending_login_tenant_verified");
+            AsyncStorage.removeItem("pending_login_landlord_verified");
             router.replace("/login");
           }}
           disabled={isLoading}
