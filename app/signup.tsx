@@ -22,6 +22,7 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<"tenant" | "landlord" | null>(null);
   const { signUp } = useAuth();
 
   const handleSignUp = async () => {
@@ -50,9 +51,14 @@ export default function SignUpScreen() {
       return;
     }
 
+    if (!selectedRole) {
+      Alert.alert("Error", "Please select whether you want to register as a tenant or landlord");
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await signUp(email, password, fullName, phoneNumber);
+      await signUp(email, password, fullName, phoneNumber, selectedRole);
     } catch (error: any) {
       console.error("Signup error:", error);
       console.error("Error details:", JSON.stringify(error, null, 2));
@@ -186,6 +192,57 @@ export default function SignUpScreen() {
                 )}
               </Pressable>
             </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>I want to register as</Text>
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
+              <Pressable
+                style={[
+                  {
+                    flex: 1,
+                    padding: 16,
+                    borderRadius: 12,
+                    borderWidth: 2,
+                    borderColor: selectedRole === "tenant" ? "#6366F1" : "#E5E7EB",
+                    backgroundColor: selectedRole === "tenant" ? "#EEF2FF" : "#FFFFFF",
+                    alignItems: "center",
+                  },
+                ]}
+                onPress={() => setSelectedRole("tenant")}
+              >
+                <Text style={{ fontSize: 16, fontWeight: "600", color: selectedRole === "tenant" ? "#6366F1" : "#6B7280" }}>
+                  Tenant
+                </Text>
+                <Text style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>
+                  Looking for a home
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  {
+                    flex: 1,
+                    padding: 16,
+                    borderRadius: 12,
+                    borderWidth: 2,
+                    borderColor: selectedRole === "landlord" ? "#10B981" : "#E5E7EB",
+                    backgroundColor: selectedRole === "landlord" ? "#D1FAE5" : "#FFFFFF",
+                    alignItems: "center",
+                  },
+                ]}
+                onPress={() => setSelectedRole("landlord")}
+              >
+                <Text style={{ fontSize: 16, fontWeight: "600", color: selectedRole === "landlord" ? "#10B981" : "#6B7280" }}>
+                  Landlord
+                </Text>
+                <Text style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>
+                  List properties
+                </Text>
+              </Pressable>
+            </View>
+            <Text style={{ fontSize: 12, color: "#6B7280", marginTop: 8 }}>
+              You can register both roles with the same email. Use the same password for both, or different passwords - your choice. When signing in, use the password you set for the selected role.
+            </Text>
           </View>
 
           <Pressable
