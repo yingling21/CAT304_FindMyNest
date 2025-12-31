@@ -149,17 +149,14 @@ export const [ListingProvider, useListing] = createContextHook(() => {
     try {
       if (!user) return;
       
-      const { data: landlordData, error: landlordError } = await supabase
-        .from('landlord')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (landlordError || !landlordData) {
-        console.error('Failed to fetch landlord:', landlordError);
+      // Only load listings if user is a landlord
+      if (user.role !== "landlord") {
+        // Tenant users don't have listings to load
+        setListings([]);
         return;
       }
       
+      // Use user.id directly as landlord_id (no separate landlord table needed)
       const { data, error } = await supabase
         .from("property")
         .select("*")
@@ -217,15 +214,12 @@ export const [ListingProvider, useListing] = createContextHook(() => {
 
   const saveListing = async (landlordId: string) => {
     try {
-      const { data: landlordData, error: landlordError } = await supabase
-        .from('landlord')
-        .select('id')
-        .eq('user_id', landlordUserId)
-        .single();
-      
-      if (landlordError || !landlordData) {
-        throw new Error('Landlord not found');
+      if (!user || user.role !== "landlord") {
+        throw new Error('Only landlords can create listings');
       }
+
+      // Use user.id directly as landlord_id (no separate landlord table needed)
+      const landlordIdToUse = user.id;
 
       const amenities = {
         // In-room amenities (only for room/studio)
@@ -266,7 +260,7 @@ export const [ListingProvider, useListing] = createContextHook(() => {
       const { data, error } = await supabase
         .from('listing')
         .insert({
-          landlord_id: landlordData.id,
+          landlord_id: landlordIdToUse,
           title: formData.title,
           description: formData.description,
           propertyType: formData.propertyType,
@@ -310,7 +304,7 @@ export const [ListingProvider, useListing] = createContextHook(() => {
       if (data) {
         const newListing: StoredListing = {
           id: data.property_id?.toString() || '',
-          landlordId: landlordData.id.toString(),
+          landlordId: landlordIdToUse,
           title: data.title || '',
           description: data.description || '',
           propertyType: data.propertyType,

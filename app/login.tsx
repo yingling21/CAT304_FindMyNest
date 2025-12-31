@@ -56,10 +56,6 @@ export default function LoginScreen() {
     }
   };
 
-  const handleGoogleSignIn = () => {
-    Alert.alert("Coming Soon", "Google Sign In will be available soon!");
-  };
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -79,19 +75,6 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.formContainer}>
-          <Pressable style={styles.googleButton} onPress={handleGoogleSignIn}>
-            <View style={styles.googleIconContainer}>
-              <Text style={styles.googleIcon}>G</Text>
-            </View>
-            <Text style={styles.googleButtonText}>Continue with Google</Text>
-          </Pressable>
-
-          <View style={styles.dividerContainer}>
-            <View style={styles.divider} />
-            <Text style={styles.dividerText}>Or continue with email</Text>
-            <View style={styles.divider} />
-          </View>
-
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
             <View style={styles.inputContainer}>

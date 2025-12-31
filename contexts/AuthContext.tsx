@@ -610,31 +610,20 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.log(`[SignUp] Ensured clean session state before creating account`);
 
       const {
-        data: { user },
+        data: { user, session },
         error,
       } = await supabase.auth.signUp({
         email: authEmail, // Use email+role for auth
         password: password,
+        options: {
+          data: {
+            full_name: fullName,
+            phone_number: phoneNumber,
+            original_email: email, // Store original email in user metadata (not in users table)
+            role: role,
+          },
+        },
       });
-      if (error) throw error;
-
-      if (user) {
-  const { error } = await supabase
-    .from("users")
-    .update({
-      email: email,
-      full_name: fullName,
-      phone_number: phoneNumber,
-      original_email: email, // Store original email
-      role: role,
-    })
-    .eq("id", user.id);
-
-  if (error) {
-    console.error("[SignUp] Failed to update user profile:", error);
-    throw error;
-  }
-}
       
       if (error) {
         console.error("[SignUp] Supabase signup error:", error);

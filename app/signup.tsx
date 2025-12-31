@@ -79,10 +79,6 @@ export default function SignUpScreen() {
     }
   };
 
-  const handleGoogleSignUp = () => {
-    Alert.alert("Coming Soon", "Google Sign Up will be available soon!");
-  };
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -104,19 +100,6 @@ export default function SignUpScreen() {
         <Text style={styles.heading}>Create account</Text>
 
         <View style={styles.formContainer}>
-          <Pressable style={styles.googleButton} onPress={handleGoogleSignUp}>
-            <View style={styles.googleIconContainer}>
-              <Text style={styles.googleIcon}>G</Text>
-            </View>
-            <Text style={styles.googleButtonText}>Continue with Google</Text>
-          </Pressable>
-
-          <View style={styles.dividerContainer}>
-            <View style={styles.divider} />
-            <Text style={styles.dividerText}>Or create account manually</Text>
-            <View style={styles.divider} />
-          </View>
-
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Full Name</Text>
             <View style={styles.inputContainer}>
