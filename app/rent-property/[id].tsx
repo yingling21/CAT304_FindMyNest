@@ -31,7 +31,7 @@ export default function RentPropertyScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { createRental } = useRentals();
-  const { createPayment, initiateStripePayment } = usePayments();
+  const { createPayment, completePayment } = usePayments();
 
   const [property, setProperty] = React.useState<Property | null>(null);
   const [isLoadingProperty, setIsLoadingProperty] = React.useState(true);
@@ -145,15 +145,11 @@ export default function RentPropertyScreen() {
         moveInDate
       );
 
-      await initiateStripePayment(
-        payment.id,
-        totalUpfront,
-        `Initial payment for ${property.address.split(',')[0]} - First month rent + Security deposit${utilitiesDeposit > 0 ? ' + Utilities deposit' : ''}`
-      );
+      await completePayment(payment.id, paymentMethod);
 
       Alert.alert(
-        "Payment Initiated",
-        "Please complete the payment to confirm your rental.",
+        "Rental Confirmed",
+        "Your rental has been confirmed successfully!",
         [
           {
             text: "OK",
@@ -162,8 +158,8 @@ export default function RentPropertyScreen() {
         ]
       );
     } catch (error) {
-      console.error("Payment failed:", error);
-      Alert.alert("Payment Failed", "Please try again later");
+      console.error("Rental confirmation failed:", error);
+      Alert.alert("Error", "Failed to confirm rental. Please try again later");
     } finally {
       setIsProcessing(false);
     }

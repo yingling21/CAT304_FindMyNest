@@ -7,17 +7,14 @@ import {
   getPaymentsByRental,
   createPayment as createPaymentAPI,
   updatePaymentStatus as updatePaymentStatusAPI,
-  createStripePaymentIntent,
 } from "@/src/api/payments";
-import { Platform, Alert } from "react-native";
-import { useStripe } from '@stripe/stripe-react-native';
+import { Alert } from "react-native";
 
 export const [PaymentsProvider, usePayments] = createContextHook(() => {
   const auth = useAuth();
   const user = auth?.user ?? null;
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const stripe = Platform.OS !== 'web' ? useStripe() : null;
 
   useEffect(() => {
     loadPayments();
@@ -78,70 +75,32 @@ export const [PaymentsProvider, usePayments] = createContextHook(() => {
     }
   };
 
-  const initiateStripePayment = async (
+  const completePayment = async (
     paymentId: string,
-    amount: number,
-    description: string
+    paymentMethod: 'fpx' | 'card' | 'ewallet'
   ): Promise<void> => {
     try {
-      const { clientSecret } = await createStripePaymentIntent(
-        amount,
+      await updatePaymentStatusAPI(
         paymentId,
-        user?.email
+        'success',
+        undefined,
+        paymentMethod
       );
 
-      if (Platform.OS === 'web') {
-        const stripePublishableKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-        if (!stripePublishableKey) {
-          throw new Error("Stripe key not configured");
-        }
+      setPayments(prev => prev.map(payment =>
+        payment.id === paymentId
+          ? { 
+              ...payment, 
+              paymentStatus: 'success',
+              paymentDate: new Date().toISOString(),
+              paymentMethod,
+            }
+          : payment
+      ));
 
-        const stripeCheckoutUrl = `${process.env.EXPO_PUBLIC_RORK_API_BASE_URL || ''}/api/stripe/checkout?clientSecret=${clientSecret}&paymentId=${paymentId}`;
-        
-        const width = 600;
-        const height = 700;
-        const left = window.screen.width / 2 - width / 2;
-        const top = window.screen.height / 2 - height / 2;
-        
-        const popup = window.open(
-          stripeCheckoutUrl,
-          'stripe-checkout',
-          `width=${width},height=${height},left=${left},top=${top}`
-        );
-
-        const checkPaymentStatus = setInterval(async () => {
-          if (popup?.closed) {
-            clearInterval(checkPaymentStatus);
-            await loadPayments();
-          }
-        }, 1000);
-      } else {
-        if (!stripe) {
-          throw new Error('Stripe not initialized');
-        }
-
-        const { error, paymentIntent } = await stripe.confirmPayment(clientSecret, {
-          paymentMethodType: 'Card',
-        });
-
-        if (error) {
-          console.error('Payment failed:', error);
-          await updatePaymentStatusAPI(paymentId, 'failed');
-          Alert.alert('Payment Failed', error.message);
-        } else if (paymentIntent) {
-          await updatePaymentStatusAPI(
-            paymentId,
-            'success',
-            paymentIntent.id,
-            'card'
-          );
-          Alert.alert('Success', 'Payment completed successfully!');
-        }
-        
-        await loadPayments();
-      }
+      Alert.alert('Success', 'Payment recorded successfully!');
     } catch (error) {
-      console.error("Failed to initiate payment:", error);
+      console.error("Failed to complete payment:", error);
       throw error;
     }
   };
@@ -207,7 +166,7 @@ export const [PaymentsProvider, usePayments] = createContextHook(() => {
     payments,
     isLoading,
     createPayment,
-    initiateStripePayment,
+    completePayment,
     updatePaymentStatus,
     getPaymentsByRentalId,
     getNextPaymentDueDate,

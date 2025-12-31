@@ -19,7 +19,7 @@ export default function MyRentalsScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { getTenantRentals, stopRental } = useRentals();
-  const { createPayment, initiateStripePayment } = usePayments();
+  const { createPayment, completePayment } = usePayments();
   const [stoppingRentalId, setStoppingRentalId] = useState<string | null>(null);
   const [payingRentalId, setPayingRentalId] = useState<string | null>(null);
 
@@ -88,13 +88,10 @@ export default function MyRentalsScreen() {
                 nextDueDate.toISOString()
               );
 
-              await initiateStripePayment(
-                payment.id,
-                rental.monthlyRent,
-                `Monthly rent for ${rental.propertyAddress.split(',')[0]}`
-              );
+              await completePayment(payment.id, 'fpx');
 
-              Alert.alert("Payment Initiated", "Please complete the payment.");
+              Alert.alert("Payment Recorded", "Your payment has been recorded successfully!");
+              setPayingRentalId(null);
             } catch (error) {
               console.error("Payment failed:", error);
               Alert.alert("Error", "Failed to process payment. Please try again.");

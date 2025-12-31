@@ -3,7 +3,7 @@ import 'dotenv/config';
 export default {
   expo: {
     name: "Find My Nest",
-    slug: "Find My Nest",
+    slug: "find-my-nest",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
@@ -46,7 +46,7 @@ export default {
     plugins: [
       [
         "expo-router",
-        { origin: "https://rork.com/" }
+        { origin: "https://findmynest.com/" }
       ],
       "expo-font",
       "expo-web-browser",
@@ -57,13 +57,19 @@ export default {
       [
         "expo-notifications",
         {
-          icon: "./local/assets/notification_icon.png",
+          // icon: "./local/assets/notification_icon.png",
           color: "#ffffff",
           defaultChannel: "default",
-          sounds: ["./local/assets/notification_sound.wav"],
           enableBackgroundRemoteNotifications: false
         }
-      ]
+      ],
+      [
+  "@stripe/stripe-react-native",
+  {
+    merchantIdentifier: "merchant.com.findmynest",
+    publishableKey:"pk_test_51Sk30xBKIiws3OMR6s9q42g9VVw8ASdekjA5QXpfq4mcOGK2sIzDa50eJwMF1IPYwQOdoN16N1c6z7iuGnUyCBLZ00jNTX2pAD"
+  }
+]
     ],
 
     experiments: {

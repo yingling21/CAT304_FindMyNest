@@ -11,8 +11,6 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { setupNotificationListeners } from "@/utils/notifications";
-import { StripeProvider } from '@stripe/stripe-react-native';
-import { Platform } from 'react-native';
 
 
 SplashScreen.preventAutoHideAsync();
@@ -67,10 +65,9 @@ export default function RootLayout() {
     return cleanup;
   }, [router]);
 
-  const stripeKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
-
-  const content = (
-    <QueryClientProvider client={queryClient}>
+  return (
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <FavoritesProvider>
             <MessagesProvider>
@@ -88,16 +85,7 @@ export default function RootLayout() {
             </MessagesProvider>
           </FavoritesProvider>
         </AuthProvider>
-    </QueryClientProvider>
-  );
-
-  if (Platform.OS === 'web') {
-    return content;
-  }
-
-  return (
-    <StripeProvider publishableKey={stripeKey}>
-      {content}
-    </StripeProvider>
+      </QueryClientProvider>
+    </trpc.Provider>
   );
 }
