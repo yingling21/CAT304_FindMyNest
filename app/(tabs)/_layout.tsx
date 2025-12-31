@@ -1,8 +1,8 @@
 import { useMessages } from "@/contexts/MessagesContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import { Home, Heart, MapPin, User, MessageCircle, LayoutDashboard, Building2 } from "lucide-react-native";
-import React from "react";
+import React, { useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
@@ -30,8 +30,22 @@ const styles = StyleSheet.create({
 export default function TabLayout() {
   const messagesContext = useMessages();
   const { user } = useAuth();
+  const router = useRouter();
   const unreadCount = messagesContext?.totalUnreadCount || 0;
   const isLandlord = user?.role === "landlord";
+
+  // CRITICAL: Ensure only verified users can access the main app
+  useEffect(() => {
+    if (user) {
+      const verificationStatus = user.verificationStatus;
+      // If verification_status is NULL, undefined, or not "approved", redirect to IC verification
+      if (!verificationStatus || verificationStatus === null || verificationStatus !== "approved") {
+        const statusDisplay = verificationStatus === null ? "NULL (not verified)" : verificationStatus || "undefined";
+        console.log(`[TabLayout] User verification status is "${statusDisplay}", redirecting to IC verification.`);
+        router.replace("/identity-verification");
+      }
+    }
+  }, [user, router]);
 
   return (
     <Tabs
@@ -111,6 +125,12 @@ export default function TabLayout() {
         name="LandlordHomeScreen"
         options={{
           href: null, // Hide from tab bar
+        }}
+      />
+      <Tabs.Screen
+        name="edit-profile"
+        options={{
+          href: null, // Hide Edit Profile from tab bar
         }}
       />
     </Tabs>

@@ -3,9 +3,9 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "start": "bunx rork start -p 0rq7o1jjxmxd7yez4mggt --tunnel",
-    "start-web": "bunx rork start -p 0rq7o1jjxmxd7yez4mggt --web --tunnel",
-    "start-web-dev": "DEBUG=expo* bunx rork start -p 0rq7o1jjxmxd7yez4mggt --web --tunnel",
+    "start": "bunx rork start -p w6m9ub7qebonh24uqp7h6 --tunnel",
+    "start-web": "bunx rork start -p w6m9ub7qebonh24uqp7h6 --web --tunnel",
+    "start-web-dev": "DEBUG=expo* bunx rork start -p w6m9ub7qebonh24uqp7h6 --web --tunnel",
     "lint": "expo lint",
     "android": "expo run:android",
     "ios": "expo run:ios"
@@ -17,6 +17,8 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-native-community/slider": "5.0.1",
+    "@react-native-ml-kit/text-recognition": "^2.0.0",
+    "@rneui/themed": "^4.0.0-rc.8",
     "@rork-ai/toolkit-sdk": "*",
     "@stardazed/streams-text-encoding": "^1.0.2",
     "@stripe/stripe-react-native": "0.50.3",
