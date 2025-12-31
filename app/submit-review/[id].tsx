@@ -14,7 +14,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { styles } from "@/styles/submit-review";
+import { styles } from "@/styles/submit-review.styles";
 
 export default function SubmitReviewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -108,11 +108,6 @@ export default function SubmitReviewScreen() {
       return;
     }
 
-    if (comment.trim().length === 0) {
-      Alert.alert("Error", "Please enter your comments");
-      return;
-    }
-
     try {
       setIsSubmitting(true);
       await createReview(
@@ -123,7 +118,7 @@ export default function SubmitReviewScreen() {
         conditionRating,
         valueRating,
         landlordRating,
-        comment.trim(),
+        comment.trim() || "",
         rental.startDate,
         rental.endDate || new Date().toISOString()
       );
@@ -235,7 +230,7 @@ export default function SubmitReviewScreen() {
           </View>
 
           <View style={styles.commentsSection}>
-            <Text style={styles.commentsLabel}>Your Comments</Text>
+            <Text style={styles.commentsLabel}>Your Comments (Optional)</Text>
             <TextInput
               style={styles.commentsInput}
               placeholder="Share your experience with this property..."

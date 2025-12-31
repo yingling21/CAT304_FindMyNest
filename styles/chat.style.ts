@@ -147,6 +147,9 @@ export const styles = StyleSheet.create({
   },
   messageBubbleContainer: {
     marginBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   messageBubbleContainerLeft: {
     alignItems: "flex-start",
@@ -168,6 +171,11 @@ export const styles = StyleSheet.create({
   messageBubbleOther: {
     backgroundColor: "#F3F4F6",
     borderBottomLeftRadius: 4,
+  },
+  messageBubbleUnread: {
+    backgroundColor: "#EEF2FF",
+    borderWidth: 1,
+    borderColor: "#C7D2FE",
   },
   messageText: {
     fontSize: 15,
@@ -235,5 +243,28 @@ export const styles = StyleSheet.create({
   },
   sensitiveWarningTextOther: {
     color: "#9CA3AF",
+  },
+  unreadDividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 16,
+    gap: 12,
+  },
+  unreadDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#EF4444",
+  },
+  unreadDividerText: {
+    fontSize: 12,
+    fontWeight: "600" as const,
+    color: "#EF4444",
+    textTransform: "uppercase" as const,
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#EF4444",
   },
 });

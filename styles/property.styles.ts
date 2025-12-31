@@ -486,48 +486,134 @@ export const styles = StyleSheet.create({
     fontWeight: "600" as const,
     color: "#FFFFFF",
   },
-  // Deposit Cards
-  depositsContainer: {
+  reviewAuthor: {
     flexDirection: "row",
-    gap: 12,
-    marginTop: 16,
-    justifyContent: "space-between",
-  },
-  depositCard: {
-    flex: 1,
-    backgroundColor: "#F9FAFB",
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
     alignItems: "center",
+    gap: 12,
   },
-  depositIcon: {
-    marginBottom: 8,
+  reviewAuthorPhoto: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
-  depositLabel: {
-    fontSize: 11,
-    color: "#6B7280",
-    marginTop: 8,
-    fontWeight: "500" as const,
+  reviewAuthorPhotoPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#6366F1",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  depositValue: {
+  reviewAuthorPhotoPlaceholderText: {
+    color: "#FFFFFF",
     fontSize: 16,
+    fontWeight: "600" as const,
+  },
+  reviewAuthorInfo: {
+    flex: 1,
+  },
+  reviewAuthorNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  reviewAuthorName: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "#1F2937",
+  },
+  reviewRatingBadge: {
+    backgroundColor: "#6366F1",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  reviewRatingBadgeText: {
+    fontSize: 14,
     fontWeight: "700" as const,
+    color: "#FFFFFF",
+  },
+  reviewRatingsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 16,
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  reviewRatingItem: {
+    alignItems: "center",
+    minWidth: 70,
+  },
+  reviewRatingValue: {
+    fontSize: 14,
+    fontWeight: "600" as const,
     color: "#1F2937",
     marginTop: 4,
   },
-
-  // Property Details - Date & Period
-  detailsInfoRow: {
+  reviewRentalPeriod: {
     flexDirection: "row",
-    gap: 16,
+    alignItems: "center",
+    gap: 6,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  reviewRentalPeriodText: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  noReviewsContainer: {
+    alignItems: "center",
+    paddingVertical: 32,
+  },
+  noReviewsText: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: "#9CA3AF",
+    marginBottom: 4,
+  },
+  noReviewsSubtext: {
+    fontSize: 14,
+    color: "#9CA3AF",
+  },
+  landlordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  landlordPhotoPlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#6366F1",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  landlordPhotoPlaceholderText: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "600" as const,
+  },
+  landlordInfoContainer: {
+    flex: 1,
+  },
+  landlordStatus: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+  detailsInfoRow: {
+    gap: 12,
     marginTop: 16,
   },
   detailsInfoItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 12,
+    backgroundColor: "#F9FAFB",
+    padding: 12,
+    borderRadius: 8,
   },
   detailsInfoContent: {
     flex: 1,
@@ -535,41 +621,66 @@ export const styles = StyleSheet.create({
   detailsInfoLabel: {
     fontSize: 12,
     color: "#6B7280",
+    marginBottom: 2,
   },
   detailsInfoValue: {
     fontSize: 14,
     fontWeight: "600" as const,
     color: "#1F2937",
   },
-  // Utilities Info
   utilitiesItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    paddingVertical: 8,
   },
   utilitiesText: {
     fontSize: 14,
     color: "#1F2937",
+    flex: 1,
   },
-
-  // House Rules
+  depositsContainer: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 12,
+  },
+  depositCard: {
+    flex: 1,
+    backgroundColor: "#F9FAFB",
+    padding: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    gap: 6,
+  },
+  depositLabel: {
+    fontSize: 11,
+    color: "#6B7280",
+    textAlign: "center",
+  },
+  depositValue: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: "#1F2937",
+  },
   houseRulesContainer: {
-    gap: 10,
+    gap: 12,
   },
   houseRuleCard: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 12,
     backgroundColor: "#F9FAFB",
+    padding: 16,
     borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
   },
   houseRuleCardAllowed: {
-    borderColor: "#D1FAE5",
+    backgroundColor: "#ECFDF5",
   },
   houseRuleCardNotAllowed: {
-    borderColor: "#FEE2E2",
+    backgroundColor: "#FEF2F2",
+  },
+  houseRuleCardMultiline: {
+    alignItems: "flex-start",
   },
   houseRuleIconContainer: {
     width: 40,
@@ -578,13 +689,15 @@ export const styles = StyleSheet.create({
     backgroundColor: "#EEF2FF",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
   },
   houseRuleIconContainerAllowed: {
     backgroundColor: "#D1FAE5",
   },
   houseRuleIconContainerNotAllowed: {
     backgroundColor: "#FEE2E2",
+  },
+  houseRuleIconContainerMultiline: {
+    marginTop: 0,
   },
   houseRuleContent: {
     flex: 1,
@@ -595,7 +708,7 @@ export const styles = StyleSheet.create({
     marginBottom: 2,
   },
   houseRuleValue: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600" as const,
     color: "#1F2937",
   },
@@ -605,69 +718,15 @@ export const styles = StyleSheet.create({
   houseRuleValueNotAllowed: {
     color: "#EF4444",
   },
-  houseRuleCardMultiline: {
-    alignItems: "flex-start",
+  contentSpacer: {
+    height: 24,
   },
-  houseRuleIconContainerMultiline: {
-    marginTop: 2,
+  mapView: {
+    width: "100%",
+    height: 300,
+    borderRadius: 12,
+    marginTop: 16,
   },
-
-  // Landlord Info
-  landlordContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  landlordPhotoPlaceholder: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#E5E7EB",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  landlordPhotoPlaceholderText: {
-    fontSize: 20,
-    fontWeight: "600" as const,
-    color: "#6B7280",
-  },
-  landlordInfoContainer: {
-    flex: 1,
-  },
-  landlordStatus: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginTop: 2,
-  },
-
-  // Reviews Summary
-  reviewsSummaryContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  reviewsRating: {
-    fontSize: 32,
-    fontWeight: "700" as const,
-    color: "#1F2937",
-  },
-  reviewsInfo: {
-    flex: 1,
-  },
-  reviewsCount: {
-    fontSize: 14,
-    color: "#6B7280",
-  },
-  reviewsStars: {
-    flexDirection: "row",
-    gap: 2,
-    marginTop: 4,
-  },
-  reviewsStar: {
-    fontSize: 16,
-  },
-
-  // Nearby Counts
   nearbyCountsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -675,64 +734,54 @@ export const styles = StyleSheet.create({
     marginTop: 16,
   },
   nearbyCountCard: {
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
+    backgroundColor: "#F9FAFB",
     paddingHorizontal: 12,
-    borderRadius: 16,
-    backgroundColor: "#EEF2FF",
-    borderWidth: 1,
-    borderColor: "#C7D2FE",
-    minWidth: 60,
+    paddingVertical: 8,
+    borderRadius: 8,
+    minWidth: 80,
+    alignItems: "center",
   },
   nearbyCountType: {
     fontSize: 10,
-    fontWeight: "600" as const,
-    color: "#3730A3",
+    color: "#6B7280",
     marginBottom: 2,
   },
   nearbyCountValue: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "700" as const,
-    color: "#1E40AF",
+    color: "#1F2937",
   },
-
-  // Worthiness Card
   worthinessCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-    marginBottom: 24,
+    backgroundColor: "#EEF2FF",
+    padding: 20,
+    borderRadius: 16,
+    marginTop: 16,
   },
   worthinessTitle: {
-    fontSize: 20,
-    fontWeight: "bold" as const,
+    fontSize: 18,
+    fontWeight: "700" as const,
+    color: "#1F2937",
     marginBottom: 8,
   },
   worthinessScore: {
-    fontSize: 18,
-    fontWeight: "600" as const,
-    color: "#4caf50",
+    fontSize: 32,
+    fontWeight: "700" as const,
+    color: "#6366F1",
+    marginBottom: 16,
   },
   worthinessCategoryContainer: {
-    marginTop: 16,
+    gap: 12,
   },
   worthinessCategoryItem: {
-    marginBottom: 12,
+    gap: 6,
   },
   worthinessCategoryLabel: {
-    textTransform: "capitalize" as const,
-    fontWeight: "600" as const,
-    marginBottom: 4,
+    fontSize: 12,
+    color: "#6B7280",
   },
   worthinessProgressBar: {
     height: 8,
-    backgroundColor: "#eee",
+    backgroundColor: "#E5E7EB",
     borderRadius: 4,
     overflow: "hidden",
   },
@@ -741,16 +790,29 @@ export const styles = StyleSheet.create({
     backgroundColor: "#6366F1",
     borderRadius: 4,
   },
-
-  // Map
-  mapView: {
-    width: "100%",
-    height: 400,
-    marginTop: 16,
+  reviewsSummaryContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
-
-  // Spacer
-  contentSpacer: {
-    height: 120,
+  reviewsSummaryRating: {
+    fontSize: 32,
+    fontWeight: "700" as const,
+    color: "#1F2937",
+  },
+  reviewsSummaryInfo: {
+    flex: 1,
+  },
+  reviewsSummaryCount: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  reviewsSummaryStars: {
+    flexDirection: "row",
+    gap: 2,
+    marginTop: 4,
+  },
+  reviewsStarText: {
+    fontSize: 16,
   },
 });

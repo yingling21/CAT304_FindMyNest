@@ -16,30 +16,34 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { maskSensitiveData, containsSensitiveData } from "@/utils/sensitiveDataMask";
-import { styles } from "@/styles/chat.styles";
+import { styles } from "@/styles/chat.style";
 
 export default function ChatRoomScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();                          //get conversation id
-  const { user } = useAuth();                                                     //get current user                  
-  const { conversations, getConversationMessages, sendMessage, markAsRead } =     //get conversation data
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { user } = useAuth();
+  const { conversations, getConversationMessages, sendMessage, markAsRead } =
     useMessages();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const [messageText, setMessageText] = useState("");
+  const [initialUnreadMessageIds, setInitialUnreadMessageIds] = useState<Set<string>>(new Set());
+  const hasMarkedAsRead = useRef(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   const conversation = conversations.find((c) => c.id === id);
   const messages = getConversationMessages(id || "");
 
-  // Mark conversation as read when screen opens or ID changes
   useEffect(() => {
-    if (id) {
+    if (id && user && !hasMarkedAsRead.current) {
+      const unreadMsgs = messages.filter(msg => msg.receiverId === user.id && !msg.read);
+      setInitialUnreadMessageIds(new Set(unreadMsgs.map(msg => msg.id)));
+      
       markAsRead(id);
+      hasMarkedAsRead.current = true;
     }
-  }, [id, markAsRead]);
+  }, [id, user, messages, markAsRead]);
 
-  // Auto-scroll to the latest message whenever message count changes
   useEffect(() => {
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -51,7 +55,6 @@ export default function ChatRoomScreen() {
 
     const messageToSend = messageText.trim();
     
-    // If sensitive info is detected, show warning before sending
     if (containsSensitiveData(messageToSend)) {
       Alert.alert(
         "Sensitive Information Detected",
@@ -102,7 +105,6 @@ export default function ChatRoomScreen() {
     );
   }
 
-  // Determine who the "other person" is based on user role
   const otherPersonName =
     user.role === "tenant"
       ? conversation.landlordName
@@ -147,7 +149,6 @@ export default function ChatRoomScreen() {
         </View>
       </View>
 
-      {/* Property banner: navigates to property details */}
       <Pressable
         style={styles.propertyBanner}
         onPress={() => router.push(`/property/${conversation.propertyId}` as any)}
@@ -167,7 +168,6 @@ export default function ChatRoomScreen() {
         </View>
       </Pressable>
 
-      {/* Main chat area with keyboard handling */}
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -193,6 +193,8 @@ export default function ChatRoomScreen() {
           ) : (
             messages.map((message, index) => {
               const isCurrentUser = message.senderId === user.id;
+              const isUnread = initialUnreadMessageIds.has(message.id);
+              const showUnreadDivider = isUnread && (index === 0 || !initialUnreadMessageIds.has(messages[index - 1].id));
               const showDateSeparator =
                 index === 0 ||
                 new Date(message.createdAt).toDateString() !==
@@ -226,6 +228,13 @@ export default function ChatRoomScreen() {
                       </Text>
                     </View>
                   )}
+                  {showUnreadDivider && (
+                    <View style={styles.unreadDividerContainer}>
+                      <View style={styles.unreadDividerLine} />
+                      <Text style={styles.unreadDividerText}>Unread Messages</Text>
+                      <View style={styles.unreadDividerLine} />
+                    </View>
+                  )}
                   <View
                     style={[
                       styles.messageBubbleContainer,
@@ -234,12 +243,16 @@ export default function ChatRoomScreen() {
                         : styles.messageBubbleContainerLeft,
                     ]}
                   >
+                    {isUnread && !isCurrentUser && (
+                      <View style={styles.unreadDot} />
+                    )}
                     <View
                       style={[
                         styles.messageBubble,
                         isCurrentUser
                           ? styles.messageBubbleCurrentUser
                           : styles.messageBubbleOther,
+                        isUnread && !isCurrentUser && styles.messageBubbleUnread,
                       ]}
                     >
                       <Text
