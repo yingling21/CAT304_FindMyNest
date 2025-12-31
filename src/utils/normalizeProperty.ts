@@ -1,4 +1,4 @@
-import type { Property, PropertyType, FurnishingLevel } from '@/src/types/property';
+import type { Property, PropertyType, roomType, FurnishingLevel } from '@/src/types/property';
 
 export function normalizeProperty(row: any): Property {
   return {
@@ -9,6 +9,7 @@ export function normalizeProperty(row: any): Property {
     landlordVerified: row.landlord_verified || false,
 
     propertyType: (row.propertyType || 'apartment') as PropertyType,
+    title: row.title || '',
     description: row.description || '',
     address: row.address || '',
 
@@ -16,6 +17,8 @@ export function normalizeProperty(row: any): Property {
     bedrooms: row.bedrooms || 0,
     bathrooms: row.bathrooms || 0,
     furnishingLevel: (row.furnishingLevel || 'unfurnished') as FurnishingLevel,
+    roomType: (row.roomType || 'single_room') as roomType,
+    floorLevel: row.floorLevel ? Number(row.floorLevel) : undefined, // ADD THIS
 
     monthlyRent: Number(row.monthlyRent) || 0,
     securityDeposit: Number(row.securityDeposit) || 0,

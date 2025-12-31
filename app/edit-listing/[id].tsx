@@ -6,6 +6,8 @@ import {
   TextInput,
   TouchableOpacity,
   Switch,
+  Platform,
+  Alert
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -13,6 +15,13 @@ import { ChevronLeft, ChevronRight, Check } from "lucide-react-native";
 import { useListing } from "@/contexts/ListingContext";
 import type { PropertyType, FurnishingLevel } from "@/src/types";
 import { styles } from "@/styles/listing";
+import DateTimePicker from '@react-native-community/datetimepicker';
+import MapPicker from "@/components/maps/MapPicker";
+import { pickImages } from '@/src/utils/imagePicker';
+import { uploadPropertyPhoto } from '@/src/service/photoService';
+import { Keyboard } from 'react-native';
+import * as Location from "expo-location";
+import { useAuth } from "@/contexts/AuthContext";
 
 const TOTAL_STEPS = 9;
 
@@ -31,21 +40,126 @@ const STEP_TITLES = [
 export default function EditListingScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { formData, updateFormData, resetFormData } = useListing();
+  const { user } = useAuth();
+  const { formData, updateFormData, resetFormData, updateListing } = useListing();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   useEffect(() => {
-    console.log("Editing listing:", id);
-  }, [id]);
+    const loadPropertyData = async () => {
+      if (!id || isDataLoaded) return; // Prevent reloading
+      
+      try {
+        const { getPropertyById } = await import('@/src/api/properties');
+        const property = await getPropertyById(id);
+        
+        if (property) {
+          // Populate form with existing property data
+          updateFormData({
+            propertyId: property.id,
+            propertyType: property.propertyType,
+            roomType: property.roomType || "",
+            size: property.size.toString(),
+            bedrooms: property.bedrooms.toString(),
+            bathrooms: property.bathrooms.toString(),
+            floorLevel: property.floorLevel?.toString() || "",
+            furnishingLevel: property.furnishingLevel,
+            monthlyRent: property.monthlyRent.toString(),
+            securityDeposit: property.securityDeposit.toString(),
+            utilitiesDeposit: property.utilitiesDeposit.toString(),
+            minimumRentalPeriod: property.minimumRentalPeriod.toString(),
+            moveInDate: property.moveInDate,
+            bedType: property.amenities?.bedType || "",
+            deskAndChair: property.amenities?.deskAndChair || false,
+            wardrobe: property.amenities?.wardrobe || false,
+            airConditioning: property.amenities?.airConditioning || false,
+            waterHeater: property.amenities?.waterHeater || false,
+            wifi: property.amenities?.wifi || false,
+            kitchenAccess: property.amenities?.kitchenAccess || false,
+            washingMachine: property.amenities?.washingMachine || false,
+            refrigerator: property.amenities?.refrigerator || false,
+            parking: property.amenities?.parking || false,
+            security: property.amenities?.security || false,
+            balcony: property.amenities?.balcony || false,
+            utilitiesIncluded: property.amenities?.utilitiesIncluded || false,
+            estimatedMonthlyUtilities: property.amenities?.estimatedMonthlyUtilities?.toString() || "",
+            internetSpeed: property.amenities?.internetSpeed || "",
+            cooking: property.houseRules?.cooking || "allowed",
+            guestsAllowed: property.houseRules?.guestsAllowed || false,
+            smokingAllowed: property.houseRules?.smokingAllowed || false,
+            petsAllowed: property.houseRules?.petsAllowed || false,
+            quietHours: property.houseRules?.quietHours || "",
+            cleaningRules: property.houseRules?.cleaningRules || "",
+            latitude: property.latitude,
+            longitude: property.longitude,
+            address: property.address,
+            photos: property.photos.map(p => p.url),
+            title: property.title,
+            description: property.description,
+          });
+          
+          // Update move-in date state
+          if (property.moveInDate) {
+            setMoveInDate(new Date(property.moveInDate));
+          }
+          
+          setIsDataLoaded(true); // Mark as loaded
+        }
+      } catch (error) {
+        console.error("Failed to load property:", error);
+        Alert.alert("Error", "Failed to load property data");
+      }
+    };
+    
+    loadPropertyData();
+  }, [id]); 
 
   const progress = (currentStep / TOTAL_STEPS) * 100;
 
-  const handleNext = () => {
+  const [moveInDate, setMoveInDate] = React.useState<Date>(
+    formData.moveInDate ? new Date(formData.moveInDate) : new Date()
+  );
+  const [showDatePicker, setShowDatePicker] = React.useState(false);
+  
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setMoveInDate(selectedDate);
+      const formattedDate = selectedDate.toISOString().split('T')[0];
+      updateFormData({ moveInDate: formattedDate });
+    }
+  };
+
+  const handleNext = async () => {
     if (currentStep < TOTAL_STEPS) {
       setCurrentStep(currentStep + 1);
     } else {
-      resetFormData();
-      router.back();
+      if (!user) {
+        console.error("No user found");
+        Alert.alert("Error", "You must be logged in to update a listing");
+        return;
+      }
+      
+      if (!id) {
+        console.error("No listing ID found");
+        Alert.alert("Error", "Listing ID is missing");
+        return;
+      }
+      
+      try {
+        setIsSubmitting(true);
+        await updateListing(id, user.id);
+        resetFormData();
+        Alert.alert("Success", "Listing updated successfully!");
+        router.back();
+      } catch (error) {
+        console.error("Failed to update listing:", error);
+        Alert.alert("Error", "Failed to update listing. Please try again.");
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -56,6 +170,43 @@ export default function EditListingScreen() {
       router.back();
     }
   };
+
+  const [region, setRegion] = useState<{
+    latitude: number;
+    longitude: number;
+    latitudeDelta: number;
+    longitudeDelta: number;
+  } | undefined>({
+    latitude: formData.latitude || 3.1390,
+    longitude: formData.longitude || 101.6869,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
+  });
+
+  const [selectedImages, setSelectedImages] = useState<any[]>([]);
+
+  async function handleAddPhoto() {
+    try {
+      Keyboard.dismiss();
+      await new Promise(r => setTimeout(r, 300));
+      const images = await pickImages();
+      if (!images.length) return;
+      const uploadedUrls: string[] = [];
+      for (const img of images) {
+        try {
+          const url = await uploadPropertyPhoto(img);
+          uploadedUrls.push(url);
+        } catch (err) {
+          console.warn('Failed to upload image:', img.uri, err);
+        }
+      }
+      updateFormData({
+        photos: [...(formData.photos || []), ...uploadedUrls],
+      });
+    } catch (err) {
+      console.error('Failed to pick or upload image:', err);
+    }
+  }
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -75,7 +226,13 @@ export default function EditListingScreen() {
                     styles.optionChip,
                     formData.propertyType === type && styles.optionChipSelected,
                   ]}
-                  onPress={() => updateFormData({ propertyType: type })}
+                  onPress={() => {
+                    updateFormData({ propertyType: type });
+                    // Reset roomType when switching away from "room"
+                    if (type !== "room") {
+                      updateFormData({ roomType: "" });
+                    }
+                  }}
                 >
                   <Text
                     style={[
@@ -88,7 +245,41 @@ export default function EditListingScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-
+      
+            {/* Show roomType only for "room" propertyType */}
+            {formData.propertyType === "room" && (
+              <>
+                <Text style={styles.label}>
+                  Room Type <Text style={styles.requiredStar}>*</Text>
+                </Text>
+                <View style={styles.optionsRow}>
+                  {[
+                    { value: "master_room", label: "Master Room" },
+                    { value: "single_room", label: "Single Room" },
+                    { value: "shared_room", label: "Shared Room" },
+                  ].map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.optionChip,
+                        formData.roomType === option.value && styles.optionChipSelected,
+                      ]}
+                      onPress={() => updateFormData({ roomType: option.value })}
+                    >
+                      <Text
+                        style={[
+                          styles.optionChipText,
+                          formData.roomType === option.value && styles.optionChipTextSelected,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+      
             <Text style={styles.label}>Size (sq ft) <Text style={styles.requiredStar}>*</Text></Text>
             <TextInput
               style={styles.input}
@@ -97,7 +288,7 @@ export default function EditListingScreen() {
               value={formData.size}
               onChangeText={(text) => updateFormData({ size: text })}
             />
-
+      
             <Text style={styles.label}>Bedrooms</Text>
             <View style={styles.optionsRow}>
               {["0", "1", "2", "3", "4", "5+"].map((num) => (
@@ -120,7 +311,7 @@ export default function EditListingScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-
+      
             <Text style={styles.label}>Bathrooms</Text>
             <View style={styles.optionsRow}>
               {["1", "2", "3", "4", "5+"].map((num) => (
@@ -143,15 +334,17 @@ export default function EditListingScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-
+      
+            {/* Floor Level - available for all property types */}
             <Text style={styles.label}>Floor Level</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g., Ground floor, 5th floor"
+              placeholder="e.g., Ground floor, 5th floor, or leave blank"
+              keyboardType="numeric"
               value={formData.floorLevel}
               onChangeText={(text) => updateFormData({ floorLevel: text })}
             />
-
+      
             <Text style={styles.label}>Furnishing Level <Text style={styles.requiredStar}>*</Text></Text>
             <View style={styles.optionsRow}>
               {([
@@ -181,56 +374,65 @@ export default function EditListingScreen() {
           </View>
         );
 
-      case 2:
-        return (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Pricing & Availability</Text>
-
-            <Text style={styles.label}>Monthly Rent (RM) <Text style={styles.requiredStar}>*</Text></Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter monthly rent"
-              keyboardType="numeric"
-              value={formData.monthlyRent}
-              onChangeText={(text) => updateFormData({ monthlyRent: text })}
-            />
-
-            <Text style={styles.label}>Security Deposit (RM)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter security deposit"
-              keyboardType="numeric"
-              value={formData.securityDeposit}
-              onChangeText={(text) => updateFormData({ securityDeposit: text })}
-            />
-
-            <Text style={styles.label}>Utilities Deposit (RM)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter utilities deposit"
-              keyboardType="numeric"
-              value={formData.utilitiesDeposit}
-              onChangeText={(text) => updateFormData({ utilitiesDeposit: text })}
-            />
-
-            <Text style={styles.label}>Minimum Rental Period (months)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 6, 12"
-              keyboardType="numeric"
-              value={formData.minimumRentalPeriod}
-              onChangeText={(text) => updateFormData({ minimumRentalPeriod: text })}
-            />
-
-            <Text style={styles.label}>Move-in Date Available</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., Immediately, January 2025"
-              value={formData.moveInDate}
-              onChangeText={(text) => updateFormData({ moveInDate: text })}
-            />
-          </View>
-        );
+        case 2:
+          return (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Pricing & Availability</Text>
+        
+              <Text style={styles.label}>Monthly Rent (RM) <Text style={styles.requiredStar}>*</Text></Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter monthly rent"
+                keyboardType="numeric"
+                value={formData.monthlyRent}
+                onChangeText={(text) => updateFormData({ monthlyRent: text })}
+              />
+        
+              <Text style={styles.label}>Security Deposit (RM)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter security deposit"
+                keyboardType="numeric"
+                value={formData.securityDeposit}
+                onChangeText={(text) => updateFormData({ securityDeposit: text })}
+              />
+        
+              <Text style={styles.label}>Utilities Deposit (RM)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter utilities deposit"
+                keyboardType="numeric"
+                value={formData.utilitiesDeposit}
+                onChangeText={(text) => updateFormData({ utilitiesDeposit: text })}
+              />
+        
+              <Text style={styles.label}>Minimum Rental Period (months)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., 6, 12"
+                keyboardType="numeric"
+                value={formData.minimumRentalPeriod}
+                onChangeText={(text) => updateFormData({ minimumRentalPeriod: text })}
+              />
+        
+              <Text style={styles.label}>Move-in Date Available</Text>
+              <TouchableOpacity
+                style={styles.input}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Text>{formData.moveInDate || 'Select move-in date'}</Text>
+              </TouchableOpacity>
+        
+              {showDatePicker && (
+                <DateTimePicker
+                  value={moveInDate}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChange}
+                />
+              )}
+            </View>
+          );
 
       case 3:
         return (
@@ -238,13 +440,18 @@ export default function EditListingScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>In-Room Amenities</Text>
 
-              <Text style={styles.label}>Bed Type</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g., Queen, Single"
-                value={formData.bedType}
-                onChangeText={(text) => updateFormData({ bedType: text })}
-              />
+              {/* Show bedType only for room/studio */}
+              {(formData.propertyType === "room" || formData.propertyType === "studio") && (
+                <>
+                  <Text style={styles.label}>Bed Type</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g., Queen, Single, Double"
+                    value={formData.bedType}
+                    onChangeText={(text) => updateFormData({ bedType: text })}
+                  />
+                </>
+              )}
 
               <View style={styles.switchRow}>
                 <Text style={styles.switchLabel}>Desk & Chair</Text>
@@ -406,6 +613,33 @@ export default function EditListingScreen() {
         return (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>House Rules</Text>
+            
+            <Text style={styles.label}>Cooking Policy <Text style={styles.requiredStar}>*</Text></Text>
+            <View style={styles.optionsRow}>
+              {[
+                { value: "allowed", label: "Allowed" },
+                { value: "light_cooking", label: "Light Cooking Only" },
+                { value: "no_cooking", label: "No Cooking" },
+              ].map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.optionChip,
+                    formData.cooking === option.value && styles.optionChipSelected,
+                  ]}
+                  onPress={() => updateFormData({ cooking: option.value })}
+                >
+                  <Text
+                    style={[
+                      styles.optionChipText,
+                      formData.cooking === option.value && styles.optionChipTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             <View style={styles.switchRow}>
               <Text style={styles.switchLabel}>Guests Allowed</Text>
@@ -460,32 +694,54 @@ export default function EditListingScreen() {
         return (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Location Information</Text>
-
-            <Text style={styles.label}>Address <Text style={styles.requiredStar}>*</Text></Text>
+      
+            {/* Map Picker */}
+            <MapPicker
+              region={region}
+              setRegion={setRegion}
+              onLocationSelect={({ latitude, longitude, address }) => {
+                updateFormData({ latitude, longitude, address });
+                setRegion({
+                  latitude,
+                  longitude,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                });
+              }}
+            />
+        
+            {/* Manual address input */}
+            <Text style={styles.label}>
+              Address <Text style={styles.requiredStar}>*</Text>
+            </Text>
             <TextInput
               style={[styles.input, styles.inputMultiline]}
-              placeholder="Enter full address"
               multiline
+              placeholder="Type address or adjust pin on map"
               value={formData.address}
-              onChangeText={(text) => updateFormData({ address: text })}
+              onChangeText={async (text) => {
+                updateFormData({ address: text });
+                try {
+                  const results = await Location.geocodeAsync(text);
+                  if (results.length > 0) {
+                    const { latitude, longitude } = results[0];
+                    updateFormData({ latitude, longitude });
+                    setRegion({
+                      latitude,
+                      longitude,
+                      latitudeDelta: 0.01,
+                      longitudeDelta: 0.01,
+                    });
+                  }
+                } catch (err) {
+                  console.warn("Failed to geocode address:", err);
+                }
+              }}
             />
-
-            <Text style={styles.label}>Nearby Landmarks</Text>
-            <TextInput
-              style={[styles.input, styles.inputMultiline]}
-              placeholder="e.g., Near shopping mall, university..."
-              multiline
-              value={formData.nearbyLandmarks}
-              onChangeText={(text) => updateFormData({ nearbyLandmarks: text })}
-            />
-
-            <Text style={styles.label}>Distance to Public Transport</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 5 min walk to LRT station"
-              value={formData.distanceToTransport}
-              onChangeText={(text) => updateFormData({ distanceToTransport: text })}
-            />
+        
+            <Text style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>
+              Tap on the map to select the exact property location or type the address manually
+            </Text>
           </View>
         );
 
@@ -511,21 +767,25 @@ export default function EditListingScreen() {
             />
 
             <Text style={styles.label}>Photos</Text>
-            <View style={{
-              borderWidth: 2,
-              borderColor: "#D1D5DB",
-              borderStyle: "dashed",
-              borderRadius: 12,
-              padding: 32,
-              alignItems: "center",
-            }}>
-              <Text style={{ fontSize: 14, color: "#6B7280", marginBottom: 8 }}>
-                Photo upload coming soon
+            <TouchableOpacity
+              style={{
+                borderWidth: 2,
+                borderColor: "#6366F1",
+                borderRadius: 12,
+                padding: 16,
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+              onPress={handleAddPhoto}
+            >
+              <Text style={{ color: "#6366F1", fontWeight: "600" }}>
+                Add Photo
               </Text>
-              <Text style={{ fontSize: 12, color: "#9CA3AF" }}>
-                For now, photos can be added after submission
-              </Text>
-            </View>
+            </TouchableOpacity>
+
+            <Text style={{ fontSize: 12, color: "#6B7280" }}>
+              {formData.photos?.length || 0} photo(s) selected
+            </Text>
           </View>
         );
 
@@ -627,6 +887,7 @@ export default function EditListingScreen() {
         <TouchableOpacity
           style={[styles.footerButton, styles.buttonPrevious]}
           onPress={handlePrevious}
+          disabled={isSubmitting}
         >
           <ChevronLeft size={20} color="#374151" />
           <Text style={[styles.buttonText, styles.buttonTextPrevious]}>

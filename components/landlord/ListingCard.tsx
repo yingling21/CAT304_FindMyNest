@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, Image, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { CheckCircle, Clock, XCircle, Eye, Edit2, Trash2 } from "lucide-react-native";
 import { useRouter } from "expo-router";
+import { useListing } from "@/contexts/ListingContext";
 
 type ListingProperty = {
   id: string;
@@ -47,6 +48,33 @@ export default function ListingCard({ property }: Props) {
       default:
         return styles.statusBadgePending;
     }
+  };
+
+  const { deleteListing } = useListing();
+
+  const handleDelete = () => {
+    Alert.alert(
+      "Delete Listing",
+      "Are you sure you want to delete this listing? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteListing(property.id);
+              // Optionally show success message or refresh
+            } catch (error) {
+              Alert.alert("Error", "Failed to delete listing. Please try again.");
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -103,7 +131,7 @@ export default function ListingCard({ property }: Props) {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => console.log("Delete", property.id)}
+            onPress={handleDelete}
           >
             <Trash2 size={16} color="#EF4444" />
           </TouchableOpacity>

@@ -2,6 +2,8 @@ export type PropertyType = "house" | "apartment" | "studio" | "condo" | "room";
 
 export type FurnishingLevel = "fully_furnished" | "partially_furnished" | "unfurnished";
 
+export type roomType = "single_room" | "master_room" | "shared_room";
+
 export interface Property {
   id: string;
   landlordId: string;
@@ -20,6 +22,8 @@ export interface Property {
   bedrooms: number;
   bathrooms: number;
   furnishingLevel: FurnishingLevel;
+  roomType?: roomType;
+  floorLevel?: number;
   
   monthlyRent: number;
   securityDeposit: number;
@@ -60,6 +64,8 @@ export interface PropertyInsert {
   size: number;
   bedrooms: number;
   bathrooms: number;
+  roomType?: roomType;
+  floorLevel?: number;
 
   monthlyRent: number;
   securityDeposit: number;

@@ -22,8 +22,10 @@ export default {
       bundleIdentifier: "app.rork.house-rent-app-clone",
       usesIcloudStorage: true,
       infoPlist: {
-        CFBundleAllowMixedLocalizations: true,
-        CFBundleLocalizations: ["fr"]
+        NSLocationWhenInUseUsageDescription: "Allow location access for maps"
+      },
+      config: {
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
       }
     },
 
@@ -41,6 +43,10 @@ export default {
 
     web: {
       favicon: "./assets/images/favicon.png"
+    },
+
+    extra: {
+      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
     },
 
     plugins: [

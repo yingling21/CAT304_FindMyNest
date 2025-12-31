@@ -159,7 +159,13 @@ export default function AddListingScreen() {
                     styles.optionChip,
                     formData.propertyType === type && styles.optionChipSelected,
                   ]}
-                  onPress={() => updateFormData({ propertyType: type })}
+                  onPress={() => {
+                    updateFormData({ propertyType: type });
+                    // Reset roomType when switching away from "room"
+                    if (type !== "room") {
+                      updateFormData({ roomType: "" });
+                    }
+                  }}
                 >
                   <Text
                     style={[
@@ -172,7 +178,41 @@ export default function AddListingScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-
+      
+            {/* Show roomType only for "room" propertyType */}
+            {formData.propertyType === "room" && (
+              <>
+                <Text style={styles.label}>
+                  Room Type <Text style={styles.requiredStar}>*</Text>
+                </Text>
+                <View style={styles.optionsRow}>
+                  {[
+                    { value: "master_room", label: "Master Room" },
+                    { value: "single_room", label: "Single Room" },
+                    { value: "shared_room", label: "Shared Room" },
+                  ].map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.optionChip,
+                        formData.roomType === option.value && styles.optionChipSelected,
+                      ]}
+                      onPress={() => updateFormData({ roomType: option.value })}
+                    >
+                      <Text
+                        style={[
+                          styles.optionChipText,
+                          formData.roomType === option.value && styles.optionChipTextSelected,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+      
             <Text style={styles.label}>Size (sq ft) <Text style={styles.requiredStar}>*</Text></Text>
             <TextInput
               style={styles.input}
@@ -181,7 +221,7 @@ export default function AddListingScreen() {
               value={formData.size}
               onChangeText={(text) => updateFormData({ size: text })}
             />
-
+      
             <Text style={styles.label}>Bedrooms</Text>
             <View style={styles.optionsRow}>
               {["0", "1", "2", "3", "4", "5+"].map((num) => (
@@ -204,7 +244,7 @@ export default function AddListingScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-
+      
             <Text style={styles.label}>Bathrooms</Text>
             <View style={styles.optionsRow}>
               {["1", "2", "3", "4", "5+"].map((num) => (
@@ -227,15 +267,23 @@ export default function AddListingScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-
-            <Text style={styles.label}>Floor Level</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., Ground floor, 5th floor"
-              value={formData.floorLevel}
-              onChangeText={(text) => updateFormData({ floorLevel: text })}
-            />
-
+      
+          {/* Show floorLevel only for apartment/studio/room, not house */}
+          {(formData.propertyType === "apartment" || 
+            formData.propertyType === "studio" || 
+            formData.propertyType === "room") && (
+            <>
+              <Text style={styles.label}>Floor Level</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., Ground floor, 5th floor"
+                keyboardType="numeric"
+                value={formData.floorLevel}
+                onChangeText={(text) => updateFormData({ floorLevel: text })}
+              />
+            </>
+          )}
+      
             <Text style={styles.label}>Furnishing Level <Text style={styles.requiredStar}>*</Text></Text>
             <View style={styles.optionsRow}>
               {([
@@ -325,31 +373,37 @@ export default function AddListingScreen() {
           </View>
         );
 
-      case 3:
-        return (
-          <ScrollView>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>In-Room Amenities</Text>
-
-              <Text style={styles.label}>Bed Type</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g., Queen, Single"
-                value={formData.bedType}
-                onChangeText={(text) => updateFormData({ bedType: text })}
-              />
-
-              <View style={styles.switchRow}>
-                <Text style={styles.switchLabel}>Desk & Chair</Text>
-                <Switch
-                  value={formData.deskAndChair}
-                  onValueChange={(value) => updateFormData({ deskAndChair: value })}
-                  trackColor={{ false: "#D1D5DB", true: "#C7D2FE" }}
-                  thumbColor={formData.deskAndChair ? "#6366F1" : "#F3F4F6"}
-                />
-              </View>
-
-              <View style={styles.switchRow}>
+        case 3:
+          return (
+            <ScrollView>
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>In-Room Amenities</Text>
+        
+                {/* Show bedType only for room/studio */}
+                {(formData.propertyType === "room" || formData.propertyType === "studio") && (
+                  <>
+                    <Text style={styles.label}>Bed Type</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g., Queen, Single, Double"
+                      value={formData.bedType}
+                      onChangeText={(text) => updateFormData({ bedType: text })}
+                    />
+                  </>
+                )}
+        
+                {/* In-room amenities */}
+                <View style={styles.switchRow}>
+                  <Text style={styles.switchLabel}>Desk & Chair</Text>
+                  <Switch
+                    value={formData.deskAndChair}
+                    onValueChange={(value) => updateFormData({ deskAndChair: value })}
+                    trackColor={{ false: "#D1D5DB", true: "#C7D2FE" }}
+                    thumbColor={formData.deskAndChair ? "#6366F1" : "#F3F4F6"}
+                  />
+                </View>
+                
+                <View style={styles.switchRow}>
                 <Text style={styles.switchLabel}>Wardrobe</Text>
                 <Switch
                   value={formData.wardrobe}
@@ -380,9 +434,9 @@ export default function AddListingScreen() {
               </View>
             </View>
 
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Shared Facilities</Text>
-
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Shared Facilities</Text>
+                
               <View style={styles.switchRow}>
                 <Text style={styles.switchLabel}>WiFi</Text>
                 <Switch
@@ -452,102 +506,130 @@ export default function AddListingScreen() {
                   thumbColor={formData.balcony ? "#6366F1" : "#F3F4F6"}
                 />
               </View>
+        
             </View>
-          </ScrollView>
-        );
+            </ScrollView>
+          );
 
-      case 4:
-        return (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Utilities & Bills</Text>
-
-            <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>Utilities Included in Rent</Text>
-              <Switch
-                value={formData.utilitiesIncluded}
-                onValueChange={(value) => updateFormData({ utilitiesIncluded: value })}
-                trackColor={{ false: "#D1D5DB", true: "#C7D2FE" }}
-                thumbColor={formData.utilitiesIncluded ? "#6366F1" : "#F3F4F6"}
-              />
-            </View>
-
-            {!formData.utilitiesIncluded && (
-              <>
-                <Text style={styles.label}>Estimated Monthly Utilities (RM)</Text>
+          case 4:
+            return (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Utilities & Bills</Text>
+          
+                <View style={styles.switchRow}>
+                  <Text style={styles.switchLabel}>Utilities Included in Rent</Text>
+                  <Switch
+                    value={formData.utilitiesIncluded}
+                    onValueChange={(value) => updateFormData({ utilitiesIncluded: value })}
+                    trackColor={{ false: "#D1D5DB", true: "#C7D2FE" }}
+                    thumbColor={formData.utilitiesIncluded ? "#6366F1" : "#F3F4F6"}
+                  />
+                </View>
+          
+                {!formData.utilitiesIncluded && (
+                  <>
+                    <Text style={styles.label}>Estimated Monthly Utilities (RM)</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g., 50-100"
+                      keyboardType="numeric"
+                      value={formData.estimatedMonthlyUtilities}
+                      onChangeText={(text) => updateFormData({ estimatedMonthlyUtilities: text })}
+                    />
+                  </>
+                )}
+          
+                {/* Optional: Internet Speed - you can remove this if not needed */}
+                <Text style={styles.label}>Internet Speed/Package (Optional)</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g., 50-100"
-                  value={formData.estimatedMonthlyUtilities}
-                  onChangeText={(text) =>
-                    updateFormData({ estimatedMonthlyUtilities: text })
-                  }
+                  placeholder="e.g., 100 Mbps, Included, or leave blank"
+                  value={formData.internetSpeed}
+                  onChangeText={(text) => updateFormData({ internetSpeed: text })}
                 />
-              </>
-            )}
+              </View>
+            );
 
-            <Text style={styles.label}>Internet Speed/Package</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 100 Mbps, Included"
-              value={formData.internetSpeed}
-              onChangeText={(text) => updateFormData({ internetSpeed: text })}
-            />
-          </View>
-        );
+        case 5:
+          return (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>House Rules</Text>
+        
+              <Text style={styles.label}>Cooking Policy <Text style={styles.requiredStar}>*</Text></Text>
+              <View style={styles.optionsRow}>
+                {[
+                  { value: "allowed", label: "Allowed" },
+                  { value: "light_cooking", label: "Light Cooking Only" },
+                  { value: "no_cooking", label: "No Cooking" },
+                ].map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.optionChip,
+                      formData.cooking === option.value && styles.optionChipSelected,
+                    ]}
+                    onPress={() => updateFormData({ cooking: option.value })}
+                  >
+                    <Text
+                      style={[
+                        styles.optionChipText,
+                        formData.cooking === option.value && styles.optionChipTextSelected,
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+        
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Guests Allowed</Text>
+                <Switch
+                  value={formData.guestsAllowed}
+                  onValueChange={(value) => updateFormData({ guestsAllowed: value })}
+                  trackColor={{ false: "#D1D5DB", true: "#C7D2FE" }}
+                  thumbColor={formData.guestsAllowed ? "#6366F1" : "#F3F4F6"}
+                />
+              </View>
 
-      case 5:
-        return (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>House Rules</Text>
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Smoking Allowed</Text>
+                <Switch
+                  value={formData.smokingAllowed}
+                  onValueChange={(value) => updateFormData({ smokingAllowed: value })}
+                  trackColor={{ false: "#D1D5DB", true: "#C7D2FE" }}
+                  thumbColor={formData.smokingAllowed ? "#6366F1" : "#F3F4F6"}
+                />
+              </View>
 
-            <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>Guests Allowed</Text>
-              <Switch
-                value={formData.guestsAllowed}
-                onValueChange={(value) => updateFormData({ guestsAllowed: value })}
-                trackColor={{ false: "#D1D5DB", true: "#C7D2FE" }}
-                thumbColor={formData.guestsAllowed ? "#6366F1" : "#F3F4F6"}
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Pets Allowed</Text>
+                <Switch
+                  value={formData.petsAllowed}
+                  onValueChange={(value) => updateFormData({ petsAllowed: value })}
+                  trackColor={{ false: "#D1D5DB", true: "#C7D2FE" }}
+                  thumbColor={formData.petsAllowed ? "#6366F1" : "#F3F4F6"}
+                />
+              </View>
+
+              <Text style={styles.label}>Quiet Hours</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., 10 PM - 7 AM"
+                value={formData.quietHours}
+                onChangeText={(text) => updateFormData({ quietHours: text })}
+              />
+
+              <Text style={styles.label}>Cleaning/Maintenance Rules</Text>
+              <TextInput
+                style={[styles.input, styles.inputMultiline]}
+                placeholder="Describe cleaning and maintenance expectations..."
+                multiline
+                value={formData.cleaningRules}
+                onChangeText={(text) => updateFormData({ cleaningRules: text })}
               />
             </View>
-
-            <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>Smoking Allowed</Text>
-              <Switch
-                value={formData.smokingAllowed}
-                onValueChange={(value) => updateFormData({ smokingAllowed: value })}
-                trackColor={{ false: "#D1D5DB", true: "#C7D2FE" }}
-                thumbColor={formData.smokingAllowed ? "#6366F1" : "#F3F4F6"}
-              />
-            </View>
-
-            <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>Pets Allowed</Text>
-              <Switch
-                value={formData.petsAllowed}
-                onValueChange={(value) => updateFormData({ petsAllowed: value })}
-                trackColor={{ false: "#D1D5DB", true: "#C7D2FE" }}
-                thumbColor={formData.petsAllowed ? "#6366F1" : "#F3F4F6"}
-              />
-            </View>
-
-            <Text style={styles.label}>Quiet Hours</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., 10 PM - 7 AM"
-              value={formData.quietHours}
-              onChangeText={(text) => updateFormData({ quietHours: text })}
-            />
-
-            <Text style={styles.label}>Cleaning/Maintenance Rules</Text>
-            <TextInput
-              style={[styles.input, styles.inputMultiline]}
-              placeholder="Describe cleaning and maintenance expectations..."
-              multiline
-              value={formData.cleaningRules}
-              onChangeText={(text) => updateFormData({ cleaningRules: text })}
-            />
-          </View>
-        );
+          );
 
         case 6:
           return (
