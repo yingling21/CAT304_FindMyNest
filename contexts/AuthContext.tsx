@@ -80,29 +80,25 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         if (pushToken) {
           await updateUserPushToken(userId, pushToken);
         }
-        return;
-      }
-      
-      if (data) {
-        // Map database snake_case to TypeScript camelCase
-        const mappedUser: User = {
-          id: data.id,
-          email: data.email || "",
-          fullName: data.full_name || "",
-          phoneNumber: data.phone_number || "",
-          role: data.role || "tenant",
-          profilePicture: data.profile_picture || undefined,
-          verificationStatus: (data.verification_status === null ? "pending" : data.verification_status || "pending") as VerificationStatus,
-          identityDocument: data.identity_document || undefined,
-          ownershipDocument: data.ownership_document || undefined,
-          createdAt: data.created_at || new Date().toISOString(),
-        };
-        setUser(mappedUser);
         // Clear pending user data if user now exists in database
         await AsyncStorage.removeItem(`pending_user_${userId}`);
+        return;
       }
     } catch (error) {
       console.error("Failed to load user profile:", error);
+    }
+  };
+
+  const reloadUserProfile = async () => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user) {
+        await loadUserProfile(session.user.id);
+      }
+    } catch (error) {
+      console.error("Failed to reload user profile:", error);
     }
   };
 
@@ -889,5 +885,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     signOut,
     updateUserRole,
     completeVerification,
+    reloadUserProfile,
   };
 });

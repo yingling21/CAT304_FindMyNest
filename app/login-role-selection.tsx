@@ -8,6 +8,9 @@ import {
   View,
   Alert,
   ActivityIndicator,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -81,100 +84,98 @@ export default function LoginRoleSelectionScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.greeting}>Select Account Type</Text>
-          <Text style={styles.subtitle}>
-            You have accounts registered as both tenant and landlord. Which account would you like to sign in to?
-          </Text>
-          {!tenantVerified && !landlordVerified && (
-            <Text style={{ fontSize: 13, color: "#F59E0B", marginTop: 12, textAlign: "center", paddingHorizontal: 20, fontWeight: "600" }}>
-              ⚠️ Both accounts require IC verification. Please select which account you want to continue/finish the IC verification process for.
-            </Text>
-          )}
-          {(tenantVerified || landlordVerified) && (
-            <Text style={{ fontSize: 13, color: "#6366F1", marginTop: 12, textAlign: "center", paddingHorizontal: 20 }}>
-              ℹ️ Use the same password you used when registering. Select which account you want to access.
-            </Text>
-          )}
-        </View>
-
-        <View style={styles.optionsContainer}>
-          <Pressable
-            style={[styles.optionCard, isLoading && { opacity: 0.6 }]}
-            onPress={() => handleRoleSelection("tenant")}
-            disabled={isLoading}
-          >
-            <View style={[styles.iconContainer, { backgroundColor: "#EEF2FF" }]}>
-              <Home size={40} color="#6366F1" />
-            </View>
-            <Text style={styles.optionTitle}>Sign in as Tenant</Text>
-            <Text style={styles.optionSubtitle}>
-              {tenantVerified 
-                ? "Access your tenant account to search for properties and manage rentals"
-                : "Continue/finish IC verification for your tenant account"}
-            </Text>
-            {!tenantVerified && (
-              <Text style={{ fontSize: 12, color: "#F59E0B", marginTop: 8, textAlign: "center", fontWeight: "600" }}>
-                ⚠️ IC verification required - You will be redirected to complete verification
-              </Text>
-            )}
-            {tenantVerified && (
-              <Text style={{ fontSize: 12, color: "#10B981", marginTop: 8, textAlign: "center" }}>
-                ✅ Verified - Ready to use
-              </Text>
-            )}
-            {isLoading && (
-              <ActivityIndicator color="#6366F1" style={{ marginTop: 12 }} />
-            )}
-          </Pressable>
-
-          <Pressable
-            style={[styles.optionCard, isLoading && { opacity: 0.6 }]}
-            onPress={() => handleRoleSelection("landlord")}
-            disabled={isLoading}
-          >
-            <View style={[styles.iconContainer, { backgroundColor: "#D1FAE5" }]}>
-              <Building2 size={40} color="#10B981" />
-            </View>
-            <Text style={styles.optionTitle}>Sign in as Landlord</Text>
-            <Text style={styles.optionSubtitle}>
-              {landlordVerified 
-                ? "Access your landlord account to manage properties and tenants"
-                : "Continue/finish IC verification for your landlord account"}
-            </Text>
-            {!landlordVerified && (
-              <Text style={{ fontSize: 12, color: "#F59E0B", marginTop: 8, textAlign: "center", fontWeight: "600" }}>
-                ⚠️ IC verification required - You will be redirected to complete verification
-              </Text>
-            )}
-            {landlordVerified && (
-              <Text style={{ fontSize: 12, color: "#10B981", marginTop: 8, textAlign: "center" }}>
-                ✅ Verified - Ready to use
-              </Text>
-            )}
-            {isLoading && (
-              <ActivityIndicator color="#10B981" style={{ marginTop: 12 }} />
-            )}
-          </Pressable>
-        </View>
-
-        <Pressable
-          style={{ marginTop: 24, padding: 16 }}
-          onPress={() => {
-            AsyncStorage.removeItem("pending_login_email");
-            AsyncStorage.removeItem("pending_login_password");
-            AsyncStorage.removeItem("pending_login_tenant_verified");
-            AsyncStorage.removeItem("pending_login_landlord_verified");
-            router.replace("/login");
-          }}
-          disabled={isLoading}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={true}
         >
-          <Text style={{ textAlign: "center", color: "#6366F1", fontSize: 16, fontWeight: "600" }}>
-            Back to Login
-          </Text>
-        </Pressable>
-      </View>
+          <View style={styles.container}>
+            <View style={styles.header}>
+              <Text style={styles.greeting}>Select Account Type</Text>
+            </View>
+
+            <View style={styles.optionsContainer}>
+              <Pressable
+                style={[styles.optionCard, isLoading && { opacity: 0.6 }]}
+                onPress={() => handleRoleSelection("tenant")}
+                disabled={isLoading}
+              >
+                <View style={[styles.iconContainer, { backgroundColor: "#EEF2FF" }]}>
+                  <Home size={40} color="#6366F1" />
+                </View>
+                <Text style={styles.optionTitle}>Sign in as Tenant</Text>
+                <Text style={styles.optionSubtitle}>
+                  {tenantVerified 
+                    ? "Access your tenant account to search for properties and manage rentals"
+                    : "Continue/finish IC verification for your tenant account"}
+                </Text>
+                {!tenantVerified && (
+                  <Text style={{ fontSize: 12, color: "#F59E0B", marginTop: 8, textAlign: "center", fontWeight: "600" }}>
+                    ⚠️ IC verification required - You will be redirected to complete verification
+                  </Text>
+                )}
+                {tenantVerified && (
+                  <Text style={{ fontSize: 12, color: "#10B981", marginTop: 8, textAlign: "center" }}>
+                    ✅ Verified - Ready to use
+                  </Text>
+                )}
+                {isLoading && (
+                  <ActivityIndicator color="#6366F1" style={{ marginTop: 12 }} />
+                )}
+              </Pressable>
+
+              <Pressable
+                style={[styles.optionCard, isLoading && { opacity: 0.6 }]}
+                onPress={() => handleRoleSelection("landlord")}
+                disabled={isLoading}
+              >
+                <View style={[styles.iconContainer, { backgroundColor: "#D1FAE5" }]}>
+                  <Building2 size={40} color="#10B981" />
+                </View>
+                <Text style={styles.optionTitle}>Sign in as Landlord</Text>
+                <Text style={styles.optionSubtitle}>
+                  {landlordVerified 
+                    ? "Access your landlord account to manage properties and tenants"
+                    : "Continue/finish IC verification for your landlord account"}
+                </Text>
+                {!landlordVerified && (
+                  <Text style={{ fontSize: 12, color: "#F59E0B", marginTop: 8, textAlign: "center", fontWeight: "600" }}>
+                    ⚠️ IC verification required - You will be redirected to complete verification
+                  </Text>
+                )}
+                {landlordVerified && (
+                  <Text style={{ fontSize: 12, color: "#10B981", marginTop: 8, textAlign: "center" }}>
+                    ✅ Verified - Ready to use
+                  </Text>
+                )}
+                {isLoading && (
+                  <ActivityIndicator color="#10B981" style={{ marginTop: 12 }} />
+                )}
+              </Pressable>
+            </View>
+
+            <Pressable
+              style={{ marginTop: 24, padding: 16, marginBottom: 20 }}
+              onPress={() => {
+                AsyncStorage.removeItem("pending_login_email");
+                AsyncStorage.removeItem("pending_login_password");
+                AsyncStorage.removeItem("pending_login_tenant_verified");
+                AsyncStorage.removeItem("pending_login_landlord_verified");
+                router.replace("/login");
+              }}
+              disabled={isLoading}
+            >
+              <Text style={{ textAlign: "center", color: "#6366F1", fontSize: 16, fontWeight: "600" }}>
+                Back to Login
+              </Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
