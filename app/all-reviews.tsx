@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useReviews } from "@/contexts/ReviewsContext";
+import { useListing } from "@/contexts/ListingContext";
 import { Stack, useRouter } from "expo-router";
 import { ChevronLeft, Star, MapPin } from "lucide-react-native";
 import React, { useState, useMemo } from "react";
@@ -18,16 +19,18 @@ export default function AllReviewsScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { reviews } = useReviews();
+  const { listings } = useListing();
   const [activeTab, setActiveTab] = useState<TabType>("all");
   const [selectedProperty, setSelectedProperty] = useState<string>("all");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const landlordReviews = useMemo(() => {
     if (!user) return [];
+    const landlordPropertyIds = listings.map(listing => listing.id);
     return reviews.filter(review => {
-      return true;
+      return landlordPropertyIds.includes(review.propertyId);
     });
-  }, [reviews, user]);
+  }, [reviews, user, listings]);
 
   const propertyOptions = useMemo(() => {
     const uniqueProperties = new Map();
