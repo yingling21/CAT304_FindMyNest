@@ -7,6 +7,7 @@ import { ReviewsProvider } from "@/contexts/ReviewsContext";
 import { PaymentsProvider } from "@/contexts/PaymentsContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter } from "expo-router";
+
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -23,7 +24,6 @@ function RootLayoutNav() {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
-      <Stack.Screen name="login-role-selection" options={{ headerShown: false }} />
       <Stack.Screen name="signup" options={{ headerShown: false }} />
       <Stack.Screen name="role-selection" options={{ headerShown: false }} />
       <Stack.Screen name="identity-verification" options={{ headerShown: false }} />
@@ -67,7 +67,6 @@ export default function RootLayout() {
   }, [router]);
 
   return (
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <FavoritesProvider>
@@ -87,6 +86,5 @@ export default function RootLayout() {
           </FavoritesProvider>
         </AuthProvider>
       </QueryClientProvider>
-    </trpc.Provider>
   );
 }

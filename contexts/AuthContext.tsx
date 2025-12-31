@@ -72,21 +72,13 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const loadUserProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", userId)
-        .single();
-
-      if (error) {
-        // User doesn't exist in users table yet (not verified)
-        // Try to load from AsyncStorage if available, but mark as unverified
-        const pendingUserData = await AsyncStorage.getItem(`pending_user_${userId}`);
-        if (pendingUserData) {
-          const pendingUser = JSON.parse(pendingUserData);
-          setUser({ ...pendingUser, verificationStatus: "unverified" as VerificationStatus });
-        } else {
-          setUser(null);
+      const userData = await getUserById(userId);
+      if (userData) {
+        setUser(userData);
+        
+        const pushToken = await registerForPushNotificationsAsync();
+        if (pushToken) {
+          await updateUserPushToken(userId, pushToken);
         }
         return;
       }
@@ -627,17 +619,22 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       if (error) throw error;
 
       if (user) {
-        const { error } = await supabase
-          .from("users")
-          .update({
-            email: email,
-            full_name: fullName,
-            phone_number: phoneNumber,
-            original_email: email, // Store original email
-            role: role,
-          },
-        },
-      });
+  const { error } = await supabase
+    .from("users")
+    .update({
+      email: email,
+      full_name: fullName,
+      phone_number: phoneNumber,
+      original_email: email, // Store original email
+      role: role,
+    })
+    .eq("id", user.id);
+
+  if (error) {
+    console.error("[SignUp] Failed to update user profile:", error);
+    throw error;
+  }
+}
       
       if (error) {
         console.error("[SignUp] Supabase signup error:", error);
