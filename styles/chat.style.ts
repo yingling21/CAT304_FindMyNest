@@ -146,9 +146,9 @@ export const styles = StyleSheet.create({
     borderRadius: 16,
   },
   messageBubbleContainer: {
-    marginBottom: 8,
+    marginBottom: 12,
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     gap: 8,
   },
   messageBubbleContainerLeft: {
@@ -159,18 +159,18 @@ export const styles = StyleSheet.create({
   },
   messageBubble: {
     maxWidth: "75%",
-    paddingHorizontal: 14,
-    paddingTop: 8,
-    paddingBottom: 8,
-    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
+    borderRadius: 18,
   },
   messageBubbleCurrentUser: {
     backgroundColor: "#6366F1",
-    borderBottomRightRadius: 4,
+    borderBottomRightRadius: 6,
   },
   messageBubbleOther: {
     backgroundColor: "#F3F4F6",
-    borderBottomLeftRadius: 4,
+    borderBottomLeftRadius: 6,
   },
   messageBubbleUnread: {
     backgroundColor: "#EEF2FF",
@@ -179,8 +179,8 @@ export const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 15,
-    lineHeight: 20,
-    marginBottom: 4,
+    lineHeight: 21,
+    marginBottom: 2,
   },
   messageTextCurrentUser: {
     color: "#FFFFFF",

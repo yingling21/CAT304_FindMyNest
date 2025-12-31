@@ -67,12 +67,21 @@ export const [RentalsProvider, useRentals] = createContextHook(() => {
     durationMonths: number
   ): Promise<Rental> => {
     try {
-      if (!user) {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      
+      if (!authUser) {
         throw new Error("User not authenticated");
       }
 
       const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + durationMonths);
+
+      console.log('Creating rental with tenant_id:', authUser.id);
+      console.log('Rental data:', {
+        property_id: propertyId,
+        tenant_id: authUser.id,
+        landlord_id: landlordId,
+      });
 
       const { data, error } = await supabase
         .from('rentals')
@@ -80,7 +89,7 @@ export const [RentalsProvider, useRentals] = createContextHook(() => {
           property_id: propertyId,
           property_address: propertyAddress,
           property_image: propertyImage,
-          tenant_id: user.id,
+          tenant_id: authUser.id,
           landlord_id: landlordId,
           monthly_rent: monthlyRent,
           security_deposit: securityDeposit,
@@ -91,7 +100,10 @@ export const [RentalsProvider, useRentals] = createContextHook(() => {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Failed to create rental:', error);
+        throw error;
+      }
       
       const newRental: Rental = {
         id: data.id,
