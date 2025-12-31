@@ -12,6 +12,8 @@ import {
   Pressable,
   TextInput,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "@/styles/submit-review.styles";
@@ -164,7 +166,12 @@ export default function SubmitReviewScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={0}
+        >
+          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.propertyCard}>
             <Image
               source={{ uri: rental.propertyImage }}
@@ -251,9 +258,9 @@ export default function SubmitReviewScreen() {
           </View>
 
           <View style={{ height: 100 }} />
-        </ScrollView>
+          </ScrollView>
 
-        <View style={styles.footer}>
+          <View style={styles.footer}>
           <Pressable
             style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
             onPress={handleSubmit}
@@ -263,7 +270,8 @@ export default function SubmitReviewScreen() {
               {isSubmitting ? "Submitting..." : "Submit Review"}
             </Text>
           </Pressable>
-        </View>
+          </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </>
   );
