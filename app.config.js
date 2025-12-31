@@ -46,7 +46,7 @@ export default {
     },
 
     extra: {
-      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
+      googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
     },
 
     plugins: [
@@ -70,12 +70,12 @@ export default {
         }
       ],
       [
-  "@stripe/stripe-react-native",
-  {
-    merchantIdentifier: "merchant.com.findmynest",
-    publishableKey:"pk_test_51Sk30xBKIiws3OMR6s9q42g9VVw8ASdekjA5QXpfq4mcOGK2sIzDa50eJwMF1IPYwQOdoN16N1c6z7iuGnUyCBLZ00jNTX2pAD"
-  }
-]
+        "@stripe/stripe-react-native",
+        {
+          merchantIdentifier: "merchant.com.findmynest",
+          publishableKey: process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY
+        }
+      ]
     ],
 
     experiments: {
