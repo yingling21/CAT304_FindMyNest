@@ -152,10 +152,10 @@ export const styles = StyleSheet.create({
     gap: 8,
   },
   messageBubbleContainerLeft: {
-    alignItems: "flex-start",
+    justifyContent: "flex-start",
   },
   messageBubbleContainerRight: {
-    alignItems: "flex-end",
+    justifyContent: "flex-end",
   },
   messageBubble: {
     maxWidth: "75%",
