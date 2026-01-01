@@ -26,26 +26,14 @@ export const [ReviewsProvider, useReviews] = createContextHook(() => {
       }
 
       if (user.role === 'landlord') {
-      // LANDLORD: Fetch reviews for their properties only
-      // Step 1: Get landlord ID from landlord table
-        const { data: landlordData, error: landlordError } = await supabase
-          .from('landlord')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (landlordError || !landlordData) {
-          console.error('Failed to fetch landlord:', landlordError);
-          setReviews([]);
-          return;
-        }
+        const landlordId = user.id;
 
-        // Step 2: Get all property IDs owned by this landlord
+        // Step 1: Get all property IDs owned by this landlord
         const { data: propertiesData, error: propertiesError } = await supabase
-          .from('listing')
+          .from('property')
           .select('property_id')
-          .eq('landlord_id', landlordData.id);
-        
+          .eq('landlord_id', landlordId);
+
         if (propertiesError) {
           console.error('Failed to fetch properties:', propertiesError);
           setReviews([]);

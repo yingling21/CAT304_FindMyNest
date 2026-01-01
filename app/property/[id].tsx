@@ -263,33 +263,51 @@ export default function PropertyDetailScreen() {
         <View style={styles.content}>
           {/* Title & Address */}
           <View style={styles.titleSection}>
+            {/* Badges */}
             <View style={styles.badges}>
-              <View style={styles.typeBadge}>
-                <Text style={styles.typeBadgeText}>
-                  {property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)}
-                </Text>
-              </View>
-              {property.roomType && (
+              {/* Property Type Badge */}
+              {property.propertyType && (
                 <View style={styles.typeBadge}>
                   <Text style={styles.typeBadgeText}>
-                    {property.roomType === "master_room" ? "Master Room" : 
-                     property.roomType === "single_room" ? "Single Room" : 
-                     "Shared Room"}
+                    {property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)}
                   </Text>
                 </View>
               )}
+
+              {/* Room Type Badge */}
+              {property.roomType && (
+                <View style={styles.typeBadge}>
+                  <Text style={styles.typeBadgeText}>
+                    {property.roomType === "master_room"
+                      ? "Master Room"
+                      : property.roomType === "single_room"
+                      ? "Single Room"
+                      : "Shared Room"}
+                  </Text>
+                </View>
+              )}
+
+              {/* Rental Status Badge */}
               {property.rentalStatus && (
                 <View style={styles.availableBadge}>
                   <Text style={styles.availableBadgeText}>Available Now</Text>
                 </View>
               )}
             </View>
-            <Text style={styles.title}>{property.title}</Text>
-            <View style={styles.locationRow}>
-              <MapPin size={18} color="#6B7280" />
-              <Text style={styles.address}>{property.address}</Text>
-            </View>
-            {property.floorLevel && (
+
+            {/* Property Title */}
+            {property.title && <Text style={styles.title}>{property.title}</Text>}
+
+            {/* Location */}
+            {property.address && (
+              <View style={styles.locationRow}>
+                <MapPin size={18} color="#6B7280" />
+                <Text style={styles.address}>{property.address}</Text>
+              </View>
+            )}
+
+            {/* Floor Level */}
+            {property.floorLevel != null && (
               <Text style={[styles.address, { marginTop: 4 }]}>
                 Floor: {property.floorLevel}
               </Text>

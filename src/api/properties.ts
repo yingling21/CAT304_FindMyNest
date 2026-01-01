@@ -156,7 +156,7 @@ export async function createProperty(propertyData: Partial<PropertyInput>): Prom
       size: propertyData.size,
       bedrooms: propertyData.bedrooms,
       bathrooms: propertyData.bathrooms,
-      room_type: propertyData.roomType, // ADD THIS
+      roomType: propertyData.roomType, // ADD THIS
       floorLevel: propertyData.floorLevel, // ADD THIS
       furnishingLevel: propertyData.furnishingLevel,
       monthlyRent: propertyData.monthlyRent,
@@ -203,7 +203,7 @@ export async function updateProperty(id: string, propertyData: Partial<Property>
       size: propertyData.size,
       bedrooms: propertyData.bedrooms,
       bathrooms: propertyData.bathrooms,
-      room_type: propertyData.roomType,
+      roomType: propertyData.roomType,
       floorLevel: propertyData.floorLevel, 
       furnishingLevel: propertyData.furnishingLevel,
       monthlyRent: propertyData.monthlyRent,
