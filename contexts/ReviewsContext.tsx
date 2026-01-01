@@ -15,53 +15,132 @@ export const [ReviewsProvider, useReviews] = createContextHook(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // Load reviews based on user role
   const loadReviews = useCallback(async () => {
     try {
       setIsLoading(true);
       
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      if (data) {
-        setReviews(data.map((review: any) => ({
-          id: review.id,
-          propertyId: review.property_id,
-          rentalId: review.rental_id,
-          tenantId: review.tenant_id,
-          tenantName: review.tenant_name,
-          tenantPhoto: review.tenant_photo,
-          tenantVerified: review.tenant_verified,
-          rating: review.rating,
-          locationRating: review.location_rating,
-          conditionRating: review.condition_rating,
-          valueRating: review.value_rating,
-          landlordRating: review.landlord_rating,
-          comment: review.comment,
-          rentalStartDate: review.rental_start_date,
-          rentalEndDate: review.rental_end_date,
-          createdAt: review.created_at,
-        })));
+      if (!user) {
+        setReviews([]);
+        return;
+      }
+
+      if (user.role === 'landlord') {
+      // LANDLORD: Fetch reviews for their properties only
+      // Step 1: Get landlord ID from landlord table
+        const { data: landlordData, error: landlordError } = await supabase
+          .from('landlord')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (landlordError || !landlordData) {
+          console.error('Failed to fetch landlord:', landlordError);
+          setReviews([]);
+          return;
+        }
+
+        // Step 2: Get all property IDs owned by this landlord
+        const { data: propertiesData, error: propertiesError } = await supabase
+          .from('listing')
+          .select('property_id')
+          .eq('landlord_id', landlordData.id);
+        
+        if (propertiesError) {
+          console.error('Failed to fetch properties:', propertiesError);
+          setReviews([]);
+          return;
+        }
+
+        const propertyIds = propertiesData?.map(p => p.property_id) || [];
+        console.log('Landlord property IDs:', propertyIds);
+
+        // If landlord has no properties, they have no reviews
+        if (propertyIds.length === 0) {
+          setReviews([]);
+          return;
+        }
+
+        // Step 3: Fetch reviews for those properties
+        const { data, error } = await supabase
+          .from('reviews')
+          .select('*')
+          .in('property_id', propertyIds)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (data) {
+          console.log('Loaded reviews for landlord:', data.length);
+
+          // Normalize and set reviews
+          setReviews(data.map((review: any) => ({
+            id: review.id,
+            propertyId: review.property_id,
+            rentalId: review.rental_id,
+            tenantId: review.tenant_id,
+            tenantName: review.tenant_name,
+            tenantPhoto: review.tenant_photo,
+            tenantVerified: review.tenant_verified,
+            rating: review.rating,
+            locationRating: review.location_rating,
+            conditionRating: review.condition_rating,
+            valueRating: review.value_rating,
+            landlordRating: review.landlord_rating,
+            comment: review.comment,
+            rentalStartDate: review.rental_start_date,
+            rentalEndDate: review.rental_end_date,
+            createdAt: review.created_at,
+          })));
+        }
+      } else if (user.role === 'tenant') {
+
+        // TENANT: Fetch only their own reviews
+        const { data, error } = await supabase
+          .from('reviews')
+          .select('*')
+          .eq('tenant_id', user.id)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (data) {
+          setReviews(data.map((review: any) => ({
+            id: review.id,
+            propertyId: review.property_id,
+            rentalId: review.rental_id,
+            tenantId: review.tenant_id,
+            tenantName: review.tenant_name,
+            tenantPhoto: review.tenant_photo,
+            tenantVerified: review.tenant_verified,
+            rating: review.rating,
+            locationRating: review.location_rating,
+            conditionRating: review.condition_rating,
+            valueRating: review.value_rating,
+            landlordRating: review.landlord_rating,
+            comment: review.comment,
+            rentalStartDate: review.rental_start_date,
+            rentalEndDate: review.rental_end_date,
+            createdAt: review.created_at,
+          })));
+        }
       }
     } catch (error) {
       console.error("Failed to load reviews:", error);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const createReview = async (
     propertyId: string,
     rentalId: string,
-    rating: number,
-    locationRating: number,
-    conditionRating: number,
-    valueRating: number,
-    landlordRating: number,
-    comment: string,
+    rating: number,              // Overall rating (1-5)
+    locationRating: number,      // Location rating (1-5)
+    conditionRating: number,     // Property condition rating (1-5)
+    valueRating: number,         // Value for money rating (1-5)
+    landlordRating: number,      // Landlord rating (1-5)
+    comment: string,             // Optional comment
     rentalStartDate: string,
     rentalEndDate: string
   ): Promise<Review> => {
@@ -70,6 +149,7 @@ export const [ReviewsProvider, useReviews] = createContextHook(() => {
         throw new Error("User not authenticated");
       }
 
+      // Insert review into database
       const { data: reviewData, error: reviewError } = await supabase
         .from('reviews')
         .insert({
@@ -93,6 +173,7 @@ export const [ReviewsProvider, useReviews] = createContextHook(() => {
       
       if (reviewError) throw reviewError;
 
+      // Mark rental as reviewed so tenant can't review again
       const { error: rentalError } = await supabase
         .from('rentals')
         .update({ has_review: true })
@@ -100,6 +181,7 @@ export const [ReviewsProvider, useReviews] = createContextHook(() => {
       
       if (rentalError) throw rentalError;
 
+      // Create normalized review object
       const newReview: Review = {
         id: reviewData.id,
         propertyId: reviewData.property_id,
@@ -119,6 +201,7 @@ export const [ReviewsProvider, useReviews] = createContextHook(() => {
         createdAt: reviewData.created_at,
       };
 
+      // Update local state
       setReviews(prev => [newReview, ...prev]);
       return newReview;
     } catch (error) {
@@ -127,24 +210,28 @@ export const [ReviewsProvider, useReviews] = createContextHook(() => {
     }
   };
 
+  // Get all reviews for a specific property
   const getReviewsByProperty = (propertyId: string) => {
     return reviews.filter(review => review.propertyId === propertyId);
   };
 
+  // Get all reviews submitted by a specific tenant
   const getReviewsByTenant = (tenantId: string) => {
     return reviews.filter(review => review.tenantId === tenantId);
   };
 
+  // Check if a property has been reviewed by the current tenant
   const hasReviewed = (rentalId: string) => {
     return reviews.some(review => review.rentalId === rentalId);
   };
 
+  // Functions returned by the context:
   return {
-    reviews,
-    isLoading,
-    createReview,
-    getReviewsByProperty,
-    getReviewsByTenant,
-    hasReviewed,
+    reviews,                        // All reviews (filtered by role)
+    isLoading,                      // Loading state
+    createReview,                   // Submit a new review
+    getReviewsByProperty,           // Get reviews for a specific property
+    getReviewsByTenant,             // Get reviews by a specific tenant
+    hasReviewed,                    // Check if tenant reviewed a rental
   };
 });

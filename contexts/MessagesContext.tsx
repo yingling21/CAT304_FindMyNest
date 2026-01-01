@@ -18,6 +18,7 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [isLoading, setIsLoading] = useState(true);
 
+   // Load conversations and messages when user logs in
   const loadData = useCallback(async () => {
     try {
       if (!user) {
@@ -27,9 +28,11 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
         return;
       }
 
+      // 1. Fetch all conversations for the user
       const conversationsData = await getConversationsByUser(user.id);
       setConversations(conversationsData);
 
+      // 2. Fetch messages for all conversations
       const conversationIds = conversationsData.map(c => c.id);
       if (conversationIds.length > 0) {
         const messagesByConversation = await getMessagesByConversations(conversationIds);
@@ -46,6 +49,8 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
     loadData();
   }, [loadData]);
 
+  // This function checks if a conversation already exists between the tenant and landlord
+  // for a specific property. If it exists, return the ID. Otherwise, create a new one.
   const createOrGetConversation = async (
     propertyId: string,
     propertyAddress: string,
@@ -57,6 +62,7 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
   ): Promise<string> => {
     if (!user) throw new Error("User not authenticated");
 
+    // Call API to create or get existing conversation
     const conversationId = await createOrGetConversationAPI({
       propertyId,
       propertyAddress,
@@ -72,6 +78,7 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
 
     await loadData();
 
+    // Reload data to include the new/existing conversation
     return conversationId;
   };
 
@@ -81,11 +88,14 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
   ): Promise<void> => {
     if (!user) throw new Error("User not authenticated");
 
+    // Find the conversation
     const conversation = conversations.find((c) => c.id === conversationId);
     if (!conversation) throw new Error("Conversation not found");
 
+    // Determine who receives the message (opposite of sender's role)
     const receiverId = user.role === "tenant" ? conversation.landlordId : conversation.tenantId;
 
+    // Send message via API (includes sensitive data masking)
     const newMessage = await sendMessageAPI({
       conversationId,
       senderId: user.id,
@@ -93,11 +103,13 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
       content,
     });
 
+    // Update local state immediately
     setMessages(prev => ({
       ...prev,
       [conversationId]: [...(prev[conversationId] || []), newMessage],
     }));
 
+    // Update conversation's last message info
     setConversations(prev => prev.map((c) =>
       c.id === conversationId
         ? {
@@ -109,6 +121,7 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
         : c
     ));
 
+    // Send push notification to receiver
     const receiverPushToken = await getUserPushToken(receiverId);
     if (receiverPushToken) {
       await sendPushNotification({
@@ -126,9 +139,11 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
   const markAsRead = async (conversationId: string): Promise<void> => {
     if (!user) return;
 
+    // Update messages as read in database
     try {
       await markMessagesAsReadAPI(conversationId, user.id);
 
+      // Update local state to reflect read status
       setMessages(prev => ({
         ...prev,
         [conversationId]: (prev[conversationId] || []).map((msg) =>
@@ -136,6 +151,7 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
         ),
       }));
 
+      // Reset unread count for the conversation
       setConversations(prev => prev.map((c) =>
         c.id === conversationId ? { ...c, unreadCount: 0 } : c
       ));
@@ -176,12 +192,12 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
   };
 
   return {
-    conversations: userConversations,
-    isLoading,
-    createOrGetConversation,
-    sendMessage,
-    markAsRead,
-    totalUnreadCount,
-    getConversationMessages,
+    conversations: userConversations,     // Filtered list for current user
+    isLoading,                            // Loading state
+    createOrGetConversation,              // Start a new conversation
+    sendMessage,                          // Send a message
+    markAsRead,                           // Mark messages as read
+    totalUnreadCount,                     // Badge count for notifications
+    getConversationMessages,              // Get messages for a conversation
   };
 });
