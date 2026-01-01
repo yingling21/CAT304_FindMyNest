@@ -9,9 +9,8 @@ export async function getConversationsByUser(userId: string): Promise<Conversati
   const { data, error } = await supabase
     .from('conversations')
     .select('*')
-    .or(`tenant_id.eq.${userId},landlord_id.eq.${userId}`)
-    // Sort conversations by most recent activity
-    .order('last_message_time', { ascending: false });
+    .or(`tenant_id.eq.${userId},landlord_id.eq.${userId}`)    // Get conversations where user is either tenant OR landlord
+    .order('last_message_time', { ascending: false });        // Sort conversations by most recent activity
 
   if (error) {
     console.error('Failed to fetch conversations:', error);
@@ -151,9 +150,9 @@ export async function sendMessage(params: {
   receiverId: string;
   content: string;
 }): Promise<Message> {
-  const maskedContent = maskSensitiveData(params.content);
+  const maskedContent = maskSensitiveData(params.content);      // Mask sensitive data (phone numbers, emails, account numbers)
 
-  // Update conversation preview with latest message
+  // Insert message into database
   const { data: messageData, error: msgError } = await supabase
     .from('messages')
     .insert({
@@ -171,6 +170,7 @@ export async function sendMessage(params: {
     throw msgError;
   }
 
+  // Update conversation's last message and timestamp
   const { error: convError } = await supabase
     .from('conversations')
     .update({
