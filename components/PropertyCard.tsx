@@ -69,7 +69,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
 
       <View style={styles.content}>
         <Text style={styles.title} numberOfLines={1}>
-          {property.description.length > 50 ? property.description.substring(0, 50) + '...' : property.description}
+          {property.title.length > 50 ? property.title.substring(0, 50) + '...' : property.title}
         </Text>
         <View style={styles.priceRow}>
           <Text style={styles.price}>RM {property.monthlyRent}</Text>
