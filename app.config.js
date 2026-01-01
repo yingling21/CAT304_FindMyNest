@@ -19,8 +19,9 @@ export default {
 
     ios: {
       supportsTablet: false,
-      bundleIdentifier: "app.rork.house-rent-app-clone",
+      bundleIdentifier: "app.rork.house-rent-app-qxhb4lq",
       usesIcloudStorage: true,
+      deploymentTarget: "16.0",
       infoPlist: {
         NSLocationWhenInUseUsageDescription: "Allow location access for maps"
       },

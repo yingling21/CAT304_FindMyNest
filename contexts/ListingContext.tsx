@@ -258,13 +258,13 @@ export const [ListingProvider, useListing] = createContextHook(() => {
       };
   
       const { data, error } = await supabase
-        .from('listing')
+        .from('property')
         .insert({
           landlord_id: landlordIdToUse,
           title: formData.title,
           description: formData.description,
           propertyType: formData.propertyType,
-          room_type: formData.propertyType === "room" ? formData.roomType : null, // ADD THIS
+          room_type: formData.propertyType === "room" ? formData.roomType : null,
           size: parseInt(formData.size) || 0,
           bedrooms: parseInt(formData.bedrooms) || 0,
           bathrooms: parseInt(formData.bathrooms) || 0,
@@ -272,7 +272,7 @@ export const [ListingProvider, useListing] = createContextHook(() => {
                         formData.propertyType === "studio" || 
                         formData.propertyType === "room") 
             ? parseInt(formData.floorLevel) || null 
-            : null, // ADD THIS
+            : null, 
           furnishingLevel: formData.furnishingLevel,
           monthlyRent: parseFloat(formData.monthlyRent) || 0,
           securityDeposit: parseFloat(formData.securityDeposit) || 0,
@@ -333,7 +333,7 @@ export const [ListingProvider, useListing] = createContextHook(() => {
     try {
       const rentalStatus = status === "approved";
       const { error } = await supabase
-        .from('listing')
+        .from('property')
         .update({ rentalStatus })
         .eq("property_id", listingId);
       if (error) throw error;

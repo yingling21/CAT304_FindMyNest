@@ -181,7 +181,7 @@ export async function createProperty(propertyData: Partial<PropertyInput>): Prom
     }));
 
     const { error: photoError } = await supabase
-      .from("property_photo")
+      .from("property_Photo")
       .insert(photoInserts);
 
     if (photoError) throw photoError;
