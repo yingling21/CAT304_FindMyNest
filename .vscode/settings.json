@@ -1,3 +1,9 @@
 {
-    "git.ignoreLimitWarning": true
+  "typescript.tsserver.experimental.enableProjectDiagnostics": false,
+  "typescript.preferences.includePackageJsonAutoImports": "off",
+  "files.exclude": {
+    "**/node_modules": false
+  },
+  "typescript.validate.enable": true,
+  "typescript.preferences.ignoreSourceCodeInWorkspace": true
 }

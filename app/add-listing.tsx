@@ -42,7 +42,7 @@ export default function AddListingScreen() {
   const { formData, updateFormData, resetFormData, saveListing } = useListing();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [moveInDate, setMoveInDate] = React.useState<Date>(formData.moveInDate ? new Date(formData.moveInDate) : new Date());
+  const [availableDate, setAvailableDate] = React.useState<Date>(formData.availableDate ? new Date(formData.availableDate) : new Date());
   const [showDatePicker, setShowDatePicker] = React.useState(false);
 
   const progress = (currentStep / TOTAL_STEPS) * 100;
@@ -50,9 +50,9 @@ export default function AddListingScreen() {
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios'); // keep open on iOS
     if (selectedDate) {
-      setMoveInDate(selectedDate);
+      setAvailableDate(selectedDate);
       const formattedDate = selectedDate.toISOString().split('T')[0]; // YYYY-MM-DD
-      updateFormData({ moveInDate: formattedDate });
+      updateFormData({ availableDate: formattedDate });
     }
   };
 
@@ -359,12 +359,12 @@ export default function AddListingScreen() {
                 style={styles.input}
                 onPress={() => setShowDatePicker(true)}
               >
-                <Text>{formData.moveInDate || 'Select move-in date'}</Text>
+                <Text>{formData.availableDate || 'Select available date'}</Text>
               </TouchableOpacity>
 
               {showDatePicker && (
                 <DateTimePicker
-                  value={moveInDate}
+                  value={availableDate}
                   mode="date"
                   display="default"
                   onChange={handleDateChange}

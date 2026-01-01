@@ -76,10 +76,30 @@ export default function TenantHomeScreen() {
 
   const filteredProperties = useMemo(() => {
     return properties.filter((property) => {
-      const matchesSearch = property.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        property.description.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      if (!matchesSearch) return false;
+      // Filter out properties where availableDate is more than one month away
+      if (property.availableDate) {
+        try {
+          const availableDate = new Date(property.availableDate);
+          const today = new Date();
+          const oneMonthFromNow = new Date();
+          oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+          
+          // If availableDate is more than one month away, exclude it
+          if (availableDate > oneMonthFromNow) {
+            return false;
+          }
+        } catch {
+          // If date parsing fails, include the property
+        }
+      }
+
+      // Only filter by search query if it's not empty
+      if (searchQuery.trim()) {
+        const matchesSearch = property.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          property.description.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        if (!matchesSearch) return false;
+      }
 
       if (
         filters.location &&

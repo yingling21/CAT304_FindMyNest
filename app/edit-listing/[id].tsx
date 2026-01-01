@@ -70,7 +70,7 @@ export default function EditListingScreen() {
             securityDeposit: property.securityDeposit.toString(),
             utilitiesDeposit: property.utilitiesDeposit.toString(),
             minimumRentalPeriod: property.minimumRentalPeriod.toString(),
-            moveInDate: property.moveInDate,
+            availableDate: property.availableDate,
             bedType: property.amenities?.bedType || "",
             deskAndChair: property.amenities?.deskAndChair || false,
             wardrobe: property.amenities?.wardrobe || false,
@@ -100,9 +100,9 @@ export default function EditListingScreen() {
             description: property.description,
           });
           
-          // Update move-in date state
-          if (property.moveInDate) {
-            setMoveInDate(new Date(property.moveInDate));
+          // Update available date state
+          if (property.availableDate) {
+            setAvailableDate(new Date(property.availableDate));
           }
           
           setIsDataLoaded(true); // Mark as loaded
@@ -118,17 +118,17 @@ export default function EditListingScreen() {
 
   const progress = (currentStep / TOTAL_STEPS) * 100;
 
-  const [moveInDate, setMoveInDate] = React.useState<Date>(
-    formData.moveInDate ? new Date(formData.moveInDate) : new Date()
+  const [availableDate, setAvailableDate] = React.useState<Date>(
+    formData.availableDate ? new Date(formData.availableDate) : new Date()
   );
   const [showDatePicker, setShowDatePicker] = React.useState(false);
   
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
-      setMoveInDate(selectedDate);
+      setAvailableDate(selectedDate);
       const formattedDate = selectedDate.toISOString().split('T')[0];
-      updateFormData({ moveInDate: formattedDate });
+      updateFormData({ availableDate: formattedDate });
     }
   };
 
@@ -420,12 +420,12 @@ export default function EditListingScreen() {
                 style={styles.input}
                 onPress={() => setShowDatePicker(true)}
               >
-                <Text>{formData.moveInDate || 'Select move-in date'}</Text>
+                <Text>{formData.availableDate || 'Select available date'}</Text>
               </TouchableOpacity>
         
               {showDatePicker && (
                 <DateTimePicker
-                  value={moveInDate}
+                  value={availableDate}
                   mode="date"
                   display="default"
                   onChange={handleDateChange}

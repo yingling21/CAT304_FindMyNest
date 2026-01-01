@@ -1,4 +1,4 @@
-import type { Property, PropertyType, roomType, FurnishingLevel } from '@/src/types/property';
+import type { Property, PropertyType, roomType, FurnishingLevel, ApprovalStatus } from '@/src/types/property';
 
 export function normalizeProperty(row: any): Property {
   return {
@@ -24,8 +24,8 @@ export function normalizeProperty(row: any): Property {
     securityDeposit: Number(row.securityDeposit) || 0,
     utilitiesDeposit: Number(row.utilitiesDeposit) || 0,
     minimumRentalPeriod: row.minimumRentalPeriod || 0,
-    moveInDate: row.moveInDate || new Date().toISOString().split('T')[0],
-    rentalStatus: row.rentalStatus !== false,
+    availableDate: row.availableDate || new Date().toISOString().split('T')[0],
+    approvalStatus: (row.approvalStatus || row.rentalStatus === true ? "approved" : row.rentalStatus === false ? "pending" : "pending") as ApprovalStatus,
 
     amenities: row.amenities || {},
     houseRules: row.houseRules || {},
@@ -38,7 +38,7 @@ export function normalizeProperty(row: any): Property {
     latitude: Number(row.latitude) || 0,   // <-- added
     longitude: Number(row.longitude) || 0, // <-- added
 
-    createdAt: row.created_At || new Date().toISOString(),
+    createdAt: row.created_at || new Date().toISOString(),
     updatedAt: row.updated_at || new Date().toISOString(),
   };
 }

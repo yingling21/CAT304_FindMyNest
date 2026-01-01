@@ -86,6 +86,23 @@ export default function SearchScreen() {
 
   const filteredAndSortedProperties = useMemo(() => {
     let results = properties.filter((property) => {
+      // Filter out properties where availableDate is more than one month away
+      if (property.availableDate) {
+        try {
+          const availableDate = new Date(property.availableDate);
+          const today = new Date();
+          const oneMonthFromNow = new Date();
+          oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+          
+          // If availableDate is more than one month away, exclude it
+          if (availableDate > oneMonthFromNow) {
+            return false;
+          }
+        } catch {
+          // If date parsing fails, include the property
+        }
+      }
+
       if (
         filters.location &&
         !property.address.toLowerCase().includes(filters.location.toLowerCase())

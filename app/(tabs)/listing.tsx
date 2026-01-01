@@ -41,7 +41,7 @@ export default function ListingScreen() {
     id: listing.id,
     landlordId: listing.landlordId,
     title: listing.title,
-    image: "https://images.unsplash.com/photo-1600210492493-0946911123ea?w=400",
+    image: listing.coverPhotoUrl || "https://via.placeholder.com/400",
     price: listing.price,
     address: listing.address,
     status: listing.status,

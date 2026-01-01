@@ -31,7 +31,7 @@ async function enrichPropertiesWithData(properties: any[]): Promise<any[]> {
     if (!photosByProperty[propId]) photosByProperty[propId] = [];
     photosByProperty[propId].push({
       id: photo.Photo_id.toString(),
-      url: photo.photo_URL,
+      url: photo.photo_url,
       isCover: photo.is_cover,
     });
   });
@@ -77,8 +77,8 @@ export async function getAvailableProperties(): Promise<Property[]> {
   const { data, error } = await supabase
     .from('property')
     .select('*')
-    .eq('rentalStatus', true)
-    .order('created_At', { ascending: false });
+    .eq('approvalStatus', 'approved')
+    .order('created_at', { ascending: false });
 
   if (error) {
     console.error('Failed to fetch properties:', error);
@@ -131,7 +131,7 @@ export async function getPropertiesByLandlord(landlordId: string): Promise<Prope
     .from('property')
     .select('*')
     .eq('landlord_id', landlordId)
-    .order('created_At', { ascending: false });
+    .order('created_at', { ascending: false });
 
   if (error) {
     console.error('Failed to fetch landlord properties:', error);
@@ -163,8 +163,8 @@ export async function createProperty(propertyData: Partial<PropertyInput>): Prom
       securityDeposit: propertyData.securityDeposit,
       utilitiesDeposit: propertyData.utilitiesDeposit,
       minimumRentalPeriod: propertyData.minimumRentalPeriod,
-      moveInDate: propertyData.moveInDate,
-      rentalStatus: propertyData.rentalStatus !== false,
+      availableDate: propertyData.availableDate,
+      approvalStatus: propertyData.approvalStatus || 'pending',
       amenities: propertyData.amenities || {},
       houseRules: propertyData.houseRules || {},
     })
@@ -210,8 +210,8 @@ export async function updateProperty(id: string, propertyData: Partial<Property>
       securityDeposit: propertyData.securityDeposit,
       utilitiesDeposit: propertyData.utilitiesDeposit,
       minimumRentalPeriod: propertyData.minimumRentalPeriod,
-      moveInDate: propertyData.moveInDate,
-      rentalStatus: propertyData.rentalStatus !== false,
+      availableDate: propertyData.availableDate,
+      approvalStatus: propertyData.approvalStatus,
       amenities: propertyData.amenities,
       houseRules: propertyData.houseRules,
     })
@@ -233,7 +233,7 @@ export async function updateProperty(id: string, propertyData: Partial<Property>
     if (propertyData.photos.length > 0) {
       const photoInserts = propertyData.photos.map((photo, index) => ({
         property_id: data.property_id,
-        photo_URL: typeof photo === 'string' ? photo : photo.url,
+        photo_url: typeof photo === 'string' ? photo : photo.url,
         is_cover: index === 0,
       }));
 

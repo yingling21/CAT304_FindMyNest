@@ -33,6 +33,51 @@ export default function PropertyCard({ property }: PropertyCardProps) {
     toggleFavorite(property.id);
   };
 
+  // Check if property is available now (availableDate is today or in the past)
+  const isAvailableNow = () => {
+    if (property.approvalStatus !== 'approved') return false;
+    if (!property.availableDate) return false;
+    try {
+      const availableDate = new Date(property.availableDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      availableDate.setHours(0, 0, 0, 0);
+      return availableDate <= today;
+    } catch {
+      return false;
+    }
+  };
+
+  // Check if availableDate is in the future (after today)
+  const isFutureDate = () => {
+    if (!property.availableDate) return false;
+    try {
+      const availableDate = new Date(property.availableDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      availableDate.setHours(0, 0, 0, 0);
+      return availableDate > today;
+    } catch {
+      return false;
+    }
+  };
+
+  const formatAvailableDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-MY", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return "Date TBD";
+    }
+  };
+
+  const available = isAvailableNow();
+  const futureDate = isFutureDate();
+
   return (
     <Pressable style={styles.card} onPress={handlePress}>
       <View style={styles.imageContainer}>
@@ -48,11 +93,17 @@ export default function PropertyCard({ property }: PropertyCardProps) {
               {property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)}
             </Text>
           </View>
-          {property.rentalStatus && (
+          {available ? (
             <View style={styles.statusBadge}>
-              <Text style={styles.statusBadgeText}>Available Now</Text>
+              <Text style={styles.statusBadgeText}>Available</Text>
             </View>
-          )}
+          ) : futureDate && property.availableDate ? (
+            <View style={styles.unavailableBadge}>
+              <Text style={styles.unavailableBadgeText}>
+                {formatAvailableDate(property.availableDate)}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         <Pressable
@@ -154,6 +205,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   statusBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "600" as const,
+  },
+  unavailableBadge: {
+    backgroundColor: "#EF4444",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  unavailableBadgeText: {
     color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "600" as const,
