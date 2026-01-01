@@ -19,39 +19,108 @@ export const [ReviewsProvider, useReviews] = createContextHook(() => {
     try {
       setIsLoading(true);
       
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      if (data) {
-        setReviews(data.map((review: any) => ({
-          id: review.id,
-          propertyId: review.property_id,
-          rentalId: review.rental_id,
-          tenantId: review.tenant_id,
-          tenantName: review.tenant_name,
-          tenantPhoto: review.tenant_photo,
-          tenantVerified: review.tenant_verified,
-          rating: review.rating,
-          locationRating: review.location_rating,
-          conditionRating: review.condition_rating,
-          valueRating: review.value_rating,
-          landlordRating: review.landlord_rating,
-          comment: review.comment,
-          rentalStartDate: review.rental_start_date,
-          rentalEndDate: review.rental_end_date,
-          createdAt: review.created_at,
-        })));
+      if (!user) {
+        setReviews([]);
+        return;
+      }
+
+      if (user.role === 'landlord') {
+        const { data: landlordData, error: landlordError } = await supabase
+          .from('landlord')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (landlordError || !landlordData) {
+          console.error('Failed to fetch landlord:', landlordError);
+          setReviews([]);
+          return;
+        }
+
+        const { data: propertiesData, error: propertiesError } = await supabase
+          .from('listing')
+          .select('property_id')
+          .eq('landlord_id', landlordData.id);
+        
+        if (propertiesError) {
+          console.error('Failed to fetch properties:', propertiesError);
+          setReviews([]);
+          return;
+        }
+
+        const propertyIds = propertiesData?.map(p => p.property_id) || [];
+        console.log('Landlord property IDs:', propertyIds);
+
+        if (propertyIds.length === 0) {
+          setReviews([]);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('reviews')
+          .select('*')
+          .in('property_id', propertyIds)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (data) {
+          console.log('Loaded reviews for landlord:', data.length);
+          setReviews(data.map((review: any) => ({
+            id: review.id,
+            propertyId: review.property_id,
+            rentalId: review.rental_id,
+            tenantId: review.tenant_id,
+            tenantName: review.tenant_name,
+            tenantPhoto: review.tenant_photo,
+            tenantVerified: review.tenant_verified,
+            rating: review.rating,
+            locationRating: review.location_rating,
+            conditionRating: review.condition_rating,
+            valueRating: review.value_rating,
+            landlordRating: review.landlord_rating,
+            comment: review.comment,
+            rentalStartDate: review.rental_start_date,
+            rentalEndDate: review.rental_end_date,
+            createdAt: review.created_at,
+          })));
+        }
+      } else if (user.role === 'tenant') {
+        const { data, error } = await supabase
+          .from('reviews')
+          .select('*')
+          .eq('tenant_id', user.id)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (data) {
+          setReviews(data.map((review: any) => ({
+            id: review.id,
+            propertyId: review.property_id,
+            rentalId: review.rental_id,
+            tenantId: review.tenant_id,
+            tenantName: review.tenant_name,
+            tenantPhoto: review.tenant_photo,
+            tenantVerified: review.tenant_verified,
+            rating: review.rating,
+            locationRating: review.location_rating,
+            conditionRating: review.condition_rating,
+            valueRating: review.value_rating,
+            landlordRating: review.landlord_rating,
+            comment: review.comment,
+            rentalStartDate: review.rental_start_date,
+            rentalEndDate: review.rental_end_date,
+            createdAt: review.created_at,
+          })));
+        }
       }
     } catch (error) {
       console.error("Failed to load reviews:", error);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const createReview = async (
     propertyId: string,

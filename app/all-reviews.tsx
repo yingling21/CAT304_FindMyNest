@@ -18,7 +18,7 @@ type TabType = "all" | "property";
 export default function AllReviewsScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { reviews } = useReviews();
+  const { reviews, isLoading: reviewsLoading } = useReviews();
   const { listings } = useListing();
   const [activeTab, setActiveTab] = useState<TabType>("all");
   const [selectedProperty, setSelectedProperty] = useState<string>("all");
@@ -27,9 +27,15 @@ export default function AllReviewsScreen() {
   const landlordReviews = useMemo(() => {
     if (!user) return [];
     const landlordPropertyIds = listings.map(listing => listing.id);
-    return reviews.filter(review => {
-      return landlordPropertyIds.includes(review.propertyId);
+    console.log('Landlord property IDs:', landlordPropertyIds);
+    console.log('All reviews:', reviews.length);
+    const filtered = reviews.filter(review => {
+      const matches = landlordPropertyIds.includes(review.propertyId);
+      console.log(`Review ${review.id} for property ${review.propertyId}: ${matches}`);
+      return matches;
     });
+    console.log('Filtered landlord reviews:', filtered.length);
+    return filtered;
   }, [reviews, user, listings]);
 
   const propertyOptions = useMemo(() => {
@@ -196,7 +202,11 @@ export default function AllReviewsScreen() {
           )}
 
           <View style={styles.reviewsList}>
-            {filteredReviews.length === 0 ? (
+            {reviewsLoading ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyTitle}>Loading reviews...</Text>
+              </View>
+            ) : filteredReviews.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Star size={48} color="#D1D5DB" />
                 <Text style={styles.emptyTitle}>No Reviews Yet</Text>
