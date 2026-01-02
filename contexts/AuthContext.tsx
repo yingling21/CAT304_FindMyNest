@@ -5,8 +5,6 @@ import { useEffect, useState } from "react";
 import type { User, UserRole, VerificationStatus } from "@/src/types";
 import { supabase } from "../lib/supabase";
 import { getUserById, updateUserRole as updateUserRoleAPI, updateUserVerification } from "@/src/api/users";
-import { registerForPushNotificationsAsync } from "@/utils/notifications";
-import { updateUserPushToken } from "@/src/api/notifications";
 import { AppState } from "react-native";
 
 // Tells Supabase Auth to continuously refresh the session automatically if
@@ -76,10 +74,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       if (userData) {
         setUser(userData);
         
-        const pushToken = await registerForPushNotificationsAsync();
-        if (pushToken) {
-          await updateUserPushToken(userId, pushToken);
-        }
         // Clear pending user data if user now exists in database
         await AsyncStorage.removeItem(`pending_user_${userId}`);
         return;
