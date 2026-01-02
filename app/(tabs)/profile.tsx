@@ -61,7 +61,7 @@ export default function ProfileScreen() {
               borderRadius: 10,
               backgroundColor: "#6366F1",
             }}
-            onPress={() => router.push("/(tabs)/edit-profile")}
+            onPress={() => router.push("/(tabs)/edit-profile" as any)}
           >
             <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>Edit Profile</Text>
           </Pressable>
