@@ -3,6 +3,8 @@ import { View, Text, StyleSheet } from "react-native";
 import { MessageSquare, CheckCircle, XCircle, UserPlus } from "lucide-react-native";
 import { useMessages } from "@/contexts/MessagesContext";
 import { useRentals } from "@/contexts/RentalsContext";
+import { useListing } from "@/contexts/ListingContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 type ActivityType = "message" | "approved" | "rejected" | "new_tenant";
 
@@ -16,8 +18,10 @@ interface Activity {
 }
 
 export default function LandlordRecentActivity() {
+  const { user } = useAuth();
   const { conversations } = useMessages();
   const { getLandlordRentals } = useRentals();
+  const { getListingsByLandlord } = useListing();
 
   const activities = useMemo(() => {
     const getRelativeTime = (date: Date): string => {
@@ -36,6 +40,7 @@ export default function LandlordRecentActivity() {
 
     const activityList: Activity[] = [];
 
+    // Add message activities
     conversations.forEach(conv => {
       if (conv.lastMessage && conv.lastMessageTime) {
         activityList.push({
@@ -49,24 +54,72 @@ export default function LandlordRecentActivity() {
       }
     });
 
-    activityList.push({
-      id: "approved-1",
-      type: "approved",
-      title: "Your listing \"house in gurun\" was approved",
-      time: getRelativeTime(new Date(Date.now() - 86400000)),
-      timestamp: Date.now() - 86400000,
-    });
+    // Add listing approval/rejection activities
+    if (user) {
+      const listings = getListingsByLandlord(user.id);
+      listings.forEach(listing => {
+        const createdAt = new Date(listing.createdAt);
+        const daysSinceCreation = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Only show recent approvals/rejections (within last 7 days)
+        if (daysSinceCreation <= 7) {
+          if (listing.status === "approved") {
+            activityList.push({
+              id: `approved-${listing.id}`,
+              type: "approved",
+              title: `Your listing "${listing.title}" was approved`,
+              subtitle: listing.address,
+              time: getRelativeTime(createdAt),
+              timestamp: createdAt.getTime(),
+            });
+          } else if (listing.status === "rejected") {
+            activityList.push({
+              id: `rejected-${listing.id}`,
+              type: "rejected",
+              title: `Your listing "${listing.title}" was rejected`,
+              subtitle: listing.address,
+              time: getRelativeTime(createdAt),
+              timestamp: createdAt.getTime(),
+            });
+          }
+        }
+      });
+    }
 
+    // Add rental activities (pending, confirmed, and active rentals)
     const rentals = getLandlordRentals();
-    rentals.forEach((rental, index) => {
-      if (rental.status === "active") {
+    rentals.forEach((rental) => {
+      // Show new rental requests (pending)
+      if (rental.status === "pending") {
         activityList.push({
-          id: `tenant-${rental.id}`,
+          id: `rental-pending-${rental.id}`,
           type: "new_tenant",
-          title: `New tenant for property at ${rental.propertyAddress}`,
-          subtitle: `Rental started on ${new Date(rental.startDate).toLocaleDateString("en-MY")}`,
+          title: `New rental request for ${rental.propertyAddress}`,
+          subtitle: `Start date: ${new Date(rental.startDate).toLocaleDateString("en-MY")}`,
           time: getRelativeTime(new Date(rental.createdAt)),
           timestamp: new Date(rental.createdAt).getTime(),
+        });
+      }
+      // Show confirmed rentals
+      else if (rental.status === "confirmed") {
+        activityList.push({
+          id: `rental-confirmed-${rental.id}`,
+          type: "new_tenant",
+          title: `Rental confirmed for ${rental.propertyAddress}`,
+          subtitle: `Start date: ${new Date(rental.startDate).toLocaleDateString("en-MY")}`,
+          time: getRelativeTime(new Date(rental.createdAt)),
+          timestamp: new Date(rental.createdAt).getTime(),
+        });
+      }
+      // Show active rentals
+      else if (rental.status === "active") {
+        activityList.push({
+          id: `rental-active-${rental.id}`,
+          type: "new_tenant",
+          title: `Active rental at ${rental.propertyAddress}`,
+          subtitle: `Started on ${new Date(rental.startDate).toLocaleDateString("en-MY")}`,
+          time: getRelativeTime(new Date(rental.startDate)),
+          timestamp: new Date(rental.startDate).getTime(),
         });
       }
     });
@@ -74,7 +127,7 @@ export default function LandlordRecentActivity() {
     return activityList
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, 5);
-  }, [conversations, getLandlordRentals]);
+  }, [conversations, getLandlordRentals, getListingsByLandlord, user]);
 
   const getActivityIcon = (type: ActivityType) => {
     switch (type) {

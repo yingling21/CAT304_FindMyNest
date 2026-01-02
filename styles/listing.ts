@@ -8,7 +8,6 @@ export const styles = StyleSheet.create({
   header: {
     backgroundColor: "#6366F1",
     paddingHorizontal: 20,
-    paddingTop: 16,
     paddingBottom: 20,
   },
   headerTop: {
@@ -204,6 +203,39 @@ export const styles = StyleSheet.create({
     color: "#6B7280",
     textAlign: "center",
     paddingHorizontal: 40,
+  },
+  submitError: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  errorIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#FEE2E2",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: "700" as const,
+    color: "#EF4444",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  errorMessage: {
+    fontSize: 15,
+    color: "#6B7280",
+    textAlign: "center",
+    paddingHorizontal: 40,
+  },
+  reviewSubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginBottom: 20,
   },
   listingTabContainer: {
     flex: 1,

@@ -6,11 +6,12 @@ import {
   TextInput,
   TouchableOpacity,
   Switch,
-  Platform
+  Platform,
+  Alert
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { ChevronLeft, ChevronRight, Check } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, Check, XCircle } from "lucide-react-native";
 import { useListing } from "@/contexts/ListingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import type { PropertyType, FurnishingLevel } from "@/src/types";
@@ -42,7 +43,10 @@ export default function AddListingScreen() {
   const { formData, updateFormData, resetFormData, saveListing } = useListing();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [moveInDate, setMoveInDate] = React.useState<Date>(formData.moveInDate ? new Date(formData.moveInDate) : new Date());
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitError, setSubmitError] = useState<string>('');
+  const insets = useSafeAreaInsets();
+  const [availableDate, setAvailableDate] = React.useState<Date>(formData.availableDate ? new Date(formData.availableDate) : new Date());
   const [showDatePicker, setShowDatePicker] = React.useState(false);
 
   const progress = (currentStep / TOTAL_STEPS) * 100;
@@ -50,9 +54,9 @@ export default function AddListingScreen() {
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios'); // keep open on iOS
     if (selectedDate) {
-      setMoveInDate(selectedDate);
+      setAvailableDate(selectedDate);
       const formattedDate = selectedDate.toISOString().split('T')[0]; // YYYY-MM-DD
-      updateFormData({ moveInDate: formattedDate });
+      updateFormData({ availableDate: formattedDate });
     }
   };
 
@@ -114,21 +118,55 @@ export default function AddListingScreen() {
   const handleNext = async () => {
     if (currentStep < TOTAL_STEPS) {
       setCurrentStep(currentStep + 1);
+      setSubmitStatus('idle'); // Reset status when moving to next step
     } else {
       if (!user) {
         console.error("No user found");
+        Alert.alert(
+          "Submission Failed",
+          "No user found. Please sign in and try again.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                setCurrentStep(1);
+                setSubmitStatus('idle');
+                setSubmitError('');
+              }
+            }
+          ]
+        );
         return;
       }
       
       try {
         setIsSubmitting(true);
+        setSubmitStatus('idle');
+        setSubmitError('');
         await saveListing(user.id);
-        resetFormData();
-        router.back();
-      } catch (error) {
-        console.error("Failed to save listing:", error);
-      } finally {
+        setSubmitStatus('success');
         setIsSubmitting(false);
+        // Don't navigate back - let user see the success message
+      } catch (error: any) {
+        console.error("Failed to save listing:", error);
+        setIsSubmitting(false);
+        const errorMessage = error?.message || "Failed to submit listing. Please try again.";
+        
+        // Show error alert and navigate back to step 1
+        Alert.alert(
+          "Submission Failed",
+          errorMessage,
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                setCurrentStep(1);
+                setSubmitStatus('idle');
+                setSubmitError('');
+              }
+            }
+          ]
+        );
       }
     }
   };
@@ -216,10 +254,14 @@ export default function AddListingScreen() {
             <Text style={styles.label}>Size (sq ft) <Text style={styles.requiredStar}>*</Text></Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter size"
-              keyboardType="numeric"
+              placeholder="Enter size (numbers only)"
+              keyboardType="number-pad"
               value={formData.size}
-              onChangeText={(text) => updateFormData({ size: text })}
+              onChangeText={(text) => {
+                // Only allow numbers
+                const numericText = text.replace(/[^0-9]/g, '');
+                updateFormData({ size: numericText });
+              }}
             />
       
             <Text style={styles.label}>Bedrooms</Text>
@@ -276,10 +318,14 @@ export default function AddListingScreen() {
               <Text style={styles.label}>Floor Level</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g., Ground floor, 5th floor"
-                keyboardType="numeric"
+                placeholder="Enter floor number (numbers only)"
+                keyboardType="number-pad"
                 value={formData.floorLevel}
-                onChangeText={(text) => updateFormData({ floorLevel: text })}
+                onChangeText={(text) => {
+                  // Only allow numbers
+                  const numericText = text.replace(/[^0-9]/g, '');
+                  updateFormData({ floorLevel: numericText });
+                }}
               />
             </>
           )}
@@ -321,37 +367,53 @@ export default function AddListingScreen() {
             <Text style={styles.label}>Monthly Rent (RM) <Text style={styles.requiredStar}>*</Text></Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter monthly rent"
-              keyboardType="numeric"
+              placeholder="Enter monthly rent (numbers only)"
+              keyboardType="number-pad"
               value={formData.monthlyRent}
-              onChangeText={(text) => updateFormData({ monthlyRent: text })}
+              onChangeText={(text) => {
+                // Only allow numbers
+                const numericText = text.replace(/[^0-9]/g, '');
+                updateFormData({ monthlyRent: numericText });
+              }}
             />
 
             <Text style={styles.label}>Security Deposit (RM)</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter security deposit"
-              keyboardType="numeric"
+              placeholder="Enter security deposit (numbers only)"
+              keyboardType="number-pad"
               value={formData.securityDeposit}
-              onChangeText={(text) => updateFormData({ securityDeposit: text })}
+              onChangeText={(text) => {
+                // Only allow numbers
+                const numericText = text.replace(/[^0-9]/g, '');
+                updateFormData({ securityDeposit: numericText });
+              }}
             />
 
             <Text style={styles.label}>Utilities Deposit (RM)</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter utilities deposit"
-              keyboardType="numeric"
+              placeholder="Enter utilities deposit (numbers only)"
+              keyboardType="number-pad"
               value={formData.utilitiesDeposit}
-              onChangeText={(text) => updateFormData({ utilitiesDeposit: text })}
+              onChangeText={(text) => {
+                // Only allow numbers
+                const numericText = text.replace(/[^0-9]/g, '');
+                updateFormData({ utilitiesDeposit: numericText });
+              }}
             />
 
             <Text style={styles.label}>Minimum Rental Period (months)</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g., 6, 12"
-              keyboardType="numeric"
+              placeholder="Enter months (numbers only)"
+              keyboardType="number-pad"
               value={formData.minimumRentalPeriod}
-              onChangeText={(text) => updateFormData({ minimumRentalPeriod: text })}
+              onChangeText={(text) => {
+                // Only allow numbers
+                const numericText = text.replace(/[^0-9]/g, '');
+                updateFormData({ minimumRentalPeriod: numericText });
+              }}
             />
 
             <Text style={styles.label}>Move-in Date Available</Text>
@@ -359,12 +421,12 @@ export default function AddListingScreen() {
                 style={styles.input}
                 onPress={() => setShowDatePicker(true)}
               >
-                <Text>{formData.moveInDate || 'Select move-in date'}</Text>
+                <Text>{formData.availableDate || 'Select available date'}</Text>
               </TouchableOpacity>
 
               {showDatePicker && (
                 <DateTimePicker
-                  value={moveInDate}
+                  value={availableDate}
                   mode="date"
                   display="default"
                   onChange={handleDateChange}
@@ -531,10 +593,14 @@ export default function AddListingScreen() {
                     <Text style={styles.label}>Estimated Monthly Utilities (RM)</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g., 50-100"
-                      keyboardType="numeric"
+                      placeholder="Enter amount (numbers only)"
+                      keyboardType="number-pad"
                       value={formData.estimatedMonthlyUtilities}
-                      onChangeText={(text) => updateFormData({ estimatedMonthlyUtilities: text })}
+                      onChangeText={(text) => {
+                        // Only allow numbers
+                        const numericText = text.replace(/[^0-9]/g, '');
+                        updateFormData({ estimatedMonthlyUtilities: numericText });
+                      }}
                     />
                   </>
                 )}
@@ -785,15 +851,47 @@ export default function AddListingScreen() {
         );
 
       case 9:
+        // Show success message if submission was successful
+        if (submitStatus === 'success') {
+          return (
+            <View style={styles.section}>
+              <View style={styles.submitSuccess}>
+                <View style={styles.successIcon}>
+                  <Check size={48} color="#10B981" />
+                </View>
+                <Text style={styles.successTitle}>Submitted</Text>
+                <Text style={styles.successMessage}>
+                  Your property listing has been submitted for review. We&apos;ll notify you once it&apos;s approved.
+                </Text>
+              </View>
+            </View>
+          );
+        }
+        
+        // Show error message if submission failed
+        if (submitStatus === 'error') {
+          return (
+            <View style={styles.section}>
+              <View style={styles.submitError}>
+                <View style={styles.errorIcon}>
+                  <XCircle size={48} color="#EF4444" />
+                </View>
+                <Text style={styles.errorTitle}>Error</Text>
+                <Text style={styles.errorMessage}>
+                  {submitError || "Failed to submit listing. Please try again."}
+                </Text>
+              </View>
+            </View>
+          );
+        }
+        
+        // Show ready to submit message before submission
         return (
           <View style={styles.section}>
             <View style={styles.submitSuccess}>
-              <View style={styles.successIcon}>
-                <Check size={48} color="#10B981" />
-              </View>
-              <Text style={styles.successTitle}>Listing Submitted!</Text>
+              <Text style={styles.sectionTitle}>Ready to Submit</Text>
               <Text style={styles.successMessage}>
-                Your property listing has been submitted for review. We&apos;ll notify you once it&apos;s approved.
+                Click &quot;Submit&quot; below to submit your listing for review.
               </Text>
             </View>
           </View>
@@ -805,8 +903,8 @@ export default function AddListingScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.container} edges={[]}>
+      <View style={[styles.header, { paddingTop: insets.top - 40 }]}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={handlePrevious} style={styles.backButton}>
             <ChevronLeft size={24} color="#FFFFFF" />
@@ -835,26 +933,40 @@ export default function AddListingScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.footerButton, styles.buttonPrevious]}
-          onPress={handlePrevious}
-        >
-          <ChevronLeft size={20} color="#374151" />
-          <Text style={[styles.buttonText, styles.buttonTextPrevious]}>
-            {currentStep === 1 ? "Cancel" : "Previous"}
-          </Text>
-        </TouchableOpacity>
+        {submitStatus === 'success' ? (
+          <TouchableOpacity
+            style={[styles.footerButton, styles.buttonNext, { flex: 1 }]}
+            onPress={() => {
+              resetFormData();
+              router.back();
+            }}
+          >
+            <Text style={[styles.buttonText, styles.buttonTextNext]}>Done</Text>
+          </TouchableOpacity>
+        ) : (
+          <>
+            <TouchableOpacity
+              style={[styles.footerButton, styles.buttonPrevious]}
+              onPress={handlePrevious}
+            >
+              <ChevronLeft size={20} color="#374151" />
+              <Text style={[styles.buttonText, styles.buttonTextPrevious]}>
+                {currentStep === 1 ? "Cancel" : "Previous"}
+              </Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.footerButton, styles.buttonNext]}
-          onPress={handleNext}
-          disabled={isSubmitting}
-        >
-          <Text style={[styles.buttonText, styles.buttonTextNext]}>
-            {isSubmitting ? "Submitting..." : currentStep === TOTAL_STEPS ? "Done" : "Next"}
-          </Text>
-          <ChevronRight size={20} color="#FFFFFF" />
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.footerButton, styles.buttonNext]}
+              onPress={handleNext}
+              disabled={isSubmitting}
+            >
+              <Text style={[styles.buttonText, styles.buttonTextNext]}>
+                {isSubmitting ? "Submitting..." : currentStep === TOTAL_STEPS ? "Submit" : "Next"}
+              </Text>
+              <ChevronRight size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </SafeAreaView>
   );

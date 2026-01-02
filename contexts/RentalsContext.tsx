@@ -75,6 +75,10 @@ export const [RentalsProvider, useRentals] = createContextHook(() => {
 
       const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + durationMonths);
+      
+      // Calculate new available date (one day after rental ends)
+      const newAvailableDate = new Date(endDate);
+      newAvailableDate.setDate(newAvailableDate.getDate() + 1);
 
       console.log('Creating rental with tenant_id:', authUser.id);
       console.log('Rental data:', {
@@ -83,6 +87,7 @@ export const [RentalsProvider, useRentals] = createContextHook(() => {
         landlord_id: landlordId,
       });
 
+      // Create rental with pending status
       const { data, error } = await supabase
         .from('rentals')
         .insert({
@@ -95,7 +100,7 @@ export const [RentalsProvider, useRentals] = createContextHook(() => {
           security_deposit: securityDeposit,
           start_date: startDate,
           end_date: endDate.toISOString(),
-          status: 'active',
+          status: 'pending',
         })
         .select()
         .single();
@@ -103,6 +108,19 @@ export const [RentalsProvider, useRentals] = createContextHook(() => {
       if (error) {
         console.error('Failed to create rental:', error);
         throw error;
+      }
+      
+      // Update property's availableDate to be after the rental end date
+      const { error: updateError } = await supabase
+        .from('property')
+        .update({
+          availableDate: newAvailableDate.toISOString(),
+        })
+        .eq('property_id', propertyId);
+      
+      if (updateError) {
+        console.error('Failed to update property availableDate:', updateError);
+        // Don't throw error here, rental is already created
       }
       
       const newRental: Rental = {
@@ -124,6 +142,29 @@ export const [RentalsProvider, useRentals] = createContextHook(() => {
       return newRental;
     } catch (error) {
       console.error("Failed to create rental:", error);
+      throw error;
+    }
+  };
+
+  const updateRentalStatus = async (
+    rentalId: string,
+    status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled'
+  ): Promise<void> => {
+    try {
+      const { error } = await supabase
+        .from('rentals')
+        .update({ status })
+        .eq('id', rentalId);
+      
+      if (error) throw error;
+      
+      setRentals(prev => prev.map(rental =>
+        rental.id === rentalId
+          ? { ...rental, status: status as any }
+          : rental
+      ));
+    } catch (error) {
+      console.error("Failed to update rental status:", error);
       throw error;
     }
   };
@@ -165,6 +206,7 @@ export const [RentalsProvider, useRentals] = createContextHook(() => {
     rentals,
     isLoading,
     createRental,
+    updateRentalStatus,
     stopRental,
     getTenantRentals,
     getLandlordRentals,

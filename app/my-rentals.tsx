@@ -24,8 +24,36 @@ export default function MyRentalsScreen() {
   const [payingRentalId, setPayingRentalId] = useState<string | null>(null);
 
   const rentals = getTenantRentals();
-  const activeRentals = rentals.filter(r => r.status === "active");
-  const pastRentals = rentals.filter(r => r.status !== "active");
+  const now = new Date();
+  
+  // Pending rentals (waiting for landlord confirmation)
+  const pendingRentals = rentals.filter(r => r.status === "pending");
+  
+  // Confirmed rentals (landlord confirmed but start date hasn't arrived yet)
+  const confirmedRentals = rentals.filter(r => {
+    if (r.status !== "confirmed") return false;
+    const startDate = new Date(r.startDate);
+    return startDate > now;
+  });
+  
+  // Active rentals (confirmed and start date has passed)
+  const activeRentals = rentals.filter(r => {
+    if (r.status === "active") {
+      const startDate = new Date(r.startDate);
+      return startDate <= now;
+    }
+    // Also include confirmed rentals where start date has passed (auto-activate)
+    if (r.status === "confirmed") {
+      const startDate = new Date(r.startDate);
+      return startDate <= now;
+    }
+    return false;
+  });
+  
+  // Past rentals (completed or cancelled)
+  const pastRentals = rentals.filter(r => 
+    r.status === "completed" || r.status === "cancelled"
+  );
 
   const calculateDaysRemaining = (endDate: string | undefined): number => {
     if (!endDate) return 0;
@@ -125,7 +153,7 @@ export default function MyRentalsScreen() {
         </View>
 
         <ScrollView style={styles.myRentalsScrollView} showsVerticalScrollIndicator={false}>
-          {activeRentals.length === 0 && pastRentals.length === 0 ? (
+          {activeRentals.length === 0 && pastRentals.length === 0 && pendingRentals.length === 0 && confirmedRentals.length === 0 ? (
             <View style={styles.emptyContainer}>
               <HomeIcon size={64} color="#D1D5DB" />
               <Text style={styles.emptyTitle}>No Rentals Yet</Text>
@@ -135,6 +163,115 @@ export default function MyRentalsScreen() {
             </View>
           ) : (
             <>
+              {pendingRentals.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Pending Rentals</Text>
+                  {pendingRentals.map((rental) => {
+                    const startDate = new Date(rental.startDate);
+                    const endDate = rental.endDate ? new Date(rental.endDate) : null;
+
+                    return (
+                      <View key={rental.id} style={styles.rentalCard}>
+                        <Image
+                          source={{ uri: rental.propertyImage }}
+                          style={styles.propertyImage}
+                          contentFit="cover"
+                        />
+                        <View style={styles.rentalInfo}>
+                          <View style={styles.rentalHeader}>
+                            <Text style={styles.propertyTitle} numberOfLines={1}>
+                              {rental.propertyAddress}
+                            </Text>
+                            <View style={[styles.statusBadge, { backgroundColor: "#F59E0B" }]}>
+                              <Text style={styles.statusText}>Pending</Text>
+                            </View>
+                          </View>
+                          <Text style={styles.propertyAddress} numberOfLines={1}>
+                            {rental.propertyAddress}
+                          </Text>
+                          <Text style={styles.propertyPrice}>
+                            RM {rental.monthlyRent}/mo
+                          </Text>
+                          <Text style={styles.rentalPeriod}>
+                            {startDate.toLocaleDateString("en-MY", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}{" "}
+                            -{" "}
+                            {endDate
+                              ? endDate.toLocaleDateString("en-MY", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "Ongoing"}
+                          </Text>
+                          <Text style={[styles.daysRemaining, { color: "#F59E0B" }]}>
+                            Waiting for landlord confirmation
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+
+              {confirmedRentals.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Upcoming Rentals</Text>
+                  {confirmedRentals.map((rental) => {
+                    const startDate = new Date(rental.startDate);
+                    const endDate = rental.endDate ? new Date(rental.endDate) : null;
+                    const daysUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+                    return (
+                      <View key={rental.id} style={styles.rentalCard}>
+                        <Image
+                          source={{ uri: rental.propertyImage }}
+                          style={styles.propertyImage}
+                          contentFit="cover"
+                        />
+                        <View style={styles.rentalInfo}>
+                          <View style={styles.rentalHeader}>
+                            <Text style={styles.propertyTitle} numberOfLines={1}>
+                              {rental.propertyAddress}
+                            </Text>
+                            <View style={[styles.statusBadge, { backgroundColor: "#10B981" }]}>
+                              <Text style={styles.statusText}>Confirmed</Text>
+                            </View>
+                          </View>
+                          <Text style={styles.propertyAddress} numberOfLines={1}>
+                            {rental.propertyAddress}
+                          </Text>
+                          <Text style={styles.propertyPrice}>
+                            RM {rental.monthlyRent}/mo
+                          </Text>
+                          <Text style={styles.rentalPeriod}>
+                            {startDate.toLocaleDateString("en-MY", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}{" "}
+                            -{" "}
+                            {endDate
+                              ? endDate.toLocaleDateString("en-MY", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "Ongoing"}
+                          </Text>
+                          <Text style={[styles.daysRemaining, { color: "#10B981" }]}>
+                            Starts in {daysUntilStart} {daysUntilStart === 1 ? "day" : "days"}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+
               {activeRentals.length > 0 && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Active Rentals</Text>

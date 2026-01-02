@@ -73,7 +73,7 @@ export async function createRental(rentalData: Partial<Rental>): Promise<Rental>
   return normalizeRental(data);
 }
 
-export async function updateRentalStatus(id: string, status: 'active' | 'completed' | 'cancelled'): Promise<void> {
+export async function updateRentalStatus(id: string, status: 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled'): Promise<void> {
   const { error } = await supabase
     .from('rentals')
     .update({ status })

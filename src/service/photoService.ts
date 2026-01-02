@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import * as ImageManipulator from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 
 /**
@@ -22,18 +23,33 @@ export async function uploadPropertyPhoto(image: any): Promise<string> {
       ext = 'jpg';
     }
 
-    const filePath = `temp/${Date.now()}.${ext}`;
+    const filePath = `property-photos/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
 
-    // Fetch the image and convert to blob
-    const response = await fetch(uri);
-    const blob = await response.blob();
+    // Read file as base64 using expo-file-system
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: 'base64',
+    });
+
+    // Convert base64 to ArrayBuffer
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
 
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from('property-photos')
-      .upload(filePath, blob, { upsert: true });
+      .upload(filePath, byteArray, { 
+        upsert: true,
+        contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
+      });
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      throw uploadError;
+    }
 
     // Get public URL
     const { data } = supabase.storage

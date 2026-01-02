@@ -23,7 +23,15 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "strict": true,
-    "paths": { "@/*": ["./*"] }
+    "paths": { "@/*": ["./*"] },
+    "skipLibCheck": true
   },
-  "include": ["**/*.ts","**/*.tsx",".expo/types/**/*.ts","expo-env.d.ts"]
+  "include": ["**/*.ts","**/*.tsx",".expo/types/**/*.ts","expo-env.d.ts"],
+  "exclude": [
+    "node_modules",
+    "**/node_modules/**",
+    "**/node_modules/**/*.ts",
+    "**/node_modules/**/*.tsx",
+    "**/node_modules/**/*.json"
+  ]
 }
