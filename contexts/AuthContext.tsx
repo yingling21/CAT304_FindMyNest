@@ -161,7 +161,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         await AsyncStorage.setItem("pending_login_password", password);
         await AsyncStorage.setItem("pending_login_tenant_verified", JSON.stringify(tenantVerified));
         await AsyncStorage.setItem("pending_login_landlord_verified", JSON.stringify(landlordVerified));
-        router.replace("/login-role-selection" as any);
+        router.replace("/login-role-selection");
         return;
       }
 
@@ -293,7 +293,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
             fullName: userData.full_name || "",
             phoneNumber: userData.phone_number || "",
             role: userData.role || "tenant",
-            avatarUrl: userData.profile_picture || undefined,
             verificationStatus: (userData.verification_status === null ? "pending" : userData.verification_status || "pending") as VerificationStatus,
             identityDocument: userData.identity_document || undefined,
             ownershipDocument: userData.ownership_document || undefined,
@@ -378,7 +377,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
                   fullName: newUserData.full_name || "",
                   phoneNumber: newUserData.phone_number || "",
                   role: newUserData.role || "tenant",
-                  avatarUrl: newUserData.profile_picture || undefined,
                   verificationStatus: (newUserData.verification_status === null ? "pending" : newUserData.verification_status || "pending") as VerificationStatus,
                   identityDocument: newUserData.identity_document || undefined,
                   ownershipDocument: newUserData.ownership_document || undefined,
@@ -408,7 +406,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
                 fullName: updatedUser.full_name || "",
                 phoneNumber: updatedUser.phone_number || "",
                 role: updatedUser.role || "tenant",
-                avatarUrl: updatedUser.profile_picture || undefined,
                 verificationStatus: (updatedUser.verification_status === null ? "pending" : updatedUser.verification_status || "pending") as VerificationStatus,
                 identityDocument: updatedUser.identity_document || undefined,
                 ownershipDocument: updatedUser.ownership_document || undefined,
@@ -465,7 +462,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
                     fullName: newUserData.full_name || "",
                     phoneNumber: newUserData.phone_number || "",
                     role: newUserData.role || "tenant",
-                    avatarUrl: newUserData.profile_picture || undefined,
                     verificationStatus: (newUserData.verification_status === null ? "pending" : newUserData.verification_status || "pending") as VerificationStatus,
                     identityDocument: newUserData.identity_document || undefined,
                     ownershipDocument: newUserData.ownership_document || undefined,
@@ -524,7 +520,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
             fullName: latestUserData.full_name || "",
             phoneNumber: latestUserData.phone_number || "",
             role: latestUserData.role || "tenant",
-            avatarUrl: latestUserData.profile_picture || undefined,
             verificationStatus: (latestUserData.verification_status === null ? "pending" : latestUserData.verification_status || "pending") as VerificationStatus,
             identityDocument: latestUserData.identity_document || undefined,
             ownershipDocument: latestUserData.ownership_document || undefined,
