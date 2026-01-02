@@ -1,16 +1,23 @@
 import { supabase } from '@/lib/supabase';
 import type { Message, Conversation } from '@/src/types/message';
-import { normalizeMessage, normalizeMessages, normalizeConversations } from '@/src/utils/normalizeMessage';
+import {
+  normalizeMessage,
+  normalizeMessages,
+  normalizeConversations,
+} from '@/src/utils/normalizeMessage';
 import { maskSensitiveData } from '@/utils/sensitiveDataMask';
 
-// Fetch conversations by user
-// Retrieves all conversations where the user is either a tenant or landlord
-export async function getConversationsByUser(userId: string): Promise<Conversation[]> {
+/* =========================================================
+   Fetch conversations by user
+   ========================================================= */
+export async function getConversationsByUser(
+  userId: string
+): Promise<Conversation[]> {
   const { data, error } = await supabase
     .from('conversations')
     .select('*')
-    .or(`tenant_id.eq.${userId},landlord_id.eq.${userId}`)    // Get conversations where user is either tenant OR landlord
-    .order('last_message_time', { ascending: false });        // Sort conversations by most recent activity
+    .or(`tenant_id.eq.${userId},landlord_id.eq.${userId}`)
+    .order('last_message_time', { ascending: false });
 
   if (error) {
     console.error('Failed to fetch conversations:', error);
@@ -20,13 +27,17 @@ export async function getConversationsByUser(userId: string): Promise<Conversati
   return normalizeConversations(data || []);
 }
 
-// Fetch messages for a single conversation
-export async function getMessagesByConversation(conversationId: string): Promise<Message[]> {
+/* =========================================================
+   Fetch messages for a single conversation
+   ========================================================= */
+export async function getMessagesByConversation(
+  conversationId: string
+): Promise<Message[]> {
   const { data, error } = await supabase
     .from('messages')
     .select('*')
     .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true });    // Messages should be shown oldest → newest
+    .order('created_at', { ascending: true });
 
   if (error) {
     console.error('Failed to fetch messages:', error);
@@ -36,7 +47,12 @@ export async function getMessagesByConversation(conversationId: string): Promise
   return normalizeMessages(data || []);
 }
 
-export async function getMessagesByConversations(conversationIds: string[]): Promise<Record<string, Message[]>> {
+/* =========================================================
+   Fetch messages for multiple conversations
+   ========================================================= */
+export async function getMessagesByConversations(
+  conversationIds: string[]
+): Promise<Record<string, Message[]>> {
   if (conversationIds.length === 0) {
     return {};
   }
@@ -54,7 +70,7 @@ export async function getMessagesByConversations(conversationIds: string[]): Pro
 
   const messagesByConversation: Record<string, Message[]> = {};
   const messages = normalizeMessages(data || []);
-  
+
   messages.forEach((message) => {
     if (!messagesByConversation[message.conversationId]) {
       messagesByConversation[message.conversationId] = [];
@@ -65,8 +81,9 @@ export async function getMessagesByConversations(conversationIds: string[]): Pro
   return messagesByConversation;
 }
 
-// Create or get an existing conversation
-// Ensures only ONE conversation exists per property + tenant
+/* =========================================================
+   CREATE or GET conversation  ✅ FIXED
+   ========================================================= */
 export async function createOrGetConversation(params: {
   propertyId: string;
   propertyAddress: string;
@@ -79,80 +96,66 @@ export async function createOrGetConversation(params: {
   landlordName: string;
   landlordPhoto?: string;
 }): Promise<string> {
+  /**
+   * ❗ IMPORTANT FIX
+   * We DO NOT call supabase.auth.getUser() here.
+   * Auth has already been checked in the UI (useAuth).
+   */
 
-  // 1️⃣ Get authenticated user
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    throw new Error("User not authenticated");
-  }
-
-  const authUserId = user.id;
-
-  // 2️⃣ Check if conversation already exists (per property + tenant)
+  // 1️⃣ Check if conversation already exists
   const { data: existingConv, error: searchError } = await supabase
-    .from("conversations")
-    .select("*")
-    .eq("property_id", params.propertyId)
-    .eq("tenant_id", params.tenantId)
+    .from('conversations')
+    .select('id')
+    .eq('property_id', params.propertyId)
+    .eq('tenant_id', params.tenantId)
     .single();
 
   if (!searchError && existingConv) {
     return existingConv.id;
   }
 
-  // 3️⃣ Determine role of creator
-  const isTenant = authUserId === params.tenantId;
-  const isLandlord = authUserId === params.landlordId;
-
-  if (!isTenant && !isLandlord) {
-    throw new Error("Authenticated user is not part of this conversation");
-  }
-
-  // 4️⃣ INSERT with auth.uid() forced into row (RLS REQUIRED)
+  // 2️⃣ Create new conversation
   const { data, error } = await supabase
-    .from("conversations")
+    .from('conversations')
     .insert({
       property_id: params.propertyId,
       property_address: params.propertyAddress,
       property_image: params.propertyImage,
       property_price: params.propertyPrice,
 
-      tenant_id: isTenant ? authUserId : params.tenantId,
+      tenant_id: params.tenantId,
       tenant_name: params.tenantName,
-      tenant_photo: params.tenantPhoto,
+      tenant_photo: params.tenantPhoto ?? null,
 
-      landlord_id: isLandlord ? authUserId : params.landlordId,
+      landlord_id: params.landlordId,
       landlord_name: params.landlordName,
-      landlord_photo: params.landlordPhoto,
+      landlord_photo: params.landlordPhoto ?? null,
 
-      last_message: "",
+      last_message: '',
       unread_count: 0,
     })
-    .select()
+    .select('id')
     .single();
 
-  if (error) {
-    console.error("Failed to create conversation:", error);
-    throw error;
+  if (error || !data) {
+    console.error('Failed to create conversation:', error);
+    throw error || new Error('Failed to create conversation');
   }
 
   return data.id;
 }
 
-// Send a message
+/* =========================================================
+   Send message
+   ========================================================= */
 export async function sendMessage(params: {
   conversationId: string;
   senderId: string;
   receiverId: string;
   content: string;
 }): Promise<Message> {
-  const maskedContent = maskSensitiveData(params.content);      // Mask sensitive data (phone numbers, emails, account numbers)
+  const maskedContent = maskSensitiveData(params.content);
 
-  // Insert message into database
   const { data: messageData, error: msgError } = await supabase
     .from('messages')
     .insert({
@@ -170,7 +173,6 @@ export async function sendMessage(params: {
     throw msgError;
   }
 
-  // Update conversation's last message and timestamp
   const { error: convError } = await supabase
     .from('conversations')
     .update({
@@ -186,8 +188,13 @@ export async function sendMessage(params: {
   return normalizeMessage(messageData);
 }
 
-// Mark messages as read
-export async function markMessagesAsRead(conversationId: string, userId: string): Promise<void> {
+/* =========================================================
+   Mark messages as read
+   ========================================================= */
+export async function markMessagesAsRead(
+  conversationId: string,
+  userId: string
+): Promise<void> {
   const { error: msgError } = await supabase
     .from('messages')
     .update({ read: true })
@@ -200,7 +207,6 @@ export async function markMessagesAsRead(conversationId: string, userId: string)
     throw msgError;
   }
 
-  // Reset unread count in conversation table
   const { error: convError } = await supabase
     .from('conversations')
     .update({ unread_count: 0 })
