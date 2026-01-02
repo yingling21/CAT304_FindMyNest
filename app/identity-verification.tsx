@@ -246,14 +246,14 @@ export default function IdentityVerificationScreen() {
       await new Promise(resolve => setTimeout(resolve, 500));
 
       // Verify that verification status is now approved
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
+      const { data: { session: latestSession } } = await supabase.auth.getSession();
+      if (latestSession?.user) {
         const { data: updatedUser } = await supabase
           .from("users")
           .select("verification_status")
-          .eq("id", session.user.id)
+          .eq("id", latestSession.user.id)
           .single();
-        
+
         if (updatedUser?.verification_status === "approved") {
           console.log("Verification confirmed as approved. Navigating to home.");
           // Navigate directly to home page without showing alert
