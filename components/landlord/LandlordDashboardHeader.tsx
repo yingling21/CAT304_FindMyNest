@@ -14,17 +14,17 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: "#6366F1",
     paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 32,
+    paddingTop: 16,
+    paddingBottom: 20,
   },
   greeting: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "700" as const,
     color: "#FFFFFF",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 14,
     color: "#C7D2FE",
   },
 });
