@@ -9,7 +9,7 @@ import {
   sendMessage as sendMessageAPI,
   markMessagesAsRead as markMessagesAsReadAPI 
 } from "@/src/api/messages";
-import { getUserPushToken, sendPushNotification } from "@/src/api/notifications";
+
 
 interface NewMessageNotification {
   conversationId: string;
@@ -166,19 +166,6 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
           }
         : c
     ));
-
-    const receiverPushToken = await getUserPushToken(receiverId);
-    if (receiverPushToken) {
-      await sendPushNotification({
-        pushToken: receiverPushToken,
-        title: `New message from ${auth.user.fullName}`,
-        body: content,
-        data: {
-          conversationId,
-          type: 'message',
-        },
-      });
-    }
   };
 
   const markAsRead = async (conversationId: string): Promise<void> => {
