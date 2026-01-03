@@ -2,7 +2,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import { MessagesProvider, useMessages } from "@/contexts/MessagesContext";
 import { ListingProvider } from "@/contexts/ListingContext";
-import { RentalsProvider } from "@/contexts/RentalsContext";
+import { RentalsProvider, useRentals } from "@/contexts/RentalsContext";
 import { ReviewsProvider } from "@/contexts/ReviewsContext";
 import { PaymentsProvider } from "@/contexts/PaymentsContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -20,6 +20,7 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { newMessageNotification, dismissNotification } = useMessages();
+  const { rentalNotification, dismissRentalNotification } = useRentals();
 
   return (
     <>
@@ -51,6 +52,17 @@ function RootLayoutNav() {
           senderPhoto={newMessageNotification.senderPhoto}
           message={newMessageNotification.message}
           onDismiss={dismissNotification}
+        />
+      )}
+
+      {rentalNotification && (
+        <MessageBanner
+          senderName={rentalNotification.senderName}
+          senderPhoto={rentalNotification.senderPhoto}
+          message={rentalNotification.message}
+          type={rentalNotification.type}
+          navigationPath={rentalNotification.navigationPath}
+          onDismiss={dismissRentalNotification}
         />
       )}
     </>
