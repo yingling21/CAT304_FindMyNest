@@ -391,18 +391,18 @@ export default function EditListingScreen() {
               formData.propertyType === "studio" || 
               formData.propertyType === "room") && (
               <>
-                <Text style={styles.label}>Floor Level</Text>
-                <TextInput
-                  style={styles.input}
+            <Text style={styles.label}>Floor Level</Text>
+            <TextInput
+              style={styles.input}
                   placeholder="Enter floor number (numbers only)"
                   keyboardType="number-pad"
-                  value={formData.floorLevel}
+              value={formData.floorLevel}
                   onChangeText={(text) => {
                     // Only allow numbers
                     const numericText = text.replace(/[^0-9]/g, '');
                     updateFormData({ floorLevel: numericText });
                   }}
-                />
+            />
               </>
             )}
       
@@ -916,15 +916,15 @@ export default function EditListingScreen() {
       case 9:
         // Show success message if submission was successful
         if (submitStatus === 'success') {
-          return (
-            <View style={styles.section}>
-              <View style={styles.submitSuccess}>
-                <View style={styles.successIcon}>
-                  <Check size={48} color="#10B981" />
-                </View>
+        return (
+          <View style={styles.section}>
+            <View style={styles.submitSuccess}>
+              <View style={styles.successIcon}>
+                <Check size={48} color="#10B981" />
+              </View>
                 <Text style={styles.successTitle}>Submitted</Text>
-                <Text style={styles.successMessage}>
-                  Your property listing has been updated successfully.
+              <Text style={styles.successMessage}>
+                Your property listing has been updated successfully.
                 </Text>
               </View>
             </View>
@@ -1008,27 +1008,27 @@ export default function EditListingScreen() {
           </TouchableOpacity>
         ) : (
           <>
-            <TouchableOpacity
-              style={[styles.footerButton, styles.buttonPrevious]}
-              onPress={handlePrevious}
-              disabled={isSubmitting}
-            >
-              <ChevronLeft size={20} color="#374151" />
-              <Text style={[styles.buttonText, styles.buttonTextPrevious]}>
-                {currentStep === 1 ? "Cancel" : "Previous"}
-              </Text>
-            </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.footerButton, styles.buttonPrevious]}
+          onPress={handlePrevious}
+          disabled={isSubmitting}
+        >
+          <ChevronLeft size={20} color="#374151" />
+          <Text style={[styles.buttonText, styles.buttonTextPrevious]}>
+            {currentStep === 1 ? "Cancel" : "Previous"}
+          </Text>
+        </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.footerButton, styles.buttonNext]}
-              onPress={handleNext}
+        <TouchableOpacity
+          style={[styles.footerButton, styles.buttonNext]}
+          onPress={handleNext}
               disabled={isSubmitting}
-            >
-              <Text style={[styles.buttonText, styles.buttonTextNext]}>
+        >
+          <Text style={[styles.buttonText, styles.buttonTextNext]}>
                 {isSubmitting ? "Submitting..." : currentStep === TOTAL_STEPS ? "Submit" : "Next"}
-              </Text>
-              <ChevronRight size={20} color="#FFFFFF" />
-            </TouchableOpacity>
+          </Text>
+          <ChevronRight size={20} color="#FFFFFF" />
+        </TouchableOpacity>
           </>
         )}
       </View>

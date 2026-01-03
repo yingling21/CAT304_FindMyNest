@@ -861,11 +861,23 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (error) {
+        // If there's no active session, that's okay - user is already signed out
+        // Only log other errors
+        if (error.name !== 'AuthSessionMissingError') {
+          console.error("Failed to sign out:", error);
+        }
+      }
+    } catch (error: any) {
+      // If there's no active session, that's okay - user is already signed out
+      // Only log other errors
+      if (error?.name !== 'AuthSessionMissingError') {
+        console.error("Failed to sign out:", error);
+      }
+    } finally {
+      // Always clear local state and navigate to login, regardless of signOut result
       setUser(null);
       router.replace("/login");
-    } catch (error) {
-      console.error("Failed to sign out:", error);
     }
   };
 

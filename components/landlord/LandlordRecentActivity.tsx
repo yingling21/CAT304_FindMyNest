@@ -64,9 +64,9 @@ export default function LandlordRecentActivity() {
         // Only show recent approvals/rejections (within last 7 days)
         if (daysSinceCreation <= 7) {
           if (listing.status === "approved") {
-            activityList.push({
+    activityList.push({
               id: `approved-${listing.id}`,
-              type: "approved",
+      type: "approved",
               title: `Your listing "${listing.title}" was approved`,
               subtitle: listing.address,
               time: getRelativeTime(createdAt),
@@ -80,7 +80,7 @@ export default function LandlordRecentActivity() {
               subtitle: listing.address,
               time: getRelativeTime(createdAt),
               timestamp: createdAt.getTime(),
-            });
+    });
           }
         }
       });

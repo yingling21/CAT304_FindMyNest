@@ -1,6 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useMessages } from "@/contexts/MessagesContext";
 import { useListing } from "@/contexts/ListingContext";
+import { useRentals } from "@/contexts/RentalsContext";
 import LandlordDashboardHeader from "@/components/landlord/LandlordDashboardHeader";
 import LandlordOverviewStats from "@/components/landlord/LandlordOverviewStats";
 import LandlordQuickActions from "@/components/landlord/LandlordQuickActions";
@@ -14,15 +15,31 @@ export default function LandlordHomeScreen() {
   const { user } = useAuth();
   const { totalUnreadCount } = useMessages();
   const { getListingsByLandlord } = useListing();
+  const { getLandlordRentals } = useRentals();
 
   const landlordListings = useMemo(() => {
     if (!user) return [];
     return getListingsByLandlord(user.id);
   }, [user, getListingsByLandlord]);
 
+  const landlordRentals = useMemo(() => {
+    return getLandlordRentals();
+  }, [getLandlordRentals]);
+
   const totalListings = landlordListings.length;
   const activeListings = landlordListings.filter(listing => listing.status === "approved").length;
-  const totalTenants = 0;
+  
+  // Count unique tenants from rentals (excluding cancelled rentals)
+  const totalTenants = useMemo(() => {
+    const activeRentals = landlordRentals.filter(
+      rental => rental.status !== "cancelled"
+    );
+    const uniqueTenantIds = new Set(
+      activeRentals.map(rental => rental.tenantId)
+    );
+    return uniqueTenantIds.size;
+  }, [landlordRentals]);
+  
   const unreadMessages = totalUnreadCount;
 
   return (

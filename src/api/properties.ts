@@ -26,11 +26,15 @@ async function enrichPropertiesWithData(properties: any[]): Promise<any[]> {
   ]);
 
   const photosByProperty: Record<string, any[]> = {};
-  (photosResult.data || []).forEach((photo) => {
+  (photosResult.data || []).forEach((photo, index) => {
     const propId = photo.property_id;
     if (!photosByProperty[propId]) photosByProperty[propId] = [];
+    
+    // Handle different possible column names for photo ID
+    const photoId = photo.Photo_id ?? photo.photo_id ?? photo.id ?? `${propId}-${index}`;
+    
     photosByProperty[propId].push({
-      id: photo.Photo_id.toString(),
+      id: typeof photoId === 'string' ? photoId : photoId.toString(),
       url: photo.photo_url,
       isCover: photo.is_cover,
     });
@@ -86,6 +90,130 @@ export async function getAvailableProperties(): Promise<Property[]> {
   }
 
   const enrichedData = await enrichPropertiesWithData(data || []);
+  return normalizeProperties(enrichedData);
+}
+
+export type PropertyFilters = {
+  location?: string;
+  propertyTypes?: string[];
+  priceMin?: number;
+  priceMax?: number;
+  sizeMin?: number;
+  sizeMax?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  furnishing?: string[];
+  amenities?: {
+    airConditioning?: boolean;
+    wifi?: boolean;
+    parking?: boolean;
+    kitchenAccess?: boolean;
+    washingMachine?: boolean;
+    security?: boolean;
+  };
+  searchQuery?: string;
+};
+
+export async function getFilteredProperties(filters: PropertyFilters = {}): Promise<Property[]> {
+  let query = supabase
+    .from('property')
+    .select('*')
+    .eq('approvalStatus', 'approved');
+
+  // Filter by location (address contains location string)
+  if (filters.location) {
+    query = query.ilike('address', `%${filters.location}%`);
+  }
+
+  // Filter by property types
+  if (filters.propertyTypes && filters.propertyTypes.length > 0) {
+    query = query.in('propertyType', filters.propertyTypes);
+  }
+
+  // Filter by price range
+  if (filters.priceMin !== undefined) {
+    query = query.gte('monthlyRent', filters.priceMin);
+  }
+  if (filters.priceMax !== undefined) {
+    query = query.lte('monthlyRent', filters.priceMax);
+  }
+
+  // Filter by size range
+  if (filters.sizeMin !== undefined) {
+    query = query.gte('size', filters.sizeMin);
+  }
+  if (filters.sizeMax !== undefined) {
+    query = query.lte('size', filters.sizeMax);
+  }
+
+  // Filter by bedrooms
+  if (filters.bedrooms !== undefined && filters.bedrooms !== null) {
+    query = query.gte('bedrooms', filters.bedrooms);
+  }
+
+  // Filter by bathrooms
+  if (filters.bathrooms !== undefined && filters.bathrooms !== null) {
+    query = query.gte('bathrooms', filters.bathrooms);
+  }
+
+  // Filter by furnishing level
+  if (filters.furnishing && filters.furnishing.length > 0) {
+    query = query.in('furnishingLevel', filters.furnishing);
+  }
+
+  // Order by created_at
+  query = query.order('created_at', { ascending: false });
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Failed to fetch filtered properties:', error);
+    throw error;
+  }
+
+  // Filter by amenities and search query in memory (since Supabase JSONB filtering can be complex)
+  let filteredData = data || [];
+
+  // Filter by amenities (stored as JSONB)
+  if (filters.amenities) {
+    filteredData = filteredData.filter((property: any) => {
+      const amenities = property.amenities || {};
+      if (filters.amenities?.airConditioning && !amenities.airConditioning) return false;
+      if (filters.amenities?.wifi && !amenities.wifi) return false;
+      if (filters.amenities?.parking && !amenities.parking) return false;
+      if (filters.amenities?.kitchenAccess && !amenities.kitchenAccess) return false;
+      if (filters.amenities?.washingMachine && !amenities.washingMachine) return false;
+      if (filters.amenities?.security && !amenities.security) return false;
+      return true;
+    });
+  }
+
+  // Filter by search query (address or description)
+  if (filters.searchQuery) {
+    const searchLower = filters.searchQuery.toLowerCase();
+    filteredData = filteredData.filter((property: any) => {
+      const address = (property.address || '').toLowerCase();
+      const description = (property.description || '').toLowerCase();
+      return address.includes(searchLower) || description.includes(searchLower);
+    });
+  }
+
+  // Filter by availableDate (within one month)
+  const today = new Date();
+  const oneMonthFromNow = new Date();
+  oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+  
+  filteredData = filteredData.filter((property: any) => {
+    if (!property.availableDate) return true;
+    try {
+      const availableDate = new Date(property.availableDate);
+      return availableDate <= oneMonthFromNow;
+    } catch {
+      return true;
+    }
+  });
+
+  const enrichedData = await enrichPropertiesWithData(filteredData);
   return normalizeProperties(enrichedData);
 }
 

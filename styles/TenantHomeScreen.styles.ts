@@ -13,7 +13,7 @@ export const tenantHomeStyles = StyleSheet.create({
   },
   searchSection: {
     paddingHorizontal: 20,
-    marginTop: 20,
+    marginTop: 8,
   },
   resultsHeader: {
     flexDirection: "row",

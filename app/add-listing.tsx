@@ -853,15 +853,15 @@ export default function AddListingScreen() {
       case 9:
         // Show success message if submission was successful
         if (submitStatus === 'success') {
-          return (
-            <View style={styles.section}>
-              <View style={styles.submitSuccess}>
-                <View style={styles.successIcon}>
-                  <Check size={48} color="#10B981" />
-                </View>
+        return (
+          <View style={styles.section}>
+            <View style={styles.submitSuccess}>
+              <View style={styles.successIcon}>
+                <Check size={48} color="#10B981" />
+              </View>
                 <Text style={styles.successTitle}>Submitted</Text>
-                <Text style={styles.successMessage}>
-                  Your property listing has been submitted for review. We&apos;ll notify you once it&apos;s approved.
+              <Text style={styles.successMessage}>
+                Your property listing has been submitted for review. We&apos;ll notify you once it&apos;s approved.
                 </Text>
               </View>
             </View>
@@ -945,26 +945,26 @@ export default function AddListingScreen() {
           </TouchableOpacity>
         ) : (
           <>
-            <TouchableOpacity
-              style={[styles.footerButton, styles.buttonPrevious]}
-              onPress={handlePrevious}
-            >
-              <ChevronLeft size={20} color="#374151" />
-              <Text style={[styles.buttonText, styles.buttonTextPrevious]}>
-                {currentStep === 1 ? "Cancel" : "Previous"}
-              </Text>
-            </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.footerButton, styles.buttonPrevious]}
+          onPress={handlePrevious}
+        >
+          <ChevronLeft size={20} color="#374151" />
+          <Text style={[styles.buttonText, styles.buttonTextPrevious]}>
+            {currentStep === 1 ? "Cancel" : "Previous"}
+          </Text>
+        </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.footerButton, styles.buttonNext]}
-              onPress={handleNext}
-              disabled={isSubmitting}
-            >
-              <Text style={[styles.buttonText, styles.buttonTextNext]}>
+        <TouchableOpacity
+          style={[styles.footerButton, styles.buttonNext]}
+          onPress={handleNext}
+          disabled={isSubmitting}
+        >
+          <Text style={[styles.buttonText, styles.buttonTextNext]}>
                 {isSubmitting ? "Submitting..." : currentStep === TOTAL_STEPS ? "Submit" : "Next"}
-              </Text>
-              <ChevronRight size={20} color="#FFFFFF" />
-            </TouchableOpacity>
+          </Text>
+          <ChevronRight size={20} color="#FFFFFF" />
+        </TouchableOpacity>
           </>
         )}
       </View>

@@ -75,7 +75,7 @@ export const [RentalsProvider, useRentals] = createContextHook(() => {
 
       const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + durationMonths);
-      
+
       // Calculate new available date (one day after rental ends)
       const newAvailableDate = new Date(endDate);
       newAvailableDate.setDate(newAvailableDate.getDate() + 1);

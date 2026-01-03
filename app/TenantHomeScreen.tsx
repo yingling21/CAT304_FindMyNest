@@ -45,150 +45,44 @@ export default function TenantHomeScreen() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadProperties();
-  }, []);
+    loadFilteredProperties();
+  }, [filters, searchQuery]);
 
-  const loadProperties = async () => {
+  const loadFilteredProperties = async () => {
     try {
-      const { getAvailableProperties } = await import('@/src/api/properties');
-      const data = await getAvailableProperties();
+      setLoading(true);
+      const { getFilteredProperties } = await import('@/src/api/properties');
+      
+      // Convert filters to API format
+      const apiFilters = {
+        location: filters.location || undefined,
+        propertyTypes: filters.propertyTypes.length > 0 ? filters.propertyTypes : undefined,
+        priceMin: filters.priceMin ? parseInt(filters.priceMin, 10) : undefined,
+        priceMax: filters.priceMax ? parseInt(filters.priceMax, 10) : undefined,
+        sizeMin: filters.sizeMin ? parseInt(filters.sizeMin, 10) : undefined,
+        sizeMax: filters.sizeMax ? parseInt(filters.sizeMax, 10) : undefined,
+        bedrooms: filters.bedrooms || undefined,
+        bathrooms: filters.bathrooms || undefined,
+        furnishing: filters.furnishing.length > 0 ? filters.furnishing : undefined,
+        amenities: Object.values(filters.amenities).some(v => v) ? filters.amenities : undefined,
+        searchQuery: searchQuery.trim() || undefined,
+      };
+
+      const data = await getFilteredProperties(apiFilters);
       setProperties(data);
     } catch (error) {
-      console.error('Failed to load properties:', error);
+      console.error('Failed to load filtered properties:', error);
       setProperties([]);
-    }
+    } finally {
+      setLoading(false);
+        }
   };
-  React.useEffect(() => {
-    const loadProperties = async () => {
-      try {
-        const { getAvailableProperties } = await import('@/src/api/properties');
-        const data = await getAvailableProperties();
-        setProperties(data);
-      } catch (error) {
-        console.error('Failed to load properties:', error);
-      }
-    };
-    
-    loadProperties();
-  }, []);
 
-  const filteredProperties = useMemo(() => {
-    return properties.filter((property) => {
-      // Filter out properties where availableDate is more than one month away
-      if (property.availableDate) {
-        try {
-          const availableDate = new Date(property.availableDate);
-          const today = new Date();
-          const oneMonthFromNow = new Date();
-          oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
-          
-          // If availableDate is more than one month away, exclude it
-          if (availableDate > oneMonthFromNow) {
-            return false;
-          }
-        } catch {
-          // If date parsing fails, include the property
-        }
-      }
-
-      // Only filter by search query if it's not empty
-      if (searchQuery.trim()) {
-        const matchesSearch = property.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          property.description.toLowerCase().includes(searchQuery.toLowerCase());
-        
-        if (!matchesSearch) return false;
-      }
-
-      if (
-        filters.location &&
-        !property.address.toLowerCase().includes(filters.location.toLowerCase())
-      ) {
-        return false;
-      }
-
-      if (
-        filters.propertyTypes.length > 0 &&
-        !filters.propertyTypes.includes(property.propertyType)
-      ) {
-        return false;
-      }
-
-      if (filters.priceMin) {
-        const priceMinNum = parseInt(filters.priceMin, 10);
-        if (!isNaN(priceMinNum) && property.monthlyRent < priceMinNum) {
-          return false;
-        }
-      }
-
-      if (filters.priceMax) {
-        const priceMaxNum = parseInt(filters.priceMax, 10);
-        if (!isNaN(priceMaxNum) && property.monthlyRent > priceMaxNum) {
-          return false;
-        }
-      }
-
-      if (filters.sizeMin) {
-        const sizeMinNum = parseInt(filters.sizeMin, 10);
-        if (!isNaN(sizeMinNum) && property.size < sizeMinNum) {
-          return false;
-        }
-      }
-
-      if (filters.sizeMax) {
-        const sizeMaxNum = parseInt(filters.sizeMax, 10);
-        if (!isNaN(sizeMaxNum) && property.size > sizeMaxNum) {
-          return false;
-        }
-      }
-
-      if (filters.bedrooms && property.bedrooms < filters.bedrooms) {
-        return false;
-      }
-
-      if (filters.bathrooms && property.bathrooms < filters.bathrooms) {
-        return false;
-      }
-
-      if (
-        filters.furnishing.length > 0 &&
-        !filters.furnishing.includes(property.furnishingLevel)
-      ) {
-        return false;
-      }
-
-      if (
-        filters.amenities.airConditioning &&
-        !property.amenities?.airConditioning
-      ) {
-        return false;
-      }
-      if (filters.amenities.wifi && !property.amenities?.wifi) {
-        return false;
-      }
-      if (filters.amenities.parking && !property.amenities?.parking) {
-        return false;
-      }
-      if (
-        filters.amenities.kitchenAccess &&
-        !property.amenities?.kitchenAccess
-      ) {
-        return false;
-      }
-      if (
-        filters.amenities.washingMachine &&
-        !property.amenities?.washingMachine
-      ) {
-        return false;
-      }
-      if (filters.amenities.security && !property.amenities?.security) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [searchQuery, filters, properties]);
+  // Properties are already filtered from the database
+  const filteredProperties = properties;
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -224,6 +118,12 @@ export default function TenantHomeScreen() {
           />
         </View>
 
+        {loading ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateTitle}>Loading properties...</Text>
+          </View>
+        ) : (
+          <>
         <View style={styles.resultsHeader}>
           <Text style={styles.resultsCount}>
             {filteredProperties.length} {filteredProperties.length === 1 ? "property" : "properties"} found
@@ -247,6 +147,8 @@ export default function TenantHomeScreen() {
               Try adjusting your search or filters to find what you&apos;re looking for.
             </Text>
           </View>
+            )}
+          </>
         )}
       </ScrollView>
 

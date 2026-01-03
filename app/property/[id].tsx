@@ -255,12 +255,12 @@ export default function PropertyDetailScreen() {
             style={{ width: screenWidth }}
           >
             {property.photos.map((photo, index) => (
-              <Image
+          <Image
                 key={index}
                 source={{ uri: photo.url || "https://via.placeholder.com/400" }}
                 style={[styles.mainPhoto, { width: screenWidth }]}
-                contentFit="cover"
-              />
+            contentFit="cover"
+          />
             ))}
           </ScrollView>
           {property.photos.length > 1 && (
@@ -369,7 +369,7 @@ export default function PropertyDetailScreen() {
 
                 if (available) {
                   return (
-                    <View style={styles.availableBadge}>
+                <View style={styles.availableBadge}>
                       <Text style={styles.availableBadgeText}>Available</Text>
                     </View>
                   );
@@ -379,7 +379,7 @@ export default function PropertyDetailScreen() {
                       <Text style={styles.availableBadgeText}>
                         {formatAvailableDate(property.availableDate)}
                       </Text>
-                    </View>
+                </View>
                   );
                 }
                 return null;

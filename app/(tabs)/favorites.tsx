@@ -38,9 +38,9 @@ export default function FavoritesScreen() {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Favorites</Text>
         </View>
-        <View style={styles.center}>
-          <Text>Loading favorites...</Text>
-        </View>
+      <View style={styles.center}>
+        <Text>Loading favorites...</Text>
+      </View>
       </SafeAreaView>
     );
   }
@@ -51,12 +51,12 @@ export default function FavoritesScreen() {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Favorites</Text>
         </View>
-        <View style={styles.center}>
-          <Text style={styles.emptyTitle}>No favorites yet</Text>
-          <Text style={styles.emptyText}>
-            Tap the ❤️ icon on a property to save it here.
-          </Text>
-        </View>
+      <View style={styles.center}>
+        <Text style={styles.emptyTitle}>No favorites yet</Text>
+        <Text style={styles.emptyText}>
+          Tap the ❤️ icon on a property to save it here.
+        </Text>
+      </View>
       </SafeAreaView>
     );
   }
@@ -101,12 +101,12 @@ export default function FavoritesScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Favorites</Text>
       </View>
-      <FlatList
+    <FlatList
         data={filteredProperties}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => <PropertyCard property={item} />}
-      />
+      keyExtractor={(item) => item.id}
+      contentContainerStyle={styles.list}
+      renderItem={({ item }) => <PropertyCard property={item} />}
+    />
     </SafeAreaView>
   );
 }

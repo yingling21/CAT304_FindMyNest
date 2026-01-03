@@ -303,24 +303,24 @@ export default function RentPropertyScreen() {
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Move-in Date</Text>
                 <TouchableOpacity
-                  style={styles.dateInputContainer}
-                  onPress={() => setShowDatePicker(true)}
-                >
-                  <Calendar size={20} color="#6366F1" />
-                  <Text style={styles.dateInput}>
-                    {moveInDate.toLocaleDateString("en-MY")}
-                  </Text>
+                    style={styles.dateInputContainer}
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <Calendar size={20} color="#6366F1" />
+                    <Text style={styles.dateInput}>
+                      {moveInDate.toLocaleDateString("en-MY")}
+                    </Text>
                 </TouchableOpacity>
 
-                {showDatePicker && (
-                  <DateTimePicker
-                    value={moveInDate}
-                    mode="date"
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={moveInDate}
+                      mode="date"
                     display="default"
                     minimumDate={new Date(availableDate.getTime() + 24 * 60 * 60 * 1000)}
                     onChange={handleDateChange}
-                  />
-                )}
+                    />
+                  )}
                 <Text style={styles.availableFromText}>
                   Available from {availableDate.toLocaleDateString("en-MY", {
                     day: "2-digit",

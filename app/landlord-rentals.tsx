@@ -497,14 +497,14 @@ export default function LandlordRentalsScreen() {
                             </View>
                           </View>
 
-                        </View>
+                            </View>
 
                         <View style={styles.actionButtons}>
                           <Pressable
                             style={[styles.actionButton, styles.stopButton]}
                             onPress={() => handleStopRental(rental)}
                             disabled={stoppingRentalId === rental.id}
-                          >
+                                  >
                             {stoppingRentalId === rental.id ? (
                               <ActivityIndicator size="small" color="#FFFFFF" />
                             ) : (
