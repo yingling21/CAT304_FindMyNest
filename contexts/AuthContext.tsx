@@ -128,7 +128,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     }
   };
 
-  const signIn = async (email: string, password: string, role?: "tenant" | "landlord") => {
+  const signIn = async (email: string, password: string, role?: "tenant" | "landlord" | "admin") => {
     try {
       // Check which roles exist for this email, including verification status
       const { data: existingUsers, error: checkError } = await supabase
@@ -145,6 +145,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       const availableRoles = existingUsers?.map(u => u.role) || [];
       const hasTenant = availableRoles.includes("tenant");
       const hasLandlord = availableRoles.includes("landlord");
+      const hasAdmin = availableRoles.includes("admin");
       
       // Get verification status for each role
       const tenantUser = existingUsers?.find(u => u.role === "tenant");
@@ -173,6 +174,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           selectedRole = "tenant";
         } else if (hasLandlord && !hasTenant) {
           selectedRole = "landlord";
+        } else if (hasAdmin) {
+          selectedRole = "admin";
         } else {
           // Default to tenant if somehow both don't exist
           selectedRole = "tenant";
@@ -310,8 +313,13 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           setUser(mappedUser);
           
           // Go directly to home page (no need to load profile again, we already have the data)
+          if(userData.role === "admin") {
+            router.replace("/(admin)/AdminHome");
+            return
+          } else {
           router.replace("/(tabs)/home");
           return;
+          }
         }
 
         if (!userData) {
@@ -565,7 +573,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     password: string,
     fullName: string,
     phoneNumber: string,
-    role: "tenant" | "landlord" = "tenant"
+    role: "tenant" | "landlord"
   ) => {
     try {
       // Check if email already exists with the same role

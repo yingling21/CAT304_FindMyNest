@@ -1,4 +1,4 @@
-export type UserRole = "tenant" | "landlord";
+export type UserRole = "tenant" | "landlord" | "admin";
 
 export type VerificationStatus = "pending" | "approved" | "rejected";
 

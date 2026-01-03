@@ -40,6 +40,7 @@ function RootLayoutNav() {
       <Stack.Screen name="review-history" options={{ title: "Review History" }} />
       <Stack.Screen name="all-reviews" options={{ title: "All Reviews" }} />
       <Stack.Screen name="affordability-calculator" options={{ title: "Affordability Calculator" }} />
+      <Stack.Screen name="(admin)" options={{ headerShown: false }} />
     </Stack>
   );
 }
