@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, Modal, Pressable, ScrollView, TextInput, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { X, MapPin } from "lucide-react-native";
-import type { PropertyType, FurnishingLevel } from "@/src/types";
+import type { PropertyType, FurnishingLevel, roomType } from "@/src/types";
 
 type AmenityFilter = {
   airConditioning: boolean;
@@ -24,6 +24,11 @@ export type Filters = {
   bathrooms: number | null;
   furnishing: FurnishingLevel[];
   amenities: AmenityFilter;
+  roomTypes: roomType[];
+  floorLevelMin: string;
+  floorLevelMax: string;
+  utilitiesIncluded: boolean | null;
+  cooking: string | null;
 };
 
 type Props = {
@@ -69,6 +74,16 @@ export default function PropertyFiltersModal({
       },
     });
   };
+
+  const toggleRoomType = (type: roomType) => {
+    setFilters({
+      roomTypes: filters.roomTypes.includes(type)
+        ? filters.roomTypes.filter((t) => t !== type)
+        : [...filters.roomTypes, type],
+    });
+  };
+
+  const isRoomSelected = filters.propertyTypes.includes("room");
 
   return (
     <Modal
@@ -243,6 +258,63 @@ export default function PropertyFiltersModal({
             </View>
           </View>
 
+          {isRoomSelected && (
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>Room Type</Text>
+              <View style={styles.chipContainer}>
+                {(["single_room", "master_room", "shared_room"] as roomType[]).map((type) => (
+                  <Pressable
+                    key={type}
+                    style={[styles.chip, filters.roomTypes.includes(type) && styles.chipActive]}
+                    onPress={() => toggleRoomType(type)}
+                  >
+                    <Text
+                      style={[
+                        styles.chipText,
+                        filters.roomTypes.includes(type) && styles.chipTextActive,
+                      ]}
+                    >
+                      {type === "single_room"
+                        ? "Single Room"
+                        : type === "master_room"
+                        ? "Master Room"
+                        : "Shared Room"}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+
+          <View style={styles.filterSection}>
+            <Text style={styles.filterSectionTitle}>Floor Level Range</Text>
+            <View style={styles.rangeRow}>
+              <View style={styles.rangeInput}>
+                <Text style={styles.rangeLabel}>Minimum</Text>
+                <TextInput
+                  style={styles.rangeTextInput}
+                  placeholder="0"
+                  value={filters.floorLevelMin}
+                  onChangeText={(text) => setFilters({ floorLevelMin: text.replace(/[^0-9]/g, '') })}
+                  keyboardType="numeric"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+              <Text style={styles.rangeSeparator}>-</Text>
+              <View style={styles.rangeInput}>
+                <Text style={styles.rangeLabel}>Maximum</Text>
+                <TextInput
+                  style={styles.rangeTextInput}
+                  placeholder="No limit"
+                  value={filters.floorLevelMax}
+                  onChangeText={(text) => setFilters({ floorLevelMax: text.replace(/[^0-9]/g, '') })}
+                  keyboardType="numeric"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            </View>
+          </View>
+
           <View style={styles.filterSection}>
             <Text style={styles.filterSectionTitle}>Amenities</Text>
             <View style={styles.chipContainer}>
@@ -313,6 +385,55 @@ export default function PropertyFiltersModal({
                   Security
                 </Text>
               </Pressable>
+            </View>
+          </View>
+
+          <View style={styles.filterSection}>
+            <Text style={styles.filterSectionTitle}>Utilities</Text>
+            <View style={styles.chipContainer}>
+              <Pressable
+                style={[styles.chip, filters.utilitiesIncluded === true && styles.chipActive]}
+                onPress={() =>
+                  setFilters({ utilitiesIncluded: filters.utilitiesIncluded === true ? null : true })
+                }
+              >
+                <Text
+                  style={[
+                    styles.chipText,
+                    filters.utilitiesIncluded === true && styles.chipTextActive,
+                  ]}
+                >
+                  Utilities Included
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+
+          <View style={styles.filterSection}>
+            <Text style={styles.filterSectionTitle}>Cooking</Text>
+            <View style={styles.chipContainer}>
+              {[
+                { value: "allowed", label: "Cooking Allowed" },
+                { value: "light_cooking", label: "Light Cooking" },
+                { value: "no_cooking", label: "No Cooking" },
+              ].map((option) => (
+                <Pressable
+                  key={option.value}
+                  style={[styles.chip, filters.cooking === option.value && styles.chipActive]}
+                  onPress={() =>
+                    setFilters({ cooking: filters.cooking === option.value ? null : option.value })
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.chipText,
+                      filters.cooking === option.value && styles.chipTextActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
           </View>
 

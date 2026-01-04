@@ -111,6 +111,11 @@ export type PropertyFilters = {
     washingMachine?: boolean;
     security?: boolean;
   };
+  roomTypes?: string[];
+  floorLevelMin?: number;
+  floorLevelMax?: number;
+  utilitiesIncluded?: boolean;
+  cooking?: string;
   searchQuery?: string;
 };
 
@@ -119,17 +124,14 @@ export async function getFilteredProperties(filters: PropertyFilters = {}): Prom
     .from('property')
     .select('*')
     .eq('approvalStatus', 'approved');
-
   // Filter by location (address contains location string)
   if (filters.location) {
     query = query.ilike('address', `%${filters.location}%`);
   }
-
   // Filter by property types
   if (filters.propertyTypes && filters.propertyTypes.length > 0) {
     query = query.in('propertyType', filters.propertyTypes);
   }
-
   // Filter by price range
   if (filters.priceMin !== undefined) {
     query = query.gte('monthlyRent', filters.priceMin);
@@ -137,7 +139,6 @@ export async function getFilteredProperties(filters: PropertyFilters = {}): Prom
   if (filters.priceMax !== undefined) {
     query = query.lte('monthlyRent', filters.priceMax);
   }
-
   // Filter by size range
   if (filters.sizeMin !== undefined) {
     query = query.gte('size', filters.sizeMin);
@@ -145,35 +146,39 @@ export async function getFilteredProperties(filters: PropertyFilters = {}): Prom
   if (filters.sizeMax !== undefined) {
     query = query.lte('size', filters.sizeMax);
   }
-
   // Filter by bedrooms
   if (filters.bedrooms !== undefined && filters.bedrooms !== null) {
     query = query.gte('bedrooms', filters.bedrooms);
   }
-
   // Filter by bathrooms
   if (filters.bathrooms !== undefined && filters.bathrooms !== null) {
     query = query.gte('bathrooms', filters.bathrooms);
   }
-
   // Filter by furnishing level
   if (filters.furnishing && filters.furnishing.length > 0) {
     query = query.in('furnishingLevel', filters.furnishing);
   }
-
+  // Filter by room type
+  if (filters.roomTypes && filters.roomTypes.length > 0) {
+    query = query.in('roomType', filters.roomTypes);
+  }
+  // Filter by floor level range
+  if (filters.floorLevelMin !== undefined) {
+    query = query.gte('floorLevel', filters.floorLevelMin);
+  }
+  if (filters.floorLevelMax !== undefined) {
+    query = query.lte('floorLevel', filters.floorLevelMax);
+  }
   // Order by created_at
   query = query.order('created_at', { ascending: false });
 
   const { data, error } = await query;
-
   if (error) {
     console.error('Failed to fetch filtered properties:', error);
     throw error;
   }
-
   // Filter by amenities and search query in memory (since Supabase JSONB filtering can be complex)
   let filteredData = data || [];
-
   // Filter by amenities (stored as JSONB)
   if (filters.amenities) {
     filteredData = filteredData.filter((property: any) => {
@@ -188,6 +193,22 @@ export async function getFilteredProperties(filters: PropertyFilters = {}): Prom
     });
   }
 
+  // Filter by utilities included (stored in amenities JSONB)
+  if (filters.utilitiesIncluded !== undefined) {
+    filteredData = filteredData.filter((property: any) => {
+      const amenities = property.amenities || {};
+      return amenities.utilitiesIncluded === filters.utilitiesIncluded;
+    });
+  }
+
+  // Filter by cooking (stored in amenities JSONB)
+  if (filters.cooking) {
+    filteredData = filteredData.filter((property: any) => {
+      const amenities = property.amenities || {};
+      return amenities.cooking === filters.cooking;
+    });
+  }
+
   // Filter by search query (address or description)
   if (filters.searchQuery) {
     const searchLower = filters.searchQuery.toLowerCase();
@@ -197,12 +218,10 @@ export async function getFilteredProperties(filters: PropertyFilters = {}): Prom
       return address.includes(searchLower) || description.includes(searchLower);
     });
   }
-
   // Filter by availableDate (within one month)
   const today = new Date();
   const oneMonthFromNow = new Date();
   oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
-  
   filteredData = filteredData.filter((property: any) => {
     if (!property.availableDate) return true;
     try {

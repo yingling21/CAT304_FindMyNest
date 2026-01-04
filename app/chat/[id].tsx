@@ -15,7 +15,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { maskSensitiveData, containsSensitiveData } from "@/utils/sensitiveDataMask";
+import { maskSensitiveData, containsSensitiveData } from "@/src/utils/sensitiveDataMask";
 import { styles } from "@/styles/chat.style";
 
 export default function ChatRoomScreen() {

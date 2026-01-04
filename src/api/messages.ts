@@ -5,7 +5,7 @@ import {
   normalizeMessages,
   normalizeConversations,
 } from '@/src/utils/normalizeMessage';
-import { maskSensitiveData } from '@/utils/sensitiveDataMask';
+import { maskSensitiveData } from '@/src/utils/sensitiveDataMask';
 
 /* =========================================================
    Fetch conversations by user

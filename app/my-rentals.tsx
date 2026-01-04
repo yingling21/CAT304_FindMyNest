@@ -4,7 +4,8 @@ import { usePayments } from "@/contexts/PaymentsContext";
 import { Image } from "expo-image";
 import { Stack, useRouter } from "expo-router";
 import { ChevronLeft, Home as HomeIcon } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getPropertyById } from "@/src/api/properties";
 import {
   ScrollView,
   Text,
@@ -18,13 +19,44 @@ import { styles } from "@/styles/rent-property.styles";
 export default function MyRentalsScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { getTenantRentals, stopRental } = useRentals();
+  const { getTenantRentals, stopRental, updateRentalStatus } = useRentals();
   const { createPayment, completePayment } = usePayments();
   const [stoppingRentalId, setStoppingRentalId] = useState<string | null>(null);
   const [payingRentalId, setPayingRentalId] = useState<string | null>(null);
+  const [cancellingRentalId, setCancellingRentalId] = useState<string | null>(null);
+  const [propertyTitlesMap, setPropertyTitlesMap] = useState<Record<string, string>>({});
 
   const rentals = getTenantRentals();
   const now = new Date();
+
+  // Fetch property titles
+  useEffect(() => {
+    const fetchPropertyTitles = async () => {
+      const propertyIds = new Set(rentals.map(r => r.propertyId));
+      
+      const propertyPromises = Array.from(propertyIds).map(async (propertyId) => {
+        try {
+          const property = await getPropertyById(propertyId);
+          return { id: propertyId, title: property?.title || '' };
+        } catch (error) {
+          console.error(`Failed to fetch property ${propertyId}:`, error);
+          return { id: propertyId, title: '' };
+        }
+      });
+
+      const properties = await Promise.all(propertyPromises);
+      const titlesMap: Record<string, string> = {};
+      properties.forEach(property => {
+        titlesMap[property.id] = property.title;
+      });
+
+      setPropertyTitlesMap(titlesMap);
+    };
+
+    if (rentals.length > 0) {
+      fetchPropertyTitles();
+    }
+  }, [rentals]);
   
   // Pending rentals (waiting for landlord confirmation)
   const pendingRentals = rentals.filter(r => r.status === "pending");
@@ -82,6 +114,32 @@ export default function MyRentalsScreen() {
               console.error("Failed to stop rental:", error);
               Alert.alert("Error", "Failed to stop rental. Please try again.");
               setStoppingRentalId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleCancelRental = (rental: any) => {
+    Alert.alert(
+      "Cancel Rental",
+      `Are you sure you want to cancel your rental request for "${rental.propertyAddress}"? This action cannot be undone.`,
+      [
+        { text: "No", style: "cancel" },
+        {
+          text: "Yes, Cancel",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setCancellingRentalId(rental.id);
+              await updateRentalStatus(rental.id, "cancelled");
+              setCancellingRentalId(null);
+              Alert.alert("Success", "Your rental request has been cancelled.");
+            } catch (error) {
+              console.error("Failed to cancel rental:", error);
+              Alert.alert("Error", "Failed to cancel rental. Please try again.");
+              setCancellingRentalId(null);
             }
           },
         },
@@ -180,7 +238,7 @@ export default function MyRentalsScreen() {
                         <View style={styles.rentalInfo}>
                           <View style={styles.rentalHeader}>
                             <Text style={styles.propertyTitle} numberOfLines={1}>
-                              {rental.propertyAddress}
+                              {propertyTitlesMap[rental.propertyId] || rental.propertyAddress}
                             </Text>
                             <View style={[styles.statusBadge, { backgroundColor: "#F59E0B" }]}>
                               <Text style={styles.statusText}>Pending</Text>
@@ -210,6 +268,18 @@ export default function MyRentalsScreen() {
                           <Text style={[styles.daysRemaining, { color: "#F59E0B" }]}>
                             Waiting for landlord confirmation
                           </Text>
+                          <Pressable
+                            style={[
+                              styles.cancelButton,
+                              cancellingRentalId === rental.id && styles.cancelButtonDisabled,
+                            ]}
+                            onPress={() => handleCancelRental(rental)}
+                            disabled={cancellingRentalId === rental.id}
+                          >
+                            <Text style={styles.cancelButtonText}>
+                              {cancellingRentalId === rental.id ? "Cancelling..." : "Cancel Rental"}
+                            </Text>
+                          </Pressable>
                         </View>
                       </View>
                     );
@@ -235,7 +305,7 @@ export default function MyRentalsScreen() {
                         <View style={styles.rentalInfo}>
                           <View style={styles.rentalHeader}>
                             <Text style={styles.propertyTitle} numberOfLines={1}>
-                              {rental.propertyAddress}
+                              {propertyTitlesMap[rental.propertyId] || rental.propertyAddress}
                             </Text>
                             <View style={[styles.statusBadge, { backgroundColor: "#10B981" }]}>
                               <Text style={styles.statusText}>Confirmed</Text>
@@ -265,6 +335,18 @@ export default function MyRentalsScreen() {
                           <Text style={[styles.daysRemaining, { color: "#10B981" }]}>
                             Starts in {daysUntilStart} {daysUntilStart === 1 ? "day" : "days"}
                           </Text>
+                          <Pressable
+                            style={[
+                              styles.cancelButton,
+                              cancellingRentalId === rental.id && styles.cancelButtonDisabled,
+                            ]}
+                            onPress={() => handleCancelRental(rental)}
+                            disabled={cancellingRentalId === rental.id}
+                          >
+                            <Text style={styles.cancelButtonText}>
+                              {cancellingRentalId === rental.id ? "Cancelling..." : "Cancel Rental"}
+                            </Text>
+                          </Pressable>
                         </View>
                       </View>
                     );
@@ -290,7 +372,7 @@ export default function MyRentalsScreen() {
                         <View style={styles.rentalInfo}>
                           <View style={styles.rentalHeader}>
                             <Text style={styles.propertyTitle} numberOfLines={1}>
-                              {rental.propertyAddress}
+                              {propertyTitlesMap[rental.propertyId] || rental.propertyAddress}
                             </Text>
                             <View style={styles.statusBadge}>
                               <Text style={styles.statusText}>Active</Text>
@@ -370,7 +452,7 @@ export default function MyRentalsScreen() {
                         <View style={styles.rentalInfo}>
                           <View style={styles.rentalHeader}>
                             <Text style={styles.propertyTitle} numberOfLines={1}>
-                              {rental.propertyAddress}
+                              {propertyTitlesMap[rental.propertyId] || rental.propertyAddress}
                             </Text>
                             <View style={styles.statusBadgeCompleted}>
                               <Text style={styles.statusTextCompleted}>Completed</Text>

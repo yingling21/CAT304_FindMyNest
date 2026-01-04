@@ -2,7 +2,8 @@ import { useFavorites } from "@/contexts/FavoritesContext";
 import type { Property } from "@/src/types";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { Bed, Bath, Maximize2, Heart } from "lucide-react-native";
+import { Bed, Bath, Maximize2, Heart, Users, Ban, Dog, ChefHat, X, CheckCircle2 } from "lucide-react-native";
+import SmokingIcon from "@/components/icons/SmokingIcon";
 import React from "react";
 import {
   Dimensions,
@@ -116,6 +117,61 @@ export default function PropertyCard({ property }: PropertyCardProps) {
             fill={favorite ? "#FFFFFF" : "transparent"}
           />
         </Pressable>
+
+        {property.houseRules && (
+          <View style={styles.houseRulesOverlay}>
+            {property.houseRules.guestsAllowed !== undefined && (
+              <View style={styles.ruleIcon}>
+                {property.houseRules.guestsAllowed ? (
+                  <Users size={14} color="#10B981" />
+                ) : (
+                  <View style={styles.iconWithBan}>
+                    <Users size={14} color="#6B7280" />
+                    <Ban size={12} color="#EF4444" style={styles.banOverlay} />
+                  </View>
+                )}
+              </View>
+            )}
+            {property.houseRules.smokingAllowed !== undefined && (
+              <View style={styles.ruleIcon}>
+                {property.houseRules.smokingAllowed ? (
+                  <SmokingIcon size={14} color="#10B981" />
+                ) : (
+                  <View style={styles.iconWithBan}>
+                    <SmokingIcon size={14} color="#6B7280" />
+                    <Ban size={12} color="#EF4444" style={styles.banOverlay} />
+                  </View>
+                )}
+              </View>
+            )}
+            {property.houseRules.petsAllowed !== undefined && (
+              <View style={styles.ruleIcon}>
+                {property.houseRules.petsAllowed ? (
+                  <Dog size={14} color="#10B981" />
+                ) : (
+                  <View style={styles.iconWithBan}>
+                    <Dog size={14} color="#6B7280" />
+                    <Ban size={12} color="#EF4444" style={styles.banOverlay} />
+                  </View>
+                )}
+              </View>
+            )}
+            {property.houseRules.cooking && (
+              <View style={styles.ruleIcon}>
+                {property.houseRules.cooking === "allowed" ? (
+                  <ChefHat size={14} color="#10B981" />
+                ) : property.houseRules.cooking === "light_cooking" ? (
+                  <ChefHat size={14} color="#F59E0B" />
+                ) : (
+                  <View style={styles.iconWithBan}>
+                    <ChefHat size={14} color="#6B7280" />
+                    <Ban size={12} color="#EF4444" style={styles.banOverlay} />
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+        )}
       </View>
 
       <View style={styles.content}>
@@ -281,5 +337,43 @@ const styles = StyleSheet.create({
   specText: {
     fontSize: 13,
     color: "#6B7280",
+  },
+  houseRulesOverlay: {
+    position: "absolute",
+    bottom: 12,
+    right: 12,
+    flexDirection: "row",
+    gap: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 20,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  ruleIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconWithBan: {
+    width: 24,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  banOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
 });

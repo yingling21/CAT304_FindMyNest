@@ -60,18 +60,18 @@ export default function AddListingScreen() {
     }
   };
 
-  async function geocodeAddress(address: string) {
-    try {
-      const results = await Location.geocodeAsync(address);
-      if (results.length > 0) {
-        const { latitude, longitude } = results[0];
-        return { latitude, longitude };
-      }
-    } catch (error) {
-      console.error("Failed to geocode address:", error);
-    }
-    return null;
-  }
+  // async function geocodeAddress(address: string) {
+  //   try {
+  //     const results = await Location.geocodeAsync(address);
+  //     if (results.length > 0) {
+  //       const { latitude, longitude } = results[0];
+  //       return { latitude, longitude };
+  //     }
+  //   } catch (error) {
+  //     console.error("Failed to geocode address:", error);
+  //   }
+  //   return null;
+  // }
 
   const [selectedImages, setSelectedImages] = useState<any[]>([]);
 
