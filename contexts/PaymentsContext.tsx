@@ -21,6 +21,7 @@ export const [PaymentsProvider, usePayments] = createContextHook(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
+  // Manually reload payments from database
   const loadPayments = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -39,6 +40,7 @@ export const [PaymentsProvider, usePayments] = createContextHook(() => {
     }
   }, [user]);
 
+  // Create a new payment record
   const createPayment = async (
     rentalId: string,
     propertyId: string,
@@ -55,6 +57,7 @@ export const [PaymentsProvider, usePayments] = createContextHook(() => {
         throw new Error("User not authenticated");
       }
 
+      // Create payment via API
       const payment = await createPaymentAPI({
         rentalId,
         propertyId,
@@ -67,6 +70,7 @@ export const [PaymentsProvider, usePayments] = createContextHook(() => {
         dueDate,
       });
 
+      // Update local state with new payment
       setPayments(prev => [payment, ...prev]);
       return payment;
     } catch (error) {
@@ -75,12 +79,13 @@ export const [PaymentsProvider, usePayments] = createContextHook(() => {
     }
   };
 
+  // Mark payment as successful with payment method
   const completePayment = async (
     paymentId: string,
     paymentMethod: 'fpx' | 'card' | 'ewallet'
   ): Promise<void> => {
     try {
-      await updatePaymentStatusAPI(
+      await updatePaymentStatusAPI(   // Update payment status (success/failed)
         paymentId,
         'success',
         undefined,
@@ -136,6 +141,7 @@ export const [PaymentsProvider, usePayments] = createContextHook(() => {
     }
   };
 
+  // Get all payments for a specific rental
   const getPaymentsByRentalId = async (rentalId: string): Promise<Payment[]> => {
     try {
       return await getPaymentsByRental(rentalId);
@@ -145,6 +151,7 @@ export const [PaymentsProvider, usePayments] = createContextHook(() => {
     }
   };
 
+  // Calculate next payment due date for a rental
   const getNextPaymentDueDate = (rentalId: string): string | null => {
     const rentalPayments = payments.filter(p => p.rentalId === rentalId);
     const lastSuccessfulPayment = rentalPayments
@@ -158,6 +165,7 @@ export const [PaymentsProvider, usePayments] = createContextHook(() => {
     return nextDue.toISOString();
   };
 
+  // Check if rental has pending payments
   const hasUnpaidPayments = (rentalId: string): boolean => {
     return payments.some(p => p.rentalId === rentalId && p.paymentStatus === 'pending');
   };
