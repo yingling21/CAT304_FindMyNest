@@ -77,7 +77,6 @@ export default function ListingApprovalScreen() {
 
   const handleReject = async (id) => {
     try {
-      console.log("Rejecting listing with ID:", id);
       const { error } = await supabase
         .from("property")
         .update({ approvalStatus: "rejected" })

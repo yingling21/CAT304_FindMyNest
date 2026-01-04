@@ -81,7 +81,6 @@ export default function PendingLandlordDetailScreen() {
 
         //  Open native sharing/viewer if possible
         await Sharing.shareAsync(result.uri);
-        Alert.alert("Error", "Cannot open this PDF file");
       }
     } else {
       // Open image in modal
@@ -102,7 +101,6 @@ export default function PendingLandlordDetailScreen() {
 
       setLandlord(data);
       await fetchPhoto();
-      console.log("Data in photoUrl:", photoUrl);
     } catch (error) {
       Alert.alert(
         "Error",
@@ -119,7 +117,6 @@ export default function PendingLandlordDetailScreen() {
         .from("users")
         .update({
           verification_status: "approved",
-          verification_status_manual: true,
         })
         .eq("id", id);
 

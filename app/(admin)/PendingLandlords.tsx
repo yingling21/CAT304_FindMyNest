@@ -128,7 +128,6 @@ export default function LandlordApprovalScreen() {
           style={[styles.button, styles.viewButton]}
           onPress={() => {
             router.push(`/PendingLandlords/${item.id}`);
-            fetchPendingLandlords();
           }}
         >
           <Text style={styles.buttonTextView}>View More</Text>

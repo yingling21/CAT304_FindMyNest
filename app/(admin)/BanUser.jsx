@@ -37,6 +37,7 @@ export default function BanUsersScreen() {
       const { data, error } = await supabase
         .from("users")
         .select("*")
+        .eq("verification_status", "approved")
         .order("full_name", { ascending: true });
 
       if (error) throw error;

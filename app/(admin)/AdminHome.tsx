@@ -70,6 +70,7 @@ export default function AdminHomeScreen() {
       if (pendingLandlordApprovalsError) throw pendingLandlordApprovalsError;
       if (pendingLandlordApprovalsCount)
         setPendingLandlordApprovals(pendingLandlordApprovalsCount);
+      
       const {
         count: pendingListingApprovalsCount,
         error: pendingListingApprovalsError,
