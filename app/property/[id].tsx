@@ -123,34 +123,6 @@ export default function PropertyDetailScreen() {
         setIsLoading(false);
       }
     };
-
-    const fetchNearbyPlaces = async (lat: number, lng: number) => {
-      try {
-        const apiKey = Constants.expoConfig?.extra?.googleMapsApiKey;
-        if (!apiKey) return;
-
-        const radius = 500; // meters
-        const type = "restaurant"; // example
-        const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${type}&key=${apiKey}`;
-
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (data.results) {
-          const places: NearbyPlace[] = data.results.map((p: any) => ({
-            id: p.place_id,
-            name: p.name,
-            types: p.types,
-            latitude: p.geometry.location.lat,
-            longitude: p.geometry.location.lng,
-          }));
-          setNearbyResults(places);
-        }
-      } catch (error) {
-        console.error("Failed to fetch nearby places:", error);
-      }
-    };
-
     loadProperty();
   }, [id]);
 

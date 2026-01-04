@@ -11,7 +11,6 @@ export async function uploadPropertyPhoto(image: any): Promise<string> {
   try {
     let uri = image.uri;
     let ext = uri.split('.').pop()?.toLowerCase() || 'jpg';
-
     // Convert HEIC to JPEG for iOS
     if (Platform.OS === 'ios' && ext === 'heic') {
       const result = await ImageManipulator.manipulateAsync(
@@ -24,7 +23,6 @@ export async function uploadPropertyPhoto(image: any): Promise<string> {
     }
 
     const filePath = `property-photos/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-
     // Read file as base64 using expo-file-system
     const base64 = await FileSystem.readAsStringAsync(uri, {
       encoding: 'base64',
@@ -37,7 +35,6 @@ export async function uploadPropertyPhoto(image: any): Promise<string> {
       byteNumbers[i] = byteCharacters.charCodeAt(i);
     }
     const byteArray = new Uint8Array(byteNumbers);
-
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from('property-photos')
@@ -50,17 +47,17 @@ export async function uploadPropertyPhoto(image: any): Promise<string> {
       console.error('Upload error:', uploadError);
       throw uploadError;
     }
-
     // Get public URL
     const { data } = supabase.storage
       .from('property-photos')
       .getPublicUrl(filePath);
 
     if (!data?.publicUrl) throw new Error('Failed to get public URL');
-
     return data.publicUrl;
   } catch (err) {
     console.error('Failed to upload photo:', err);
     throw err;
   }
 }
+
+

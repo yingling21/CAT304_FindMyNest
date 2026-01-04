@@ -51,23 +51,12 @@ function getDistance(
 ------------------------------------ */
 
 export default function NearbyPlaces({
-  markerPosition,
-  radius,
-  categories,
-  apiKey,
-  onResults,
-}: NearbyPlacesProps) {
+  markerPosition,radius,categories,apiKey,onResults,}: NearbyPlacesProps) {
   useEffect(() => {
     async function fetchPlaces() {
       const allPlaces: NearbyPlace[] = [];
       const counts: NearbyCounts = {
-        transport: 0,
-        food: 0,
-        shopping: 0,
-        facility: 0,
-        environment: 0,
-        education: 0,
-      };
+        transport: 0,food: 0,shopping: 0,facility: 0,environment: 0,education: 0,};
 
       for (const category of categories) {
         const types = CATEGORY_MAP[category];
@@ -88,10 +77,8 @@ export default function NearbyPlaces({
 
             json.results.forEach((p: any) => {
               const distance = getDistance(
-                markerPosition.lat,
-                markerPosition.lng,
-                p.geometry.location.lat,
-                p.geometry.location.lng
+                markerPosition.lat,markerPosition.lng,
+                p.geometry.location.lat,p.geometry.location.lng
               );
 
               allPlaces.push({
@@ -103,17 +90,14 @@ export default function NearbyPlaces({
                 distance,
               });
             });
-
             counts[category] += json.results.length;
           } catch (err) {
             console.error("NearbyPlaces error:", err);
           }
         }
       }
-
       onResults(allPlaces, counts);
     }
-
     fetchPlaces();
   }, [markerPosition.lat, markerPosition.lng, radius, categories, apiKey]);
 
