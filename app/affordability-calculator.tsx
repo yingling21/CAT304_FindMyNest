@@ -21,6 +21,37 @@ export default function AffordabilityCalculator({ visible, onClose }: Affordabil
   const [monthlyExpenses, setMonthlyExpenses] = useState("");
   const [savingsGoal, setSavingsGoal] = useState(20);
 
+  // Validation function to prevent 0 or negative values
+  const validatePositiveNumber = (text: string): string => {
+    // Remove any non-numeric characters except decimal point
+    const cleaned = text.replace(/[^0-9.]/g, '');
+    
+    // If empty, allow it (user can clear the field)
+    if (cleaned === '' || cleaned === '.') {
+      return cleaned;
+    }
+    
+    // Parse the number
+    const num = parseFloat(cleaned);
+    
+    // If it's 0, negative, or NaN, don't allow it
+    if (isNaN(num) || num <= 0) {
+      return '';
+    }
+    
+    return cleaned;
+  };
+
+  const handleIncomeChange = (text: string) => {
+    const validated = validatePositiveNumber(text);
+    setMonthlyIncome(validated);
+  };
+
+  const handleExpensesChange = (text: string) => {
+    const validated = validatePositiveNumber(text);
+    setMonthlyExpenses(validated);
+  };
+
   const income = parseFloat(monthlyIncome) || 0;
   const expenses = parseFloat(monthlyExpenses) || 0;
   const savings = (income * savingsGoal) / 100;
@@ -64,8 +95,13 @@ export default function AffordabilityCalculator({ visible, onClose }: Affordabil
               placeholder="e.g., 5000"
               keyboardType="numeric"
               value={monthlyIncome}
-              onChangeText={setMonthlyIncome}
+              onChangeText={handleIncomeChange}
             />
+            {monthlyIncome && parseFloat(monthlyIncome) <= 0 && (
+              <Text style={{ color: '#EF4444', fontSize: 12, marginTop: 4 }}>
+                Please enter a value greater than 0
+              </Text>
+            )}
           </View>
 
           <View style={styles.inputSection}>
@@ -75,8 +111,13 @@ export default function AffordabilityCalculator({ visible, onClose }: Affordabil
               placeholder="e.g., 1500"
               keyboardType="numeric"
               value={monthlyExpenses}
-              onChangeText={setMonthlyExpenses}
+              onChangeText={handleExpensesChange}
             />
+            {monthlyExpenses && parseFloat(monthlyExpenses) <= 0 && (
+              <Text style={{ color: '#EF4444', fontSize: 12, marginTop: 4 }}>
+                Please enter a value greater than 0
+              </Text>
+            )}
           </View>
 
           <View style={styles.inputSection}>
@@ -86,18 +127,18 @@ export default function AffordabilityCalculator({ visible, onClose }: Affordabil
             </View>
             <Slider
               style={styles.slider}
-              minimumValue={0}
+              minimumValue={1}
               maximumValue={50}
-              step={5}
+              step={1}
               value={savingsGoal}
-              onValueChange={setSavingsGoal}
+              onValueChange={(value) => setSavingsGoal(Math.max(1, Math.round(value)))}
               minimumTrackTintColor="#6366F1"
               maximumTrackTintColor="#E5E7EB"
               thumbTintColor="#6366F1"
             />
           </View>
 
-          {income > 0 && expenses > 0 && (
+          {income > 0 && expenses > 0 && savingsGoal > 0 && (
             <>
               <View style={styles.breakdownSection}>
                 <Text style={styles.sectionTitle}>Monthly Breakdown</Text>
