@@ -8,7 +8,7 @@ export default function AdminQuickActions() {
 
   return (
     <View style={styles.quickActionsSection}>
-      <Text style={styles.sectionTitle}>Quick Actions</Text>
+      <Text style={styles.sectionTitle}>Quick Actions & Additional Features </Text>
       <View style={styles.actionsList}>
         <Pressable 
           style={styles.actionCard}

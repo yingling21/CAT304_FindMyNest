@@ -1,4 +1,3 @@
-import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Gavel, ScrollText, Users, UserRoundPen, HousePlus, Clock8 } from "lucide-react-native";
 

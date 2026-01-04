@@ -8,18 +8,31 @@ import {
   RefreshControl,
   TouchableOpacity,
   Alert,
+  Pressable,
 } from "react-native";
 import { supabase } from "../../lib/supabase";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter, useNavigation } from "expo-router";
 
 export default function LandlordApprovalScreen() {
   const [landlords, setLandlords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const navigation = useNavigation();
+  const router = useRouter();
 
   useEffect(() => {
     fetchPendingLandlords();
   }, []);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      fetchPendingLandlords();
+      console.log("Pending Landlords page is in focus");
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   const fetchPendingLandlords = async () => {
     try {
@@ -110,6 +123,16 @@ export default function LandlordApprovalScreen() {
         >
           <Text style={styles.buttonTextAccent}>Reject</Text>
         </TouchableOpacity>
+
+        <Pressable
+          style={[styles.button, styles.viewButton]}
+          onPress={() => {
+            router.push(`/PendingLandlords/${item.id}`);
+            fetchPendingLandlords();
+          }}
+        >
+          <Text style={styles.buttonTextView}>View More</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -251,6 +274,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e61717ff",
   },
+  viewButton: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#6e6c6cff",
+  },
   buttonText: {
     color: "#fff",
     fontSize: 14,
@@ -258,6 +286,11 @@ const styles = StyleSheet.create({
   },
   buttonTextAccent: {
     color: "#e61717ff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  buttonTextView: {
+    color: "#6e6c6cff",
     fontSize: 14,
     fontWeight: "600",
   },

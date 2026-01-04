@@ -71,37 +71,35 @@ export default function TabLayout() {
         options={{
           title: "Sign Out",
           tabBarIcon: ({ color }) => <LogOut size={24} color={color} />,
-          tabBarButton: (props) => (
-            <Pressable {...props} onPress={signOut} />
-          ),
+          tabBarButton: (props) => <Pressable {...props} onPress={signOut} />,
         }}
       />
 
       <Tabs.Screen
         name="PendingListings/[id]"
         options={{
-          href : null,
+          href: null,
         }}
       />
 
       <Tabs.Screen
         name="PendingLandlords/[id]"
         options={{
-          href : null,
+          href: null,
         }}
       />
 
       <Tabs.Screen
         name="BanUser"
         options={{
-          href : null,
+          href: null,
         }}
       />
 
       <Tabs.Screen
         name="RemoveListing"
         options={{
-          href : null,
+          href: null,
         }}
       />
     </Tabs>
