@@ -111,6 +111,11 @@ export type PropertyFilters = {
     washingMachine?: boolean;
     security?: boolean;
   };
+  roomTypes?: string[];
+  floorLevelMin?: number;
+  floorLevelMax?: number;
+  utilitiesIncluded?: boolean;
+  cooking?: string;
   searchQuery?: string;
 };
 
@@ -153,6 +158,17 @@ export async function getFilteredProperties(filters: PropertyFilters = {}): Prom
   if (filters.furnishing && filters.furnishing.length > 0) {
     query = query.in('furnishingLevel', filters.furnishing);
   }
+  // Filter by room type
+  if (filters.roomTypes && filters.roomTypes.length > 0) {
+    query = query.in('roomType', filters.roomTypes);
+  }
+  // Filter by floor level range
+  if (filters.floorLevelMin !== undefined) {
+    query = query.gte('floorLevel', filters.floorLevelMin);
+  }
+  if (filters.floorLevelMax !== undefined) {
+    query = query.lte('floorLevel', filters.floorLevelMax);
+  }
   // Order by created_at
   query = query.order('created_at', { ascending: false });
 
@@ -174,6 +190,22 @@ export async function getFilteredProperties(filters: PropertyFilters = {}): Prom
       if (filters.amenities?.washingMachine && !amenities.washingMachine) return false;
       if (filters.amenities?.security && !amenities.security) return false;
       return true;
+    });
+  }
+
+  // Filter by utilities included (stored in amenities JSONB)
+  if (filters.utilitiesIncluded !== undefined) {
+    filteredData = filteredData.filter((property: any) => {
+      const amenities = property.amenities || {};
+      return amenities.utilitiesIncluded === filters.utilitiesIncluded;
+    });
+  }
+
+  // Filter by cooking (stored in amenities JSONB)
+  if (filters.cooking) {
+    filteredData = filteredData.filter((property: any) => {
+      const amenities = property.amenities || {};
+      return amenities.cooking === filters.cooking;
     });
   }
 

@@ -1,9 +1,11 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRentals } from "@/contexts/RentalsContext";
+import { createOrGetConversation as createOrGetConversationAPI } from "@/src/api/messages";
 import { Image } from "expo-image";
 import { Stack, useRouter } from "expo-router";
-import { ChevronLeft, Home as HomeIcon, User as UserIcon, Calendar, DollarSign, CheckCircle2, XCircle } from "lucide-react-native";
+import { ChevronLeft, Home as HomeIcon, User as UserIcon, Calendar, DollarSign, CheckCircle2, XCircle, MessageCircle } from "lucide-react-native";
 import React, { useState, useEffect } from "react";
+import { getPropertyById } from "@/src/api/properties";
 import {
   ScrollView,
   Text,
@@ -30,6 +32,7 @@ export default function LandlordRentalsScreen() {
   const [loadingTenants, setLoadingTenants] = useState<Record<string, boolean>>({});
   const [confirmingRentalId, setConfirmingRentalId] = useState<string | null>(null);
   const [stoppingRentalId, setStoppingRentalId] = useState<string | null>(null);
+  const [propertyTitlesMap, setPropertyTitlesMap] = useState<Record<string, string>>({});
   
   // Pending rentals (waiting for landlord confirmation)
   const pendingRentals = rentals.filter(r => r.status === "pending");
@@ -84,6 +87,35 @@ export default function LandlordRentalsScreen() {
 
     if (rentals.length > 0) {
       fetchTenantInfo();
+    }
+  }, [rentals]);
+
+  // Fetch property titles
+  useEffect(() => {
+    const fetchPropertyTitles = async () => {
+      const propertyIds = new Set(rentals.map(r => r.propertyId));
+      
+      const propertyPromises = Array.from(propertyIds).map(async (propertyId) => {
+        try {
+          const property = await getPropertyById(propertyId);
+          return { id: propertyId, title: property?.title || '' };
+        } catch (error) {
+          console.error(`Failed to fetch property ${propertyId}:`, error);
+          return { id: propertyId, title: '' };
+        }
+      });
+
+      const properties = await Promise.all(propertyPromises);
+      const titlesMap: Record<string, string> = {};
+      properties.forEach(property => {
+        titlesMap[property.id] = property.title;
+      });
+
+      setPropertyTitlesMap(titlesMap);
+    };
+
+    if (rentals.length > 0) {
+      fetchPropertyTitles();
     }
   }, [rentals]);
 
@@ -152,6 +184,35 @@ export default function LandlordRentalsScreen() {
         },
       ]
     );
+  };
+
+  const handleContactTenant = async (rental: any) => {
+    if (!user) {
+      Alert.alert("Error", "Please sign in to contact tenant");
+      return;
+    }
+    
+    try {
+      const tenantInfo = tenantInfoMap[rental.tenantId];
+      
+      const conversationId = await createOrGetConversationAPI({
+        propertyId: rental.propertyId,
+        propertyAddress: rental.propertyAddress,
+        propertyImage: rental.propertyImage || '',
+        propertyPrice: rental.monthlyRent,
+        tenantId: rental.tenantId,
+        tenantName: tenantInfo?.fullName || 'Tenant',
+        tenantPhoto: tenantInfo?.avatarUrl,
+        landlordId: user.id,
+        landlordName: user.fullName || 'Landlord',
+        landlordPhoto: user.avatarUrl,
+      });
+      
+      router.push(`/chat/${conversationId}` as any);
+    } catch (error) {
+      console.error("Failed to create conversation:", error);
+      Alert.alert("Error", "Failed to start conversation. Please try again.");
+    }
   };
 
   const handleCancelRental = (rental: any) => {
@@ -230,7 +291,7 @@ export default function LandlordRentalsScreen() {
                           <View style={styles.propertyInfo}>
                             <View style={styles.rentalHeader}>
                               <Text style={styles.propertyTitle} numberOfLines={1}>
-                                {rental.propertyAddress}
+                                {propertyTitlesMap[rental.propertyId] || rental.propertyAddress}
                               </Text>
                               <View style={[styles.statusBadge, { backgroundColor: "#F59E0B" }]}>
                                 <Text style={styles.statusText}>Pending</Text>
@@ -290,6 +351,13 @@ export default function LandlordRentalsScreen() {
 
                         <View style={styles.actionButtons}>
                           <Pressable
+                            style={[styles.actionButton, styles.contactButton]}
+                            onPress={() => handleContactTenant(rental)}
+                          >
+                            <MessageCircle size={18} color="#FFFFFF" />
+                            <Text style={styles.contactButtonText}>Contact Tenant</Text>
+                          </Pressable>
+                          <Pressable
                             style={[styles.actionButton, styles.confirmButton]}
                             onPress={() => handleConfirmRental(rental)}
                             disabled={confirmingRentalId === rental.id}
@@ -344,7 +412,7 @@ export default function LandlordRentalsScreen() {
                           <View style={styles.propertyInfo}>
                             <View style={styles.rentalHeader}>
                               <Text style={styles.propertyTitle} numberOfLines={1}>
-                                {rental.propertyAddress}
+                                {propertyTitlesMap[rental.propertyId] || rental.propertyAddress}
                               </Text>
                               <View style={[styles.statusBadge, { backgroundColor: "#10B981" }]}>
                                 <Text style={styles.statusText}>Confirmed</Text>
@@ -404,6 +472,13 @@ export default function LandlordRentalsScreen() {
 
                         <View style={styles.actionButtons}>
                           <Pressable
+                            style={[styles.actionButton, styles.contactButton]}
+                            onPress={() => handleContactTenant(rental)}
+                          >
+                            <MessageCircle size={18} color="#FFFFFF" />
+                            <Text style={styles.contactButtonText}>Contact Tenant</Text>
+                          </Pressable>
+                          <Pressable
                             style={[styles.actionButton, styles.cancelButton]}
                             onPress={() => handleCancelRental(rental)}
                             disabled={stoppingRentalId === rental.id}
@@ -443,7 +518,7 @@ export default function LandlordRentalsScreen() {
                           <View style={styles.propertyInfo}>
                             <View style={styles.rentalHeader}>
                               <Text style={styles.propertyTitle} numberOfLines={1}>
-                                {rental.propertyAddress}
+                                {propertyTitlesMap[rental.propertyId] || rental.propertyAddress}
                               </Text>
                               <View style={styles.statusBadge}>
                                 <Text style={styles.statusText}>Active</Text>
@@ -501,6 +576,13 @@ export default function LandlordRentalsScreen() {
 
                         <View style={styles.actionButtons}>
                           <Pressable
+                            style={[styles.actionButton, styles.contactButton]}
+                            onPress={() => handleContactTenant(rental)}
+                          >
+                            <MessageCircle size={18} color="#FFFFFF" />
+                            <Text style={styles.contactButtonText}>Contact Tenant</Text>
+                          </Pressable>
+                          <Pressable
                             style={[styles.actionButton, styles.stopButton]}
                             onPress={() => handleStopRental(rental)}
                             disabled={stoppingRentalId === rental.id}
@@ -540,7 +622,7 @@ export default function LandlordRentalsScreen() {
                           <View style={styles.propertyInfo}>
                             <View style={styles.rentalHeader}>
                               <Text style={styles.propertyTitle} numberOfLines={1}>
-                                {rental.propertyAddress}
+                                {propertyTitlesMap[rental.propertyId] || rental.propertyAddress}
                               </Text>
                               <View style={styles.statusBadgeCompleted}>
                                 <Text style={styles.statusTextCompleted}>Completed</Text>

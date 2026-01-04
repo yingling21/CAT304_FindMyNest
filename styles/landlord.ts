@@ -262,6 +262,14 @@ export const landlordRentalsStyles = StyleSheet.create({
     fontWeight: "600" as const,
     color: "#FFFFFF",
   },
+  contactButton: {
+    backgroundColor: "#6366F1",
+  },
+  contactButtonText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "#FFFFFF",
+  },
 });
 
 export const allReviewsStyles = StyleSheet.create({
