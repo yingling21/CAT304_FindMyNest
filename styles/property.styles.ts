@@ -741,15 +741,24 @@ export const styles = StyleSheet.create({
     minWidth: 80,
     alignItems: "center",
   },
+  nearbyCountHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 2,
+    gap: 6,
+  },
+  nearbyCountColorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
   nearbyCountType: {
     fontSize: 10,
     color: "#6B7280",
-    marginBottom: 2,
   },
   nearbyCountValue: {
     fontSize: 16,
     fontWeight: "700" as const,
-    color: "#1F2937",
   },
   worthinessCard: {
     backgroundColor: "#EEF2FF",
