@@ -93,13 +93,13 @@ export default function RemoveListingScreen() {
         .update({
           approvalStatus: "rejected",
         })
-        .eq("id", selectedListing.property_id);
+        .eq("property_id", selectedListing.property_id);
 
       if (error) throw error;
 
       Alert.alert(
         "Success",
-        `${selectedListing.users.full_name} has been banned`
+        `${selectedListing.title} has been removed successfully.`
       );
       closeDeleteModal();
       fetchListings();
