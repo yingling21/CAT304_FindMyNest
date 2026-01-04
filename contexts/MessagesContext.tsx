@@ -24,7 +24,7 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [newMessageNotification, setNewMessageNotification] = useState<NewMessageNotification | null>(null);
-  const [, setLastMessageCount] = useState<Record<string, number>>({});
+  const [, setLastMessageCount] = useState<Record<string, number>>({});   //// Track message counts to detect new messages
 
   const loadData = useCallback(async (checkForNew = false) => {
     try {
@@ -42,12 +42,14 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
       if (conversationIds.length > 0) {
         const messagesByConversation = await getMessagesByConversations(conversationIds);
         
+        // Check for new messages if polling
         if (checkForNew) {
           setLastMessageCount((prevCounts) => {
             for (const [convId, newMessages] of Object.entries(messagesByConversation)) {
               const oldCount = prevCounts[convId] || 0;
               const newCount = newMessages.length;
               
+              // New message detected!
               if (newCount > oldCount) {
                 const latestMessage = newMessages[newMessages.length - 1];
                 if (latestMessage && latestMessage.receiverId === auth.user!.id && !latestMessage.read) {
@@ -60,6 +62,7 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
                       ? conversation.landlordPhoto
                       : conversation.tenantPhoto;
                     
+                    // Show banner notification
                     setNewMessageNotification({
                       conversationId: convId,
                       senderName,
@@ -71,6 +74,7 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
               }
             }
             
+            // Update tracked counts
             const newCounts: Record<string, number> = {};
             for (const [convId, msgs] of Object.entries(messagesByConversation)) {
               newCounts[convId] = msgs.length;
@@ -94,11 +98,12 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
     }
   }, [auth?.user]);
 
+  // Poll every 3 seconds for new messages
   useEffect(() => {
     loadData(false);
 
     const interval = setInterval(() => {
-      loadData(true);
+      loadData(true);  // Check for new messages
     }, 3000);
 
     return () => clearInterval(interval);
