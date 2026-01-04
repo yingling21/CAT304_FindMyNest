@@ -820,7 +820,7 @@ export default function EditListingScreen() {
             />
         
             <Text style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>
-              Tap on the map to select the exact property location or type the address manually
+              Tap on the map to select the exact property location or type the address in the field above
             </Text>
           </View>
         );
