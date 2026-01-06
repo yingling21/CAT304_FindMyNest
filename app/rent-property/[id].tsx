@@ -3,6 +3,7 @@ import { useRentals } from "@/contexts/RentalsContext";
 import { usePayments } from "@/contexts/PaymentsContext";
 import type { Property } from "@/src/types";
 import { Image } from "expo-image";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import {
   ChevronLeft,
@@ -20,6 +21,8 @@ import {
   Pressable,
   TextInput,
   Alert,
+  Platform,
+  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "@/styles/rent-property.styles";
@@ -57,12 +60,33 @@ export default function RentPropertyScreen() {
 
   const [step, setStep] = useState<number>(1);
   const [duration, setDuration] = useState<number>(12);
+  const [moveInDate, setMoveInDate] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [customDuration, setCustomDuration] = useState<string>("");
-  const [moveInDate, setMoveInDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  );
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("fpx");
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+
+  // Set default moveInDate to availableDate when property loads
+  React.useEffect(() => {
+    if (property && property.availableDate) {
+      const availableDate = new Date(property.availableDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      availableDate.setHours(0, 0, 0, 0);
+      
+      // If availableDate is today or in the past, default to tomorrow
+      // If availableDate is in the future, default to one day after availableDate
+      const defaultMoveInDate = new Date(availableDate);
+      if (availableDate <= today) {
+        // Available now, so default to tomorrow
+        defaultMoveInDate.setDate(today.getDate() + 1);
+      } else {
+        // Available in the future, default to one day after availableDate
+        defaultMoveInDate.setDate(availableDate.getDate() + 1);
+      }
+      setMoveInDate(defaultMoveInDate);
+    }
+  }, [property]);
 
   if (isLoadingProperty) {
     return (
@@ -80,8 +104,8 @@ export default function RentPropertyScreen() {
     );
   }
 
-  const availableDate = new Date(property.moveInDate);
-  const selectedDate = new Date(moveInDate);
+  const availableDate = new Date(property.availableDate);
+  const selectedDate = moveInDate;
   const endDate = new Date(selectedDate);
   endDate.setMonth(endDate.getMonth() + duration);
 
@@ -103,11 +127,28 @@ export default function RentPropertyScreen() {
     }
   };
 
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios'); // keep open on iOS
+    if (selectedDate && property) {
+      const availableDate = new Date(property.availableDate);
+      // Ensure selected date is after availableDate
+      if (selectedDate > availableDate) {
+        setMoveInDate(selectedDate);
+      } else {
+        Alert.alert(
+          "Invalid Date",
+          `Move-in date must be after ${availableDate.toLocaleDateString("en-MY")}`
+        );
+      }
+    }
+  };
+
   const handleProceedToPayment = () => {
-    if (selectedDate < availableDate) {
+    // Ensure moveInDate is strictly greater than availableDate
+    if (selectedDate <= availableDate) {
       Alert.alert(
         "Invalid Date",
-        `Property is only available from ${availableDate.toLocaleDateString("en-MY")}`
+        `Move-in date must be after ${availableDate.toLocaleDateString("en-MY")}`
       );
       return;
     }
@@ -129,7 +170,7 @@ export default function RentPropertyScreen() {
         property.landlordId,
         property.monthlyRent,
         property.securityDeposit,
-        moveInDate,
+        moveInDate.toISOString(),
         duration
       );
 
@@ -142,7 +183,7 @@ export default function RentPropertyScreen() {
         property.monthlyRent,
         property.securityDeposit,
         utilitiesDeposit,
-        moveInDate
+        moveInDate.toISOString()
       );
 
       await completePayment(payment.id, paymentMethod);
@@ -261,16 +302,25 @@ export default function RentPropertyScreen() {
 
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Move-in Date</Text>
-                <View style={styles.dateInputContainer}>
-                  <Calendar size={20} color="#6366F1" />
-                  <TextInput
-                    style={styles.dateInput}
-                    value={moveInDate}
-                    onChangeText={setMoveInDate}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor="#9CA3AF"
-                  />
-                </View>
+                <TouchableOpacity
+                    style={styles.dateInputContainer}
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <Calendar size={20} color="#6366F1" />
+                    <Text style={styles.dateInput}>
+                      {moveInDate.toLocaleDateString("en-MY")}
+                    </Text>
+                </TouchableOpacity>
+
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={moveInDate}
+                      mode="date"
+                    display="default"
+                    minimumDate={new Date(availableDate.getTime() + 24 * 60 * 60 * 1000)}
+                    onChange={handleDateChange}
+                    />
+                  )}
                 <Text style={styles.availableFromText}>
                   Available from {availableDate.toLocaleDateString("en-MY", {
                     day: "2-digit",

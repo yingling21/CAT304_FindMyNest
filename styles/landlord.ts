@@ -218,6 +218,58 @@ export const landlordRentalsStyles = StyleSheet.create({
   paymentStatusTextPending: {
     color: "#92400E",
   },
+  actionButtons: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  confirmButton: {
+    backgroundColor: "#10B981",
+  },
+  confirmButtonText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "#FFFFFF",
+  },
+  cancelButton: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#EF4444",
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "#EF4444",
+  },
+  stopButton: {
+    backgroundColor: "#EF4444",
+  },
+  stopButtonText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "#FFFFFF",
+  },
+  contactButton: {
+    backgroundColor: "#6366F1",
+  },
+  contactButtonText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "#FFFFFF",
+  },
 });
 
 export const allReviewsStyles = StyleSheet.create({

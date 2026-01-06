@@ -9,33 +9,86 @@ import {
   sendMessage as sendMessageAPI,
   markMessagesAsRead as markMessagesAsReadAPI 
 } from "@/src/api/messages";
-import { getUserPushToken, sendPushNotification } from "@/src/api/notifications";
+
+
+interface NewMessageNotification {
+  conversationId: string;
+  senderName: string;
+  senderPhoto?: string;
+  message: string;
+}
 
 export const [MessagesProvider, useMessages] = createContextHook(() => {
   const auth = useAuth();
-  const user = auth?.user ?? null;
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [newMessageNotification, setNewMessageNotification] = useState<NewMessageNotification | null>(null);
+  const [, setLastMessageCount] = useState<Record<string, number>>({});   //// Track message counts to detect new messages
 
-   // Load conversations and messages when user logs in
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (checkForNew = false) => {
     try {
-      if (!user) {
+      if (!auth?.user) {
         setConversations([]);
         setMessages({});
         setIsLoading(false);
         return;
       }
 
-      // 1. Fetch all conversations for the user
-      const conversationsData = await getConversationsByUser(user.id);
+      const conversationsData = await getConversationsByUser(auth.user.id);
       setConversations(conversationsData);
 
-      // 2. Fetch messages for all conversations
       const conversationIds = conversationsData.map(c => c.id);
       if (conversationIds.length > 0) {
         const messagesByConversation = await getMessagesByConversations(conversationIds);
+        
+        // Check for new messages if polling
+        if (checkForNew) {
+          setLastMessageCount((prevCounts) => {
+            for (const [convId, newMessages] of Object.entries(messagesByConversation)) {
+              const oldCount = prevCounts[convId] || 0;
+              const newCount = newMessages.length;
+              
+              // New message detected!
+              if (newCount > oldCount) {
+                const latestMessage = newMessages[newMessages.length - 1];
+                if (latestMessage && latestMessage.receiverId === auth.user!.id && !latestMessage.read) {
+                  const conversation = conversationsData.find(c => c.id === convId);
+                  if (conversation) {
+                    const senderName = auth.user!.role === 'tenant' 
+                      ? conversation.landlordName 
+                      : conversation.tenantName;
+                    const senderPhoto = auth.user!.role === 'tenant'
+                      ? conversation.landlordPhoto
+                      : conversation.tenantPhoto;
+                    
+                    // Show banner notification
+                    setNewMessageNotification({
+                      conversationId: convId,
+                      senderName,
+                      senderPhoto,
+                      message: latestMessage.content,
+                    });
+                  }
+                }
+              }
+            }
+            
+            // Update tracked counts
+            const newCounts: Record<string, number> = {};
+            for (const [convId, msgs] of Object.entries(messagesByConversation)) {
+              newCounts[convId] = msgs.length;
+            }
+            return newCounts;
+          });
+        } else {
+          const initialCounts: Record<string, number> = {};
+          for (const [convId, msgs] of Object.entries(messagesByConversation)) {
+            initialCounts[convId] = msgs.length;
+          }
+          setLastMessageCount(initialCounts);
+        }
+        
         setMessages(messagesByConversation);
       }
     } catch (error) {
@@ -43,14 +96,19 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [auth?.user]);
 
+  // Poll every 3 seconds for new messages
   useEffect(() => {
-    loadData();
+    loadData(false);
+
+    const interval = setInterval(() => {
+      loadData(true);  // Check for new messages
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, [loadData]);
 
-  // This function checks if a conversation already exists between the tenant and landlord
-  // for a specific property. If it exists, return the ID. Otherwise, create a new one.
   const createOrGetConversation = async (
     propertyId: string,
     propertyAddress: string,
@@ -60,17 +118,16 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
     landlordName: string,
     landlordPhoto?: string
   ): Promise<string> => {
-    if (!user) throw new Error("User not authenticated");
+    if (!auth?.user) throw new Error("User not authenticated");
 
-    // Call API to create or get existing conversation
     const conversationId = await createOrGetConversationAPI({
       propertyId,
       propertyAddress,
       propertyImage,
       propertyPrice,
-      tenantId: user.id,
-      tenantName: user.fullName,
-      tenantPhoto: user.avatarUrl,
+      tenantId: auth.user.id,
+      tenantName: auth.user.fullName,
+      tenantPhoto: auth.user.avatarUrl,
       landlordId,
       landlordName,
       landlordPhoto,
@@ -78,7 +135,6 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
 
     await loadData();
 
-    // Reload data to include the new/existing conversation
     return conversationId;
   };
 
@@ -86,30 +142,25 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
     conversationId: string,
     content: string
   ): Promise<void> => {
-    if (!user) throw new Error("User not authenticated");
+    if (!auth?.user) throw new Error("User not authenticated");
 
-    // Find the conversation
     const conversation = conversations.find((c) => c.id === conversationId);
     if (!conversation) throw new Error("Conversation not found");
 
-    // Determine who receives the message (opposite of sender's role)
-    const receiverId = user.role === "tenant" ? conversation.landlordId : conversation.tenantId;
+    const receiverId = auth.user.role === "tenant" ? conversation.landlordId : conversation.tenantId;
 
-    // Send message via API (includes sensitive data masking)
     const newMessage = await sendMessageAPI({
       conversationId,
-      senderId: user.id,
+      senderId: auth.user.id,
       receiverId,
       content,
     });
 
-    // Update local state immediately
     setMessages(prev => ({
       ...prev,
       [conversationId]: [...(prev[conversationId] || []), newMessage],
     }));
 
-    // Update conversation's last message info
     setConversations(prev => prev.map((c) =>
       c.id === conversationId
         ? {
@@ -120,38 +171,21 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
           }
         : c
     ));
-
-    // Send push notification to receiver
-    const receiverPushToken = await getUserPushToken(receiverId);
-    if (receiverPushToken) {
-      await sendPushNotification({
-        pushToken: receiverPushToken,
-        title: `New message from ${user.fullName}`,
-        body: content,
-        data: {
-          conversationId,
-          type: 'message',
-        },
-      });
-    }
   };
 
   const markAsRead = async (conversationId: string): Promise<void> => {
-    if (!user) return;
+    if (!auth?.user) return;
 
-    // Update messages as read in database
     try {
-      await markMessagesAsReadAPI(conversationId, user.id);
+      await markMessagesAsReadAPI(conversationId, auth.user.id);
 
-      // Update local state to reflect read status
       setMessages(prev => ({
         ...prev,
         [conversationId]: (prev[conversationId] || []).map((msg) =>
-          msg.receiverId === user.id && !msg.read ? { ...msg, read: true } : msg
+          msg.receiverId === auth.user!.id && !msg.read ? { ...msg, read: true } : msg
         ),
       }));
 
-      // Reset unread count for the conversation
       setConversations(prev => prev.map((c) =>
         c.id === conversationId ? { ...c, unreadCount: 0 } : c
       ));
@@ -161,43 +195,55 @@ export const [MessagesProvider, useMessages] = createContextHook(() => {
   };
 
   const userConversations = useMemo(() => {
-    if (!user) return [];
+    if (!auth?.user) return [];
 
     return conversations
       .filter((conv) => {
-        if (user.role === "tenant") return conv.tenantId === user.id;
-        if (user.role === "landlord") return conv.landlordId === user.id;
+        if (auth.user!.role === "tenant") return conv.tenantId === auth.user!.id;
+        if (auth.user!.role === "landlord") return conv.landlordId === auth.user!.id;
         return false;
+      })
+      .map((conv) => {
+        const unreadCount = (messages[conv.id] || []).filter(
+          (msg) => msg.receiverId === auth.user!.id && !msg.read
+        ).length;
+        return { ...conv, unreadCount };
       })
       .sort(
         (a, b) =>
           new Date(b.lastMessageTime).getTime() -
           new Date(a.lastMessageTime).getTime()
       );
-  }, [user, conversations]);
+  }, [auth?.user, conversations, messages]);
 
   const totalUnreadCount = useMemo(() => {
-    if (!user) return 0;
+    if (!auth?.user) return 0;
 
     return userConversations.reduce((total, conv) => {
       const unread = (messages[conv.id] || []).filter(
-        (msg) => msg.receiverId === user.id && !msg.read
+        (msg) => msg.receiverId === auth.user!.id && !msg.read
       ).length;
       return total + unread;
     }, 0);
-  }, [user, userConversations, messages]);
+  }, [auth?.user, userConversations, messages]);
 
   const getConversationMessages = (conversationId: string): Message[] => {
     return messages[conversationId] || [];
   };
 
+  const dismissNotification = () => {
+    setNewMessageNotification(null);
+  };
+
   return {
-    conversations: userConversations,     // Filtered list for current user
-    isLoading,                            // Loading state
-    createOrGetConversation,              // Start a new conversation
-    sendMessage,                          // Send a message
-    markAsRead,                           // Mark messages as read
-    totalUnreadCount,                     // Badge count for notifications
-    getConversationMessages,              // Get messages for a conversation
+    conversations: userConversations,
+    isLoading,
+    createOrGetConversation,
+    sendMessage,
+    markAsRead,
+    totalUnreadCount,
+    getConversationMessages,
+    newMessageNotification,
+    dismissNotification,
   };
 });

@@ -4,7 +4,8 @@ import { usePayments } from "@/contexts/PaymentsContext";
 import { Image } from "expo-image";
 import { Stack, useRouter } from "expo-router";
 import { ChevronLeft, Home as HomeIcon } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getPropertyById } from "@/src/api/properties";
 import {
   ScrollView,
   Text,
@@ -18,14 +19,73 @@ import { styles } from "@/styles/rent-property.styles";
 export default function MyRentalsScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { getTenantRentals, stopRental } = useRentals();
+  const { getTenantRentals, stopRental, updateRentalStatus } = useRentals();
   const { createPayment, completePayment } = usePayments();
   const [stoppingRentalId, setStoppingRentalId] = useState<string | null>(null);
   const [payingRentalId, setPayingRentalId] = useState<string | null>(null);
+  const [cancellingRentalId, setCancellingRentalId] = useState<string | null>(null);
+  const [propertyTitlesMap, setPropertyTitlesMap] = useState<Record<string, string>>({});
 
   const rentals = getTenantRentals();
-  const activeRentals = rentals.filter(r => r.status === "active");
-  const pastRentals = rentals.filter(r => r.status !== "active");
+  const now = new Date();
+
+  // Fetch property titles
+  useEffect(() => {
+    const fetchPropertyTitles = async () => {
+      const propertyIds = new Set(rentals.map(r => r.propertyId));
+      
+      const propertyPromises = Array.from(propertyIds).map(async (propertyId) => {
+        try {
+          const property = await getPropertyById(propertyId);
+          return { id: propertyId, title: property?.title || '' };
+        } catch (error) {
+          console.error(`Failed to fetch property ${propertyId}:`, error);
+          return { id: propertyId, title: '' };
+        }
+      });
+
+      const properties = await Promise.all(propertyPromises);
+      const titlesMap: Record<string, string> = {};
+      properties.forEach(property => {
+        titlesMap[property.id] = property.title;
+      });
+
+      setPropertyTitlesMap(titlesMap);
+    };
+
+    if (rentals.length > 0) {
+      fetchPropertyTitles();
+    }
+  }, [rentals]);
+  
+  // Pending rentals (waiting for landlord confirmation)
+  const pendingRentals = rentals.filter(r => r.status === "pending");
+  
+  // Confirmed rentals (landlord confirmed but start date hasn't arrived yet)
+  const confirmedRentals = rentals.filter(r => {
+    if (r.status !== "confirmed") return false;
+    const startDate = new Date(r.startDate);
+    return startDate > now;
+  });
+  
+  // Active rentals (confirmed and start date has passed)
+  const activeRentals = rentals.filter(r => {
+    if (r.status === "active") {
+      const startDate = new Date(r.startDate);
+      return startDate <= now;
+    }
+    // Also include confirmed rentals where start date has passed (auto-activate)
+    if (r.status === "confirmed") {
+      const startDate = new Date(r.startDate);
+      return startDate <= now;
+    }
+    return false;
+  });
+  
+  // Past rentals (completed or cancelled)
+  const pastRentals = rentals.filter(r => 
+    r.status === "completed" || r.status === "cancelled"
+  );
 
   const calculateDaysRemaining = (endDate: string | undefined): number => {
     if (!endDate) return 0;
@@ -54,6 +114,32 @@ export default function MyRentalsScreen() {
               console.error("Failed to stop rental:", error);
               Alert.alert("Error", "Failed to stop rental. Please try again.");
               setStoppingRentalId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleCancelRental = (rental: any) => {
+    Alert.alert(
+      "Cancel Rental",
+      `Are you sure you want to cancel your rental request for "${rental.propertyAddress}"? This action cannot be undone.`,
+      [
+        { text: "No", style: "cancel" },
+        {
+          text: "Yes, Cancel",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setCancellingRentalId(rental.id);
+              await updateRentalStatus(rental.id, "cancelled");
+              setCancellingRentalId(null);
+              Alert.alert("Success", "Your rental request has been cancelled.");
+            } catch (error) {
+              console.error("Failed to cancel rental:", error);
+              Alert.alert("Error", "Failed to cancel rental. Please try again.");
+              setCancellingRentalId(null);
             }
           },
         },
@@ -125,7 +211,7 @@ export default function MyRentalsScreen() {
         </View>
 
         <ScrollView style={styles.myRentalsScrollView} showsVerticalScrollIndicator={false}>
-          {activeRentals.length === 0 && pastRentals.length === 0 ? (
+          {activeRentals.length === 0 && pastRentals.length === 0 && pendingRentals.length === 0 && confirmedRentals.length === 0 ? (
             <View style={styles.emptyContainer}>
               <HomeIcon size={64} color="#D1D5DB" />
               <Text style={styles.emptyTitle}>No Rentals Yet</Text>
@@ -135,6 +221,139 @@ export default function MyRentalsScreen() {
             </View>
           ) : (
             <>
+              {pendingRentals.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Pending Rentals</Text>
+                  {pendingRentals.map((rental) => {
+                    const startDate = new Date(rental.startDate);
+                    const endDate = rental.endDate ? new Date(rental.endDate) : null;
+
+                    return (
+                      <View key={rental.id} style={styles.rentalCard}>
+                        <Image
+                          source={{ uri: rental.propertyImage }}
+                          style={styles.propertyImage}
+                          contentFit="cover"
+                        />
+                        <View style={styles.rentalInfo}>
+                          <View style={styles.rentalHeader}>
+                            <Text style={styles.propertyTitle} numberOfLines={1}>
+                              {propertyTitlesMap[rental.propertyId] || rental.propertyAddress}
+                            </Text>
+                            <View style={[styles.statusBadge, { backgroundColor: "#F59E0B" }]}>
+                              <Text style={styles.statusText}>Pending</Text>
+                            </View>
+                          </View>
+                          <Text style={styles.propertyAddress} numberOfLines={1}>
+                            {rental.propertyAddress}
+                          </Text>
+                          <Text style={styles.propertyPrice}>
+                            RM {rental.monthlyRent}/mo
+                          </Text>
+                          <Text style={styles.rentalPeriod}>
+                            {startDate.toLocaleDateString("en-MY", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}{" "}
+                            -{" "}
+                            {endDate
+                              ? endDate.toLocaleDateString("en-MY", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "Ongoing"}
+                          </Text>
+                          <Text style={[styles.daysRemaining, { color: "#F59E0B" }]}>
+                            Waiting for landlord confirmation
+                          </Text>
+                          <Pressable
+                            style={[
+                              styles.cancelButton,
+                              cancellingRentalId === rental.id && styles.cancelButtonDisabled,
+                            ]}
+                            onPress={() => handleCancelRental(rental)}
+                            disabled={cancellingRentalId === rental.id}
+                          >
+                            <Text style={styles.cancelButtonText}>
+                              {cancellingRentalId === rental.id ? "Cancelling..." : "Cancel Rental"}
+                            </Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+
+              {confirmedRentals.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Upcoming Rentals</Text>
+                  {confirmedRentals.map((rental) => {
+                    const startDate = new Date(rental.startDate);
+                    const endDate = rental.endDate ? new Date(rental.endDate) : null;
+                    const daysUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+                    return (
+                      <View key={rental.id} style={styles.rentalCard}>
+                        <Image
+                          source={{ uri: rental.propertyImage }}
+                          style={styles.propertyImage}
+                          contentFit="cover"
+                        />
+                        <View style={styles.rentalInfo}>
+                          <View style={styles.rentalHeader}>
+                            <Text style={styles.propertyTitle} numberOfLines={1}>
+                              {propertyTitlesMap[rental.propertyId] || rental.propertyAddress}
+                            </Text>
+                            <View style={[styles.statusBadge, { backgroundColor: "#10B981" }]}>
+                              <Text style={styles.statusText}>Confirmed</Text>
+                            </View>
+                          </View>
+                          <Text style={styles.propertyAddress} numberOfLines={1}>
+                            {rental.propertyAddress}
+                          </Text>
+                          <Text style={styles.propertyPrice}>
+                            RM {rental.monthlyRent}/mo
+                          </Text>
+                          <Text style={styles.rentalPeriod}>
+                            {startDate.toLocaleDateString("en-MY", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}{" "}
+                            -{" "}
+                            {endDate
+                              ? endDate.toLocaleDateString("en-MY", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "Ongoing"}
+                          </Text>
+                          <Text style={[styles.daysRemaining, { color: "#10B981" }]}>
+                            Starts in {daysUntilStart} {daysUntilStart === 1 ? "day" : "days"}
+                          </Text>
+                          <Pressable
+                            style={[
+                              styles.cancelButton,
+                              cancellingRentalId === rental.id && styles.cancelButtonDisabled,
+                            ]}
+                            onPress={() => handleCancelRental(rental)}
+                            disabled={cancellingRentalId === rental.id}
+                          >
+                            <Text style={styles.cancelButtonText}>
+                              {cancellingRentalId === rental.id ? "Cancelling..." : "Cancel Rental"}
+                            </Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+
               {activeRentals.length > 0 && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>Active Rentals</Text>
@@ -153,7 +372,7 @@ export default function MyRentalsScreen() {
                         <View style={styles.rentalInfo}>
                           <View style={styles.rentalHeader}>
                             <Text style={styles.propertyTitle} numberOfLines={1}>
-                              {rental.propertyAddress}
+                              {propertyTitlesMap[rental.propertyId] || rental.propertyAddress}
                             </Text>
                             <View style={styles.statusBadge}>
                               <Text style={styles.statusText}>Active</Text>
@@ -233,7 +452,7 @@ export default function MyRentalsScreen() {
                         <View style={styles.rentalInfo}>
                           <View style={styles.rentalHeader}>
                             <Text style={styles.propertyTitle} numberOfLines={1}>
-                              {rental.propertyAddress}
+                              {propertyTitlesMap[rental.propertyId] || rental.propertyAddress}
                             </Text>
                             <View style={styles.statusBadgeCompleted}>
                               <Text style={styles.statusTextCompleted}>Completed</Text>

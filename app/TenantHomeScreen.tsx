@@ -8,7 +8,7 @@ import PropertyFiltersModal from "@/components/tenant/PropertyFiltersModal";
 import type { Filters } from "@/components/tenant/PropertyFiltersModal";
 
 import { Search } from "lucide-react-native";
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   Pressable,
   ScrollView,
@@ -36,7 +36,14 @@ const initialFilters: Filters = {
     washingMachine: false,
     security: false,
   },
+  roomTypes: [],
+  floorLevelMin: "",
+  floorLevelMax: "",
+  utilitiesIncluded: null,
+  cooking: null,
 };
+
+type SortOrder = "newest" | "oldest";
 
 export default function TenantHomeScreen() {
   const { user } = useAuth();
@@ -45,130 +52,66 @@ export default function TenantHomeScreen() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-    loadProperties();
-  }, []);
+    loadFilteredProperties();
+  }, [filters, searchQuery]);
 
-  const loadProperties = async () => {
+  const loadFilteredProperties = async () => {
     try {
-      const { getAvailableProperties } = await import('@/src/api/properties');
-      const data = await getAvailableProperties();
+      setLoading(true);
+      const { getFilteredProperties } = await import('@/src/api/properties');
+      
+      // Convert filters to API format
+      const apiFilters = {
+        location: filters.location || undefined,
+        propertyTypes: filters.propertyTypes.length > 0 ? filters.propertyTypes : undefined,
+        priceMin: filters.priceMin ? parseInt(filters.priceMin, 10) : undefined,
+        priceMax: filters.priceMax ? parseInt(filters.priceMax, 10) : undefined,
+        sizeMin: filters.sizeMin ? parseInt(filters.sizeMin, 10) : undefined,
+        sizeMax: filters.sizeMax ? parseInt(filters.sizeMax, 10) : undefined,
+        bedrooms: filters.bedrooms || undefined,
+        bathrooms: filters.bathrooms || undefined,
+        furnishing: filters.furnishing.length > 0 ? filters.furnishing : undefined,
+        amenities: Object.values(filters.amenities).some(v => v) ? filters.amenities : undefined,
+        roomTypes: filters.roomTypes.length > 0 ? filters.roomTypes : undefined,
+        floorLevelMin: filters.floorLevelMin ? parseInt(filters.floorLevelMin, 10) : undefined,
+        floorLevelMax: filters.floorLevelMax ? parseInt(filters.floorLevelMax, 10) : undefined,
+        utilitiesIncluded: filters.utilitiesIncluded !== null ? filters.utilitiesIncluded : undefined,
+        cooking: filters.cooking || undefined,
+        searchQuery: searchQuery.trim() || undefined,
+      };
+
+      const data = await getFilteredProperties(apiFilters);
       setProperties(data);
     } catch (error) {
-      console.error('Failed to load properties:', error);
+      console.error('Failed to load filtered properties:', error);
       setProperties([]);
-    }
+    } finally {
+      setLoading(false);
+        }
   };
-  React.useEffect(() => {
-    const loadProperties = async () => {
-      try {
-        const { getAvailableProperties } = await import('@/src/api/properties');
-        const data = await getAvailableProperties();
-        setProperties(data);
-      } catch (error) {
-        console.error('Failed to load properties:', error);
-      }
-    };
-    
-    loadProperties();
-  }, []);
 
+  // Sort properties by creation date
   const filteredProperties = useMemo(() => {
-    return properties.filter((property) => {
-      const matchesSearch = property.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        property.description.toLowerCase().includes(searchQuery.toLowerCase());
+    if (properties.length === 0) return properties;
+    
+    const sorted = [...properties].sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       
-      if (!matchesSearch) return false;
-
-      if (
-        filters.location &&
-        !property.address.toLowerCase().includes(filters.location.toLowerCase())
-      ) {
-        return false;
-      }
-
-      if (
-        filters.propertyTypes.length > 0 &&
-        !filters.propertyTypes.includes(property.propertyType)
-      ) {
-        return false;
-      }
-
-      if (filters.priceMin) {
-        const priceMinNum = parseInt(filters.priceMin, 10);
-        if (!isNaN(priceMinNum) && property.monthlyRent < priceMinNum) {
-          return false;
-        }
-      }
-
-      if (filters.priceMax) {
-        const priceMaxNum = parseInt(filters.priceMax, 10);
-        if (!isNaN(priceMaxNum) && property.monthlyRent > priceMaxNum) {
-          return false;
-        }
-      }
-
-      if (filters.sizeMin) {
-        const sizeMinNum = parseInt(filters.sizeMin, 10);
-        if (!isNaN(sizeMinNum) && property.size < sizeMinNum) {
-          return false;
-        }
-      }
-
-      if (filters.sizeMax) {
-        const sizeMaxNum = parseInt(filters.sizeMax, 10);
-        if (!isNaN(sizeMaxNum) && property.size > sizeMaxNum) {
-          return false;
-        }
-      }
-
-      if (filters.bedrooms && property.bedrooms < filters.bedrooms) {
-        return false;
-      }
-
-      if (filters.bathrooms && property.bathrooms < filters.bathrooms) {
-        return false;
-      }
-
-      if (
-        filters.furnishing.length > 0 &&
-        !filters.furnishing.includes(property.furnishingLevel)
-      ) {
-        return false;
-      }
-
-      if (
-        filters.amenities.airConditioning &&
-        !property.amenities?.airConditioning
-      ) {
-        return false;
-      }
-      if (filters.amenities.wifi && !property.amenities?.wifi) {
-        return false;
-      }
-      if (filters.amenities.parking && !property.amenities?.parking) {
-        return false;
-      }
-      if (
-        filters.amenities.kitchenAccess &&
-        !property.amenities?.kitchenAccess
-      ) {
-        return false;
-      }
-      if (
-        filters.amenities.washingMachine &&
-        !property.amenities?.washingMachine
-      ) {
-        return false;
-      }
-      if (filters.amenities.security && !property.amenities?.security) {
-        return false;
-      }
-
-      return true;
+      // Handle invalid dates
+      if (isNaN(dateA) && isNaN(dateB)) return 0;
+      if (isNaN(dateA)) return 1;
+      if (isNaN(dateB)) return -1;
+      
+      return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
     });
-  }, [searchQuery, filters, properties]);
+    return sorted;
+  }, [properties, sortOrder]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -180,6 +123,10 @@ export default function TenantHomeScreen() {
     if (filters.bathrooms) count++;
     if (filters.furnishing.length > 0) count++;
     if (Object.values(filters.amenities).some((v) => v)) count++;
+    if (filters.roomTypes.length > 0) count++;
+    if (filters.floorLevelMin || filters.floorLevelMax) count++;
+    if (filters.utilitiesIncluded !== null) count++;
+    if (filters.cooking) count++;
     return count;
   }, [filters]);
 
@@ -187,9 +134,16 @@ export default function TenantHomeScreen() {
     setFilters(initialFilters);
   };
 
+  const handleSortToggle = () => {
+    const newSortOrder = sortOrder === "newest" ? "oldest" : "newest";
+    setSortOrder(newSortOrder);
+    // Scroll to top when sort changes
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <ScrollView ref={scrollViewRef} style={styles.container} contentContainerStyle={styles.scrollContent}>
         <PropertySearchHeader
           userName={user?.fullName || "Guest"}
           searchQuery={searchQuery}
@@ -204,16 +158,22 @@ export default function TenantHomeScreen() {
           />
         </View>
 
+        {loading ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateTitle}>Loading properties...</Text>
+          </View>
+        ) : (
+          <>
         <View style={styles.resultsHeader}>
           <Text style={styles.resultsCount}>
             {filteredProperties.length} {filteredProperties.length === 1 ? "property" : "properties"} found
           </Text>
-          <Pressable>
-            <Text style={styles.sortButton}>Newest</Text>
+          <Pressable onPress={handleSortToggle}>
+            <Text style={styles.sortButton}>{sortOrder === "newest" ? "Newest" : "Oldest"}</Text>
           </Pressable>
         </View>
 
-        <View style={styles.propertiesContainer}>
+        <View style={styles.propertiesContainer} key={sortOrder}>
           {filteredProperties.map((property) => (
             <PropertyCard key={property.id} property={property} />
           ))}
@@ -227,6 +187,8 @@ export default function TenantHomeScreen() {
               Try adjusting your search or filters to find what you&apos;re looking for.
             </Text>
           </View>
+            )}
+          </>
         )}
       </ScrollView>
 

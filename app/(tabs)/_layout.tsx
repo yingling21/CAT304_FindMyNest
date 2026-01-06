@@ -116,18 +116,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="TenantHomeScreen"
-        options={{
-          href: null, // Hide from tab bar
-        }}
-      />
-      <Tabs.Screen
-        name="LandlordHomeScreen"
-        options={{
-          href: null, // Hide from tab bar
-        }}
-      />
-      <Tabs.Screen
         name="edit-profile"
         options={{
           href: null, // Hide Edit Profile from tab bar

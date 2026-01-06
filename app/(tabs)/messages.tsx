@@ -93,7 +93,6 @@ export default function MessagesScreen() {
           </Text>
         </View>
       ) : (
-        // List of conversations
         <ScrollView style={styles.scrollView}>
           {filteredConversations.map((conversation) => {
             const otherPersonName =
@@ -104,16 +103,18 @@ export default function MessagesScreen() {
               user?.role === "tenant"
                 ? conversation.landlordPhoto
                 : conversation.tenantPhoto;
-
-            // Number of unread messages in this conversation
             const unreadCount = conversation.unreadCount || 0;
 
             return (
               <Pressable
                 key={conversation.id}
-                style={styles.conversationItem}
+                style={[
+                  styles.conversationItem,
+                  unreadCount > 0 && styles.conversationItemUnread,
+                ]}
                 onPress={() => router.push(`/chat/${conversation.id}` as any)}
               >
+                {unreadCount > 0 && <View style={styles.unreadDot} />}
                 {otherPersonPhoto ? (
                   <Image
                     source={{ uri: otherPersonPhoto }}
@@ -128,10 +129,15 @@ export default function MessagesScreen() {
                   </View>
                 )}
 
-                {/* Conversation content */}
                 <View style={styles.conversationContent}>
                   <View style={styles.topRow}>
-                    <Text style={styles.personName} numberOfLines={1}>
+                    <Text
+                      style={[
+                        styles.personName,
+                        unreadCount > 0 && styles.personNameUnread,
+                      ]}
+                      numberOfLines={1}
+                    >
                       {otherPersonName}
                     </Text>
                     <Text style={styles.timeText}>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { ScrollView, Text, View, Pressable, Alert, Button } from "react-native";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { ScrollView, Text, View, Pressable, Alert, Button, Dimensions } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MapComponent from "@/components/maps/MapComponent";
@@ -39,9 +39,8 @@ import {
   Users,
   Clock,
 } from "lucide-react-native";
-import { calculateWorthiness, type WorthinessResult } 
-  from "@/src/utils/worthinessCalculator";
-import MapView, { Marker } from "react-native-maps";
+import { calculateWorthiness, type WorthinessResult } from "@/src/utils/worthinessCalculator";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 
 export default function PropertyDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -56,6 +55,8 @@ export default function PropertyDetailScreen() {
   const [property, setProperty] = useState<Property | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const photoScrollViewRef = useRef<ScrollView>(null);
+  const screenWidth = Dimensions.get('window').width;
   const [nearbyResults, setNearbyResults] = useState<NearbyPlace[]>([]);
   const [nearbyCounts, setNearbyCounts] = useState<NearbyCounts | null>({
     transport: 0,
@@ -93,14 +94,35 @@ export default function PropertyDetailScreen() {
   const [worthiness, setWorthiness] =
     useState<WorthinessResult | null>(null);
 
+  // Memoize the onResults callback to prevent excessive re-renders
+  const handleNearbyPlacesResults = useCallback((places: NearbyPlace[], counts: NearbyCounts) => {
+    const normalized: NearbyPlace[] = places.map(p => ({
+      id: p.id,
+      name: p.name,
+      lat: p.lat,
+      lng: p.lng,
+      distance: p.distance,
+      category: p.category || "other",
+    }));
+
+    setNearbyResults(normalized);
+    setNearbyCounts(counts);
+  }, []);
+
   useEffect(() => {
-    if (nearbyResults.length > 0) {
-      const result = calculateWorthiness(nearbyResults);
-      setWorthiness(result); 
-    }
+    // Calculate worthiness even if there are no results (will show 0)
+    const result = calculateWorthiness(nearbyResults);
+    setWorthiness(result); 
   }, [nearbyResults]);
   const totalScore = worthiness?.totalScore ?? 0;
-  const categoryScores = worthiness?.categoryScores;
+  const categoryScores = worthiness?.categoryScores ?? {
+    transport: 0,
+    food: 0,
+    shopping: 0,
+    facility: 0,
+    environment: 0,
+    education: 0,
+  };
 
   // Load property
   useEffect(() => {
@@ -111,6 +133,7 @@ export default function PropertyDetailScreen() {
         const data = await getPropertyById(id || '');
         if (data) {
           setProperty(data); // safe, data is not null
+          console.log("Property loaded:", data.title, "Location:", data.latitude, data.longitude);
         } else {
           console.error("Property not found");
           setProperty(null); // still set state so UI can handle it
@@ -122,36 +145,18 @@ export default function PropertyDetailScreen() {
         setIsLoading(false);
       }
     };
-
-    const fetchNearbyPlaces = async (lat: number, lng: number) => {
-      try {
-        const apiKey = Constants.expoConfig?.extra?.googleMapsApiKey;
-        if (!apiKey) return;
-
-        const radius = 500; // meters
-        const type = "restaurant"; // example
-        const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${type}&key=${apiKey}`;
-
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (data.results) {
-          const places: NearbyPlace[] = data.results.map((p: any) => ({
-            id: p.place_id,
-            name: p.name,
-            types: p.types,
-            latitude: p.geometry.location.lat,
-            longitude: p.geometry.location.lng,
-          }));
-          setNearbyResults(places);
-        }
-      } catch (error) {
-        console.error("Failed to fetch nearby places:", error);
-      }
-    };
-
     loadProperty();
   }, [id]);
+
+  // Sync scroll position when currentPhotoIndex changes (e.g., when tapping dots)
+  useEffect(() => {
+    if (property && property.photos.length > 0 && photoScrollViewRef.current) {
+      photoScrollViewRef.current.scrollTo({
+        x: currentPhotoIndex * screenWidth,
+        animated: true,
+      });
+    }
+  }, [currentPhotoIndex, property, screenWidth]);
 
   const reviews = getReviewsByProperty(id || "");
 
@@ -231,17 +236,39 @@ export default function PropertyDetailScreen() {
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Photos */}
         <View style={styles.photoSection}>
+          <ScrollView
+            ref={photoScrollViewRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(event) => {
+              const offsetX = event.nativeEvent.contentOffset.x;
+              const index = Math.round(offsetX / screenWidth);
+              setCurrentPhotoIndex(index);
+            }}
+            style={{ width: screenWidth }}
+          >
+            {property.photos.map((photo, index) => (
           <Image
-            source={{ uri: property.photos[currentPhotoIndex]?.url || "https://via.placeholder.com/400" }}
-            style={styles.mainPhoto}
+                key={index}
+                source={{ uri: photo.url || "https://via.placeholder.com/400" }}
+                style={[styles.mainPhoto, { width: screenWidth }]}
             contentFit="cover"
           />
+            ))}
+          </ScrollView>
           {property.photos.length > 1 && (
             <View style={styles.photoIndicators}>
               {property.photos.map((_, index) => (
                 <Pressable
                   key={index}
-                  onPress={() => setCurrentPhotoIndex(index)}
+                  onPress={() => {
+                    setCurrentPhotoIndex(index);
+                    photoScrollViewRef.current?.scrollTo({
+                      x: index * screenWidth,
+                      animated: true,
+                    });
+                  }}
                   style={[
                     styles.photoIndicator,
                     currentPhotoIndex === index && styles.photoIndicatorActive,
@@ -288,15 +315,73 @@ export default function PropertyDetailScreen() {
               )}
 
               {/* Rental Status Badge */}
-              {property.rentalStatus && (
+              {(() => {
+                // Check if property is available now (availableDate is today or in the past)
+                const isAvailableNow = () => {
+                  if (property.approvalStatus !== 'approved') return false;
+                  if (!property.availableDate) return false;
+                  try {
+                    const availableDate = new Date(property.availableDate);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    availableDate.setHours(0, 0, 0, 0);
+                    return availableDate <= today;
+                  } catch {
+                    return false;
+                  }
+                };
+
+                // Check if availableDate is in the future
+                const isFutureDate = () => {
+                  if (!property.availableDate) return false;
+                  try {
+                    const availableDate = new Date(property.availableDate);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    availableDate.setHours(0, 0, 0, 0);
+                    return availableDate > today;
+                  } catch {
+                    return false;
+                  }
+                };
+
+                const formatAvailableDate = (dateString: string) => {
+                  try {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString("en-MY", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    });
+                  } catch {
+                    return "Date TBD";
+                  }
+                };
+
+                const available = isAvailableNow();
+                const futureDate = isFutureDate();
+
+                if (available) {
+                  return (
                 <View style={styles.availableBadge}>
-                  <Text style={styles.availableBadgeText}>Available Now</Text>
+                      <Text style={styles.availableBadgeText}>Available</Text>
+                    </View>
+                  );
+                } else if (futureDate && property.availableDate) {
+                  return (
+                    <View style={[styles.availableBadge, { backgroundColor: "#EF4444" }]}>
+                      <Text style={styles.availableBadgeText}>
+                        {formatAvailableDate(property.availableDate)}
+                      </Text>
                 </View>
-              )}
+                  );
+                }
+                return null;
+              })()}
             </View>
 
             {/* Property Title */}
-            {property.title && <Text style={styles.title}>{property.title}</Text>}
+            {property.title ? <Text style={styles.title}>{property.title}</Text> : null}
 
             {/* Location */}
             {property.address && (
@@ -368,15 +453,6 @@ export default function PropertyDetailScreen() {
               </View>
             </View>
             <View style={styles.detailsInfoRow}>
-              <View style={styles.detailsInfoItem}>
-                <Calendar size={18} color="#6366F1" />
-                <View style={styles.detailsInfoContent}>
-                  <Text style={styles.detailsInfoLabel}>Move-in Date</Text>
-                  <Text style={styles.detailsInfoValue}>
-                    {new Date(property.moveInDate).toLocaleDateString()}
-                  </Text>
-                </View>
-              </View>
               <View style={styles.detailsInfoItem}>
                 <Clock size={18} color="#6366F1" />
                 <View style={styles.detailsInfoContent}>
@@ -627,35 +703,33 @@ export default function PropertyDetailScreen() {
           <View style={styles.divider} />
 
           {/* Nearby Places */}
-          <NearbyPlaces
-            markerPosition={{ lat: property.latitude, lng: property.longitude }}
-            radius={1000}
-            categories={["transport","food","shopping","facility","environment","education"]}
-            apiKey={GOOGLE_MAPS_API_KEY}
-            onResults={(places:NearbyPlace[], counts: NearbyCounts) => {
-              const normalized: NearbyPlace[] = places.map(p => ({
-                id: p.id,
-                name: p.name,
-                lat: p.lat,   // map lat -> latitude
-                lng: p.lng,  // map lng ->  longitude
-                distance: p.distance,
-                category: p.category || "other",
-              }));
+          {GOOGLE_MAPS_API_KEY && property ? (
+            <NearbyPlaces
+              markerPosition={{ lat: property.latitude, lng: property.longitude }}
+              radius={1000}
+              categories={["transport","food","shopping","facility","environment","education"]}
+              apiKey={GOOGLE_MAPS_API_KEY}
+              onResults={handleNearbyPlacesResults}
+            />
+          ) : (
+            <View style={{ padding: 16, backgroundColor: "#FEF3C7", borderRadius: 8, marginTop: 16 }}>
+              <Text style={{ color: "#92400E", fontSize: 14 }}>
+                ⚠️ Google Maps API key is not configured. Nearby places cannot be loaded.
+              </Text>
+            </View>
+          )}
 
-              setNearbyResults(normalized);
-              setNearbyCounts(counts);
-            }}
-          />
-
-          Show Nearby Places with difference category color 
+          {/* Show Nearby Places with different category colors */}
           <MapView
             style={styles.mapView}
+            provider={PROVIDER_GOOGLE}
             initialRegion={{
               latitude: property.latitude,
               longitude: property.longitude,
               latitudeDelta: 0.02,
               longitudeDelta: 0.02,
             }}
+            mapType="standard"
           >
 
           {/* Property location */}
@@ -667,9 +741,9 @@ export default function PropertyDetailScreen() {
           />
 
             {/* Nearby places */}
-            {nearbyResults.map((place) => (
+            {nearbyResults.map((place, index) => (
               <Marker
-                key={place.id}
+                key={`${place.id}-${place.category}-${index}`}
                 coordinate={{ latitude: place.lat, longitude: place.lng }}
                 title={place.name}
                 description={place.category.toUpperCase()}
@@ -681,38 +755,71 @@ export default function PropertyDetailScreen() {
           {/* Nearby Counts */}
           <View style={styles.nearbyCountsContainer}>
             {nearbyCounts &&
-              Object.entries(nearbyCounts).map(([type, count]) => (
-                <View key={type} style={styles.nearbyCountCard}>
-                  <Text style={styles.nearbyCountType}>
-                    {type.toUpperCase()}
-                  </Text>
-                  <Text style={styles.nearbyCountValue}>
-                    {count}
-                  </Text>
-                </View>
-              ))}
+              Object.entries(nearbyCounts).map(([type, count]) => {
+                const categoryColor = CATEGORY_COLORS[type] || CATEGORY_COLORS.other;
+                return (
+                  <View 
+                    key={type} 
+                    style={[
+                      styles.nearbyCountCard,
+                      { borderLeftColor: categoryColor, borderLeftWidth: 4 }
+                    ]}
+                  >
+                    <View style={styles.nearbyCountHeader}>
+                      <View 
+                        style={[
+                          styles.nearbyCountColorDot,
+                          { backgroundColor: categoryColor }
+                        ]}
+                      />
+                      <Text style={styles.nearbyCountType}>
+                        {type.toUpperCase()}
+                      </Text>
+                    </View>
+                    <Text 
+                      style={[
+                        styles.nearbyCountValue,
+                        { color: categoryColor }
+                      ]}
+                    >
+                      {count}
+                    </Text>
+                  </View>
+                );
+              })}
           </View>
         
           {/* Worthiness Card */}
           <View style={styles.worthinessCard}>
             <Text style={styles.worthinessTitle}>House Worthiness</Text>
-            <Text style={styles.worthinessScore}>
-              {totalScore.toFixed(1)} / 100
-            </Text>
-
-            {categoryScores && (
-              <View style={styles.worthinessCategoryContainer}>
-                {Object.entries(categoryScores).map(([category, score]) => (
-                  <View key={category} style={styles.worthinessCategoryItem}>
-                    <Text style={styles.worthinessCategoryLabel}>
-                      {category}: {score.toFixed(1)}
-                    </Text>
-                    <View style={styles.worthinessProgressBar}>
-                      <View style={[styles.worthinessProgressFill, { width: `${score}%` }]} />
-                    </View>
-                  </View>
-                ))}
+            {nearbyResults.length === 0 && nearbyCounts && Object.values(nearbyCounts).every(count => count === 0) ? (
+              <View style={{ padding: 16, backgroundColor: "#FEF3C7", borderRadius: 8, marginTop: 12 }}>
+                <Text style={{ color: "#92400E", fontSize: 13, marginBottom: 8 }}>
+                  ⚠️ Nearby places data is not available.
+                </Text>
+                <Text style={{ color: "#92400E", fontSize: 12 }}>
+                  To enable this feature, please enable "Places API (New)" in your Google Cloud Console project.
+                </Text>
               </View>
+            ) : (
+              <>
+                <Text style={styles.worthinessScore}>
+                  {totalScore.toFixed(1)} / 100
+                </Text>
+
+                <View style={styles.worthinessCategoryContainer}>
+                  {Object.entries(categoryScores).map(([category, score]) => (
+                    <View key={category} style={styles.worthinessCategoryItem}>
+                      <Text style={styles.worthinessCategoryLabel}>
+                        {category}: {score.toFixed(1)}
+                      </Text>
+                      <View style={styles.worthinessProgressBar}>
+                        <View style={[styles.worthinessProgressFill, { width: `${score}%` }]} />
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </>
             )}
           </View>
 

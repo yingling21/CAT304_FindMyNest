@@ -13,7 +13,7 @@ export interface Rental {
   startDate: string;
   endDate?: string;
   
-  status: "active" | "completed" | "cancelled";
+  status: "pending" | "confirmed" | "active" | "completed" | "cancelled";
   
   hasReview?: boolean;
   

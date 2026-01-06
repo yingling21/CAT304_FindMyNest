@@ -136,6 +136,18 @@ export const messagesStyles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
     gap: 12,
+    position: "relative",
+  },
+  conversationItemUnread: {
+    backgroundColor: "#F9FAFB",
+  },
+  unreadDot: {
+    position: "absolute",
+    left: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#6366F1",
   },
   avatar: {
     width: 52,
@@ -169,6 +181,10 @@ export const messagesStyles = StyleSheet.create({
     fontWeight: "600" as const,
     color: "#1F2937",
     flex: 1,
+  },
+  personNameUnread: {
+    fontWeight: "700" as const,
+    color: "#111827",
   },
   propertyTitle: {
     fontSize: 13,

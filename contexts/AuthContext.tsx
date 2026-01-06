@@ -5,8 +5,6 @@ import { useEffect, useState } from "react";
 import type { User, UserRole, VerificationStatus } from "@/src/types";
 import { supabase } from "../lib/supabase";
 import { getUserById, updateUserRole as updateUserRoleAPI, updateUserVerification } from "@/src/api/users";
-import { registerForPushNotificationsAsync } from "@/utils/notifications";
-import { updateUserPushToken } from "@/src/api/notifications";
 import { AppState } from "react-native";
 
 // Tells Supabase Auth to continuously refresh the session automatically if
@@ -76,10 +74,6 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       if (userData) {
         setUser(userData);
         
-        const pushToken = await registerForPushNotificationsAsync();
-        if (pushToken) {
-          await updateUserPushToken(userId, pushToken);
-        }
         // Clear pending user data if user now exists in database
         await AsyncStorage.removeItem(`pending_user_${userId}`);
         return;
@@ -218,18 +212,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
             redirectTo: 'dummy', // We don't actually want to reset, just check if account exists
           });
           
-          if (
-            resetError?.message &&
-            (
-              resetError.message.includes("not found") ||
-              resetError.message.includes("does not exist")
-            )
-          ) {
-            throw new Error(
-              `The ${selectedRole} account does not exist. It may not have been created properly during registration. Please try registering again as ${selectedRole}.`
-            );
+          if (resetError && (resetError.message?.includes("not found") || resetError.message?.includes("does not exist"))) {
+            throw new Error(`The ${selectedRole} account does not exist. It may not have been created properly during registration. Please try registering again as ${selectedRole}.`);
           }
-
           
           throw new Error(`Invalid password for ${selectedRole} account. Please use the exact same password you used when registering as ${selectedRole}. The password must match exactly what you set during registration.`);
         }
@@ -878,11 +863,23 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (error) {
+        // If there's no active session, that's okay - user is already signed out
+        // Only log other errors
+        if (error.name !== 'AuthSessionMissingError') {
+          console.error("Failed to sign out:", error);
+        }
+      }
+    } catch (error: any) {
+      // If there's no active session, that's okay - user is already signed out
+      // Only log other errors
+      if (error?.name !== 'AuthSessionMissingError') {
+        console.error("Failed to sign out:", error);
+      }
+    } finally {
+      // Always clear local state and navigate to login, regardless of signOut result
       setUser(null);
       router.replace("/login");
-    } catch (error) {
-      console.error("Failed to sign out:", error);
     }
   };
 

@@ -69,104 +69,44 @@ export default function SearchScreen() {
   const [sortBy, setSortBy] = useState<SortOption>("newest");
 
   const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
 
   React.useEffect(() => {
-    const loadProperties = async () => {
+    loadFilteredProperties();
+  }, [filters]);
+
+  const loadFilteredProperties = async () => {
       try {
-        const { getAvailableProperties } = await import('@/src/api/properties');
-        const data = await getAvailableProperties();
+      setLoading(true);
+      const { getFilteredProperties } = await import('@/src/api/properties');
+      
+      // Convert filters to API format
+      const apiFilters = {
+        location: filters.location || undefined,
+        propertyTypes: filters.propertyTypes.length > 0 ? filters.propertyTypes : undefined,
+        priceMin: filters.priceMin ? parseInt(filters.priceMin, 10) : undefined,
+        priceMax: filters.priceMax ? parseInt(filters.priceMax, 10) : undefined,
+        sizeMin: filters.sizeMin ? parseInt(filters.sizeMin, 10) : undefined,
+        sizeMax: filters.sizeMax ? parseInt(filters.sizeMax, 10) : undefined,
+        bedrooms: filters.bedrooms || undefined,
+        bathrooms: filters.bathrooms || undefined,
+        furnishing: filters.furnishing.length > 0 ? filters.furnishing : undefined,
+        amenities: Object.values(filters.amenities).some(v => v) ? filters.amenities : undefined,
+      };
+
+      const data = await getFilteredProperties(apiFilters);
         setProperties(data);
       } catch (error) {
-        console.error('Failed to load properties:', error);
+      console.error('Failed to load filtered properties:', error);
+      setProperties([]);
+    } finally {
+      setLoading(false);
       }
     };
     
-    loadProperties();
-  }, []);
-
+  // Properties are already filtered from the database, just sort them
   const filteredAndSortedProperties = useMemo(() => {
-    let results = properties.filter((property) => {
-      if (
-        filters.location &&
-        !property.address.toLowerCase().includes(filters.location.toLowerCase())
-      ) {
-        return false;
-      }
-
-      if (
-        filters.propertyTypes.length > 0 &&
-        !filters.propertyTypes.includes(property.propertyType)
-      ) {
-        return false;
-      }
-
-      if (
-        filters.priceMin &&
-        property.monthlyRent < parseInt(filters.priceMin)
-      ) {
-        return false;
-      }
-
-      if (
-        filters.priceMax &&
-        property.monthlyRent > parseInt(filters.priceMax)
-      ) {
-        return false;
-      }
-
-      if (filters.sizeMin && property.size < parseInt(filters.sizeMin)) {
-        return false;
-      }
-
-      if (filters.sizeMax && property.size > parseInt(filters.sizeMax)) {
-        return false;
-      }
-
-      if (filters.bedrooms && property.bedrooms < filters.bedrooms) {
-        return false;
-      }
-
-      if (filters.bathrooms && property.bathrooms < filters.bathrooms) {
-        return false;
-      }
-
-      if (
-        filters.furnishing.length > 0 &&
-        !filters.furnishing.includes(property.furnishingLevel)
-      ) {
-        return false;
-      }
-
-      if (
-        filters.amenities.airConditioning &&
-        !property.amenities.airConditioning
-      ) {
-        return false;
-      }
-      if (filters.amenities.wifi && !property.amenities.wifi) {
-        return false;
-      }
-      if (filters.amenities.parking && !property.amenities.parking) {
-        return false;
-      }
-      if (
-        filters.amenities.kitchenAccess &&
-        !property.amenities.kitchenAccess
-      ) {
-        return false;
-      }
-      if (
-        filters.amenities.washingMachine &&
-        !property.amenities.washingMachine
-      ) {
-        return false;
-      }
-      if (filters.amenities.security && !property.amenities.security) {
-        return false;
-      }
-
-      return true;
-    });
+    let results = [...properties];
 
     if (sortBy === "price_low") {
       results = results.sort((a, b) => a.monthlyRent - b.monthlyRent);
@@ -180,7 +120,7 @@ export default function SearchScreen() {
     }
 
     return results;
-  }, [properties, filters, sortBy]);
+  }, [properties, sortBy]);
 
   const togglePropertyType = (type: PropertyType) => {
     setFilters((prev) => ({
@@ -288,7 +228,7 @@ export default function SearchScreen() {
           </View>
 
           <Text style={styles.resultsText}>
-            {filteredAndSortedProperties.length} properties found
+            {loading ? "Loading..." : `${filteredAndSortedProperties.length} properties found`}
           </Text>
 
           <ScrollView
@@ -296,6 +236,12 @@ export default function SearchScreen() {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
+            {loading ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyTitle}>Loading properties...</Text>
+              </View>
+            ) : (
+              <>
             {filteredAndSortedProperties.map((property) => (
               <PropertyCard key={property.id} property={property} />
             ))}
@@ -308,6 +254,8 @@ export default function SearchScreen() {
                   Try adjusting your filters to see more results
                 </Text>
               </View>
+                )}
+              </>
             )}
           </ScrollView>
         </View>

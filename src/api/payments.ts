@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type { Payment, CreatePaymentParams } from "@/src/types/payment";
 
+// Create a new payment record
 export async function createPayment(params: CreatePaymentParams): Promise<Payment> {
   try {
     const { data: userData } = await supabase.auth.getUser();
@@ -54,6 +55,7 @@ export async function createPayment(params: CreatePaymentParams): Promise<Paymen
   }
 }
 
+// Update payment status
 export async function updatePaymentStatus(
   paymentId: string,
   status: 'success' | 'failed',
@@ -63,6 +65,7 @@ export async function updatePaymentStatus(
   try {
     const updateData: any = {
       payment_status: status,
+      // Only set payment_date if status is success
       payment_date: status === 'success' ? new Date().toISOString() : undefined,
     };
 

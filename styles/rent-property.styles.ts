@@ -441,6 +441,21 @@ export const styles = StyleSheet.create({
     fontWeight: "600" as const,
     color: "#FFFFFF",
   },
+  cancelButton: {
+    marginTop: 12,
+    backgroundColor: "#EF4444",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  cancelButtonDisabled: {
+    opacity: 0.6,
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: "#FFFFFF",
+  },
   reviewSubmittedBadge: {
     backgroundColor: "#ECFDF5",
     borderRadius: 8,

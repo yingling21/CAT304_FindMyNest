@@ -55,7 +55,7 @@ export default function LandlordOverviewStats({
 const styles = StyleSheet.create({
   overviewSection: {
     paddingHorizontal: 24,
-    marginTop: -16,
+    marginTop: 18,
   },
   sectionTitle: {
     fontSize: 18,

@@ -17,7 +17,7 @@ export type ListingFormData = {
   securityDeposit: string;
   utilitiesDeposit: string;
   minimumRentalPeriod: string;
-  moveInDate: string;
+  availableDate: string;
 
   bedType: string;
   roomType: string; // for "room" propertyType
@@ -69,7 +69,7 @@ const initialFormData: ListingFormData = {
   securityDeposit: "",
   utilitiesDeposit: "",
   minimumRentalPeriod: "",
-  moveInDate: "",
+  availableDate: "",
 
   bedType: "",
   roomType: "",
@@ -122,6 +122,7 @@ export type StoredListing = {
   messages: number;
   createdAt: string;
   formData: ListingFormData;
+  coverPhotoUrl?: string;
 };
 
 export const [ListingProvider, useListing] = createContextHook(() => {
@@ -161,11 +162,27 @@ export const [ListingProvider, useListing] = createContextHook(() => {
         .from("property")
         .select("*")
         .eq("landlord_id", user.id)
-        .order("created_At", { ascending: false });
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       if (data) {
+        const propertyIds = data.map((p: any) => p.property_id);
+        
+        // Fetch photos for all properties
+        const { data: photosData } = await supabase
+          .from("property_Photo")
+          .select("property_id, photo_url, is_cover")
+          .in("property_id", propertyIds);
+
+        // Create a map of property_id to cover photo URL
+        const photosMap: Record<string, string> = {};
+        (photosData || []).forEach((photo: any) => {
+          if (photo.is_cover || !photosMap[photo.property_id]) {
+            photosMap[photo.property_id] = photo.photo_url;
+          }
+        });
+
         setListings(
           data.map((listing: any) => ({
             id: listing.property_id?.toString() || "",
@@ -178,10 +195,11 @@ export const [ListingProvider, useListing] = createContextHook(() => {
             bathrooms: listing.bathrooms?.toString() || "0",
             price: listing.monthlyRent || 0,
             address: listing.address || "",
-            status: listing.rentalStatus ? "approved" : "pending",
+            status: listing.approvalStatus || (listing.rentalStatus === true ? "approved" : listing.rentalStatus === false ? "pending" : "pending"),
             views: 0,
             messages: 0,
-            createdAt: listing.created_At || new Date().toISOString(),
+            createdAt: listing.created_at || new Date().toISOString(),
+            coverPhotoUrl: photosMap[listing.property_id] || undefined,
             formData: {
               ...initialFormData,
               propertyType: listing.propertyType,
@@ -195,7 +213,7 @@ export const [ListingProvider, useListing] = createContextHook(() => {
               securityDeposit: listing.securityDeposit?.toString() || "",
               utilitiesDeposit: listing.utilitiesDeposit?.toString() || "",
               minimumRentalPeriod: listing.minimumRentalPeriod?.toString() || "",
-              moveInDate: listing.moveInDate || "",
+              availableDate: listing.availableDate || "",
               address: listing.address,
               latitude: listing.latitude,
               longitude: listing.longitude,
@@ -278,13 +296,13 @@ export const [ListingProvider, useListing] = createContextHook(() => {
           securityDeposit: parseFloat(formData.securityDeposit) || 0,
           utilitiesDeposit: parseFloat(formData.utilitiesDeposit) || 0,
           minimumRentalPeriod: parseInt(formData.minimumRentalPeriod) || 6,
-          moveInDate: formData.moveInDate || new Date().toISOString().split("T")[0],
+          availableDate: formData.availableDate || new Date().toISOString().split("T")[0],
           amenities,
           houseRules,
           address: formData.address,
           latitude: formData.latitude ?? null,
           longitude: formData.longitude ?? null,
-          rentalStatus: false,
+          approvalStatus: 'pending',
         })
         .select()
         .single();
@@ -313,10 +331,10 @@ export const [ListingProvider, useListing] = createContextHook(() => {
           bathrooms: data.bathrooms?.toString() || "0",
           price: data.monthlyRent || 0,
           address: data.address,
-          status: data.rentalStatus ? "approved" : "pending",
+            status: data.approvalStatus || (data.rentalStatus === true ? "approved" : data.rentalStatus === false ? "pending" : "pending"),
           views: 0,
           messages: 0,
-          createdAt: data.created_At || new Date().toISOString(),
+          createdAt: data.created_at || new Date().toISOString(),
           formData: formData,
         };
         setListings(prev => [newListing, ...prev]);
@@ -331,10 +349,9 @@ export const [ListingProvider, useListing] = createContextHook(() => {
 
   const updateListingStatus = async (listingId: string, status: "approved" | "pending" | "rejected") => {
     try {
-      const rentalStatus = status === "approved";
       const { error } = await supabase
         .from('property')
-        .update({ rentalStatus })
+        .update({ approvalStatus: status })
         .eq("property_id", listingId);
       if (error) throw error;
 
@@ -411,13 +428,13 @@ export const [ListingProvider, useListing] = createContextHook(() => {
         securityDeposit: parseFloat(formData.securityDeposit) || 0,
         utilitiesDeposit: parseFloat(formData.utilitiesDeposit) || 0,
         minimumRentalPeriod: parseInt(formData.minimumRentalPeriod) || 6,
-        moveInDate: formData.moveInDate || new Date().toISOString().split("T")[0],
+        availableDate: formData.availableDate || new Date().toISOString().split("T")[0],
         amenities,
         houseRules,
         address: formData.address,
         latitude: formData.latitude ?? null,
         longitude: formData.longitude ?? null,
-        // Keep existing rentalStatus - don't change it on update
+        // Keep existing approvalStatus - don't change it on update
       };
   
       // Only include floor_level if the column exists and value is provided

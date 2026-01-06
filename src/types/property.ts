@@ -4,6 +4,8 @@ export type FurnishingLevel = "fully_furnished" | "partially_furnished" | "unfur
 
 export type roomType = "single_room" | "master_room" | "shared_room";
 
+export type ApprovalStatus = "approved" | "pending" | "rejected";
+
 export interface Property {
   id: string;
   landlordId: string;
@@ -29,8 +31,8 @@ export interface Property {
   securityDeposit: number;
   utilitiesDeposit: number;
   minimumRentalPeriod: number;
-  moveInDate: string;
-  rentalStatus: boolean;
+  availableDate: string;
+  approvalStatus: ApprovalStatus;
   
   amenities: any;
   houseRules: any;
@@ -72,8 +74,8 @@ export interface PropertyInsert {
   utilitiesDeposit: number;
   minimumRentalPeriod: number;
 
-  moveInDate: string | null;
-  rentalStatus: boolean;
+  availableDate: string | null;
+  approvalStatus: ApprovalStatus;
 
   amenities: Record<string, boolean>;
   houseRules: Record<string, any>;
