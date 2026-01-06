@@ -23,6 +23,7 @@ function RootLayoutNav() {
   const { rentalNotification, dismissRentalNotification } = useRentals();
 
   return (
+    <>
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
@@ -45,27 +46,6 @@ function RootLayoutNav() {
       <Stack.Screen name="affordability-calculator" options={{ title: "Affordability Calculator" }} />
       <Stack.Screen name="(admin)" options={{ headerShown: false }} />
     </Stack>
-    <>
-      <Stack screenOptions={{ headerBackTitle: "Back" }}>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="signup" options={{ headerShown: false }} />
-        <Stack.Screen name="role-selection" options={{ headerShown: false }} />
-        <Stack.Screen name="identity-verification" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="add-listing" options={{ title: "Add Listing" }} />
-        <Stack.Screen name="edit-listing/[id]" options={{ title: "Edit Listing" }} />
-        <Stack.Screen name="property/[id]" options={{ title: "Property Details" }} />
-        <Stack.Screen name="chat/[id]" options={{ title: "Chat" }} />
-        <Stack.Screen name="my-rentals" options={{ title: "My Rentals" }} />
-        <Stack.Screen name="landlord-rentals" options={{ title: "Landlord Rentals" }} />
-        <Stack.Screen name="rent-property/[id]" options={{ title: "Rent Property" }} />
-        <Stack.Screen name="submit-review/[id]" options={{ title: "Submit Review" }} />
-        <Stack.Screen name="review-history" options={{ title: "Review History" }} />
-        <Stack.Screen name="all-reviews" options={{ title: "All Reviews" }} />
-        <Stack.Screen name="affordability-calculator" options={{ title: "Affordability Calculator" }} />
-      </Stack>
       
       {newMessageNotification && (
         <MessageBanner
