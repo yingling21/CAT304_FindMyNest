@@ -96,7 +96,7 @@ export default function BanUsersScreen() {
         .update({
           is_banned: true,
         })
-        .eq("id", selectedUser.id);
+        .eq("email", selectedUser.email);
 
       if (error) throw error;
 

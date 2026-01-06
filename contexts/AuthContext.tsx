@@ -127,11 +127,15 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       // Check which roles exist for this email, including verification status
       const { data: existingUsers, error: checkError } = await supabase
         .from("users")
-        .select("role, id, verification_status")
+        .select("role, id, verification_status, is_banned")
         .eq("email", email.trim());
 
       if (checkError && checkError.code !== 'PGRST116') {
         console.error("Error checking existing users:", checkError);
+      }
+
+      if (existingUsers?.some(u => u.is_banned)) {
+        throw new Error("This account has been banned. Please contact support for more information.");
       }
 
       console.log(`[SignIn] Found users for email ${email}:`, existingUsers);
