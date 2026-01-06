@@ -123,7 +123,7 @@ export default function BanUsersScreen() {
                 .update({
                   is_banned: false,
                 })
-                .eq("id", user.id);
+                .eq("email", user.email);
 
               if (error) throw error;
 
