@@ -102,8 +102,6 @@ export default function NearbyPlaces({
         });
         return;
       }
-
-      // Removed excessive logging - only log if needed for debugging
       
       const allPlaces: NearbyPlace[] = [];
       const counts: NearbyCounts = {
@@ -118,7 +116,6 @@ export default function NearbyPlaces({
       let apiErrorLogged = false; // Track if we've already logged the API error
 
       // OPTIMIZATION: Combine all types per category into single API calls
-      // This reduces API calls from ~14 to 6 (one per category) - saves ~57% quota!
       for (const category of categories) {
         const types = CATEGORY_MAP[category];
         
@@ -136,7 +133,7 @@ export default function NearbyPlaces({
           
           const requestBody = {
             includedTypes: newApiTypes, // Send all types for this category in one request
-            maxResultCount: 10, // Reduced from 20 to save quota (still plenty of results)
+            maxResultCount: 10, 
               locationRestriction: {
                 circle: {
                   center: {
@@ -168,11 +165,11 @@ export default function NearbyPlaces({
                 const errorCode = json.error?.code || json.code;
                 
                 if (errorCode === 429 || errorMsg?.includes("RATE_LIMIT_EXCEEDED") || errorMsg?.includes("Quota exceeded")) {
-                  console.warn("⚠️ Rate limit exceeded. Please wait a moment before trying again.");
+                  console.warn("Rate limit exceeded. Please wait a moment before trying again.");
                   // Stop making more API calls if rate limited
                   break;
                 } else if (errorMsg?.includes("SERVICE_DISABLED") || errorMsg?.includes("not been used") || errorMsg?.includes("disabled")) {
-                  console.warn("⚠️ Places API (New) is not enabled. Please enable it in Google Cloud Console:", 
+                  console.warn("Places API (New) is not enabled. Please enable it in Google Cloud Console:", 
                     "https://console.developers.google.com/apis/api/places.googleapis.com/overview");
                 } else {
                   console.error("Google Places API (New) error:", json.error || res.statusText);

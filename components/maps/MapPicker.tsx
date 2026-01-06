@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, ActivityIndicator, Platform, StyleSheet, Text, Pressable, Alert } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Text, Pressable, Alert } from "react-native";
 import MapView, { Marker, MapPressEvent, Region, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
 import { MapPin, Navigation } from "lucide-react-native";
