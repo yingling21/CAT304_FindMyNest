@@ -13,7 +13,6 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import MessageBanner from "@/components/MessageBanner";
 
-
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
@@ -24,31 +23,14 @@ function RootLayoutNav() {
 
   return (
     <>
-    <Stack screenOptions={{ headerBackTitle: "Back" }}>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-      <Stack.Screen name="login" options={{ headerShown: false }} />
-      <Stack.Screen name="signup" options={{ headerShown: false }} />
-      <Stack.Screen name="login-role-selection" options={{ headerShown: false }} />
-      <Stack.Screen name="role-selection" options={{ headerShown: false }} />
-      <Stack.Screen name="identity-verification" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="add-listing" options={{ title: "Add Listing" }} />
-      <Stack.Screen name="edit-listing/[id]" options={{ title: "Edit Listing" }} />
-      <Stack.Screen name="property/[id]" options={{ title: "Property Details" }} />
-      <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="my-rentals" options={{ headerShown: false }} />
-      <Stack.Screen name="landlord-rentals" options={{ headerShown: false }} />
-      <Stack.Screen name="rent-property/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="submit-review/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="pay-rent/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="review-history" options={{ headerShown: false }} />
-      <Stack.Screen name="all-reviews" options={{ headerShown: false }} />
-      <Stack.Screen name="property/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="affordability-calculator" options={{ title: "Affordability Calculator" }} />
-      <Stack.Screen name="(admin)" options={{ headerShown: false }} />
-    </Stack>
-      
+      {/* Expo Router auto-registers screens from the filesystem */}
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          headerBackTitle: "Back",
+        }}
+      />
+
       {newMessageNotification && (
         <MessageBanner
           conversationId={newMessageNotification.conversationId}
@@ -79,24 +61,24 @@ export default function RootLayout() {
   }, []);
 
   return (
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <FavoritesProvider>
-            <MessagesProvider>
-              <ListingProvider>
-                <RentalsProvider>
-                  <ReviewsProvider>
-                    <PaymentsProvider>
-                      <GestureHandlerRootView style={{ flex: 1 }}>
-                        <RootLayoutNav />
-                      </GestureHandlerRootView>
-                    </PaymentsProvider>
-                  </ReviewsProvider>
-                </RentalsProvider>
-              </ListingProvider>
-            </MessagesProvider>
-          </FavoritesProvider>
-        </AuthProvider>
-      </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <FavoritesProvider>
+          <MessagesProvider>
+            <ListingProvider>
+              <RentalsProvider>
+                <ReviewsProvider>
+                  <PaymentsProvider>
+                    <GestureHandlerRootView style={{ flex: 1 }}>
+                      <RootLayoutNav />
+                    </GestureHandlerRootView>
+                  </PaymentsProvider>
+                </ReviewsProvider>
+              </RentalsProvider>
+            </ListingProvider>
+          </MessagesProvider>
+        </FavoritesProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
