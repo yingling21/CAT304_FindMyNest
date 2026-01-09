@@ -1,7 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { verifyIcWithBackend } from "@/lib/verifyIcApi";
-import { uploadUserDocument } from "@/src/service/photoService";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
@@ -221,32 +220,16 @@ export default function IdentityVerificationScreen() {
       }
 
       // Backend has already created/updated the user row with all info
-      // Upload ownership document to Supabase storage if it exists, then store the public URL
+      // Just store document URIs without changing verification status
       if (user) {
         try {
           const updates: Record<string, any> = {};
           if (frontIcUri) {
             updates.identity_document = frontIcUri;
           }
-          
-          // Upload ownership document to Supabase storage bucket "user-photo"
-          if (ownershipDoc && user.role === "landlord") {
-            console.log("Uploading ownership document to Supabase storage...");
-            try {
-              const ownershipDocUrl = await uploadUserDocument(ownershipDoc, user.id);
-              console.log("Ownership document uploaded successfully. URL:", ownershipDocUrl);
-              updates.ownership_document = ownershipDocUrl;
-            } catch (uploadErr: any) {
-              console.error("Failed to upload ownership document to Supabase storage:", uploadErr);
-              Alert.alert(
-                "Upload Error",
-                `Failed to upload ownership document: ${uploadErr?.message || "Unknown error"}. Please try again.`
-              );
-              setIsLoading(false);
-              return;
-            }
+          if (ownershipDoc) {
+            updates.ownership_document = ownershipDoc;
           }
-          
           if (Object.keys(updates).length > 0) {
             await supabase.from("users").update(updates).eq("id", user.id);
           }
@@ -262,7 +245,7 @@ export default function IdentityVerificationScreen() {
       // Wait a moment for the state to update
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Verify that verification status is now approved
+      // Verify that verification status is now approved or pending
       const { data: { session: latestSession } } = await supabase.auth.getSession();
       if (latestSession?.user) {
         const { data: updatedUser } = await supabase
@@ -275,6 +258,24 @@ export default function IdentityVerificationScreen() {
           console.log("Verification confirmed as approved. Navigating to home.");
           // Navigate directly to home page without showing alert
           router.replace("/(tabs)/home");
+          return;
+        }
+
+        if (updatedUser?.verification_status === "pending") {
+          console.log("Verification pending admin approval.");
+          Alert.alert(
+            "Verification Submitted",
+            "Pending and wait for admin approval",
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  // Navigate to home page while waiting for approval
+                  router.replace("/(tabs)/home");
+                },
+              },
+            ]
+          );
           return;
         }
       }
