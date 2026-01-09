@@ -275,25 +275,56 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           // Check if verification_status is NULL, undefined, or not "approved"
           // NULL means user registered but never completed IC verification
           if (!verificationStatus || verificationStatus === null || verificationStatus !== "approved") {
+            // Special handling for landlords:
+            // - NULL: Landlord registered but hasn't done IC verification yet → redirect to IC verification
+            // - "pending": Landlord did IC verification, waiting for admin approval → show waiting message
+            // - "rejected": Landlord was rejected → show rejection message
             if(userData.role === "landlord"){
-              console.log(`[SignIn] Landlord account detected, verification status is not approved. Need to wait for admin approval.`);
-              Alert.alert(
-                "Verification Required",
-                "Your landlord account is pending admin approval. Please wait for confirmation before logging in.",
-                [
-                  {
-                    text: "OK",
-                    onPress: () => router.replace("/login"),
-                  },
-                ]
-              );
-              return;
+              if (verificationStatus === null || verificationStatus === undefined) {
+                // Landlord registered but hasn't done IC verification yet
+                const statusDisplay = verificationStatus === null ? "NULL (not verified)" : "undefined";
+                console.log(`[SignIn] Landlord account detected, verification status is "${statusDisplay}". Redirecting to IC verification.`);
+                // Load user profile and keep authenticated so they can submit verification
+                await loadUserProfile(data.user.id);
+                router.replace("/identity-verification" as any);
+                // CRITICAL: Return early to prevent any further processing
+                return;
+              } else if (verificationStatus === "pending") {
+                // Landlord did IC verification, waiting for admin approval
+                console.log(`[SignIn] Landlord account detected, verification status is "pending". Need to wait for admin approval.`);
+                Alert.alert(
+                  "Verification Pending",
+                  "Your landlord account is pending admin approval. Please wait for confirmation before logging in.",
+                  [
+                    {
+                      text: "OK",
+                      onPress: () => router.replace("/login"),
+                    },
+                  ]
+                );
+                return;
+              } else if (verificationStatus === "rejected") {
+                // Landlord was rejected
+                console.log(`[SignIn] Landlord account detected, verification status is "rejected".`);
+                Alert.alert(
+                  "Verification Rejected",
+                  "Your landlord account verification was rejected. Please contact support for more information.",
+                  [
+                    {
+                      text: "OK",
+                      onPress: () => router.replace("/login"),
+                    },
+                  ]
+                );
+                return;
+              }
             }
+            // For tenants or other roles: redirect to IC verification if not approved
             const statusDisplay = verificationStatus === null ? "NULL (not verified)" : verificationStatus;
             console.log(`[SignIn] User verification status is "${statusDisplay}", not approved. Redirecting to IC verification.`);
             // Load user profile and keep authenticated so they can submit verification
             await loadUserProfile(data.user.id);
-            router.replace("/identity-verification");
+            router.replace("/identity-verification" as any);
             // CRITICAL: Return early to prevent any further processing
             return;
           }
@@ -407,9 +438,34 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
                 // Only allow sign-in if verification status is "approved"
                 // Check if verification_status is NULL, undefined, or not "approved"
                 if (!mappedUser.verificationStatus || mappedUser.verificationStatus === null || mappedUser.verificationStatus !== "approved") {
+                  // Special handling for landlords
+                  if (mappedUser.role === "landlord") {
+                    if (mappedUser.verificationStatus === null || mappedUser.verificationStatus === undefined) {
+                      // Landlord registered but hasn't done IC verification yet
+                      console.log(`[SignIn] Landlord account detected, verification status is NULL. Redirecting to IC verification.`);
+                      router.replace("/identity-verification" as any);
+                      return;
+                    } else if (mappedUser.verificationStatus === "pending") {
+                      // Landlord did IC verification, waiting for admin approval
+                      Alert.alert(
+                        "Verification Pending",
+                        "Your landlord account is pending admin approval. Please wait for confirmation before logging in.",
+                        [{ text: "OK", onPress: () => router.replace("/login") }]
+                      );
+                      return;
+                    } else if (mappedUser.verificationStatus === "rejected") {
+                      Alert.alert(
+                        "Verification Rejected",
+                        "Your landlord account verification was rejected. Please contact support for more information.",
+                        [{ text: "OK", onPress: () => router.replace("/login") }]
+                      );
+                      return;
+                    }
+                  }
+                  // For tenants or other roles: redirect to IC verification
                   const statusDisplay = mappedUser.verificationStatus === null ? "NULL (not verified)" : mappedUser.verificationStatus || "undefined";
                   console.log(`[SignIn] User verification status is "${statusDisplay}", redirecting to IC verification.`);
-                  router.replace("/identity-verification");
+                  router.replace("/identity-verification" as any);
                   return;
                 }
                 
@@ -436,9 +492,34 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
               // Only allow sign-in if verification status is "approved"
               // Check if verification_status is NULL, undefined, or not "approved"
               if (!mappedUser.verificationStatus || mappedUser.verificationStatus === null || mappedUser.verificationStatus !== "approved") {
+                // Special handling for landlords
+                if (mappedUser.role === "landlord") {
+                  if (mappedUser.verificationStatus === null || mappedUser.verificationStatus === undefined) {
+                    // Landlord registered but hasn't done IC verification yet
+                    console.log(`[SignIn] Landlord account detected, verification status is NULL. Redirecting to IC verification.`);
+                    router.replace("/identity-verification" as any);
+                    return;
+                  } else if (mappedUser.verificationStatus === "pending") {
+                    // Landlord did IC verification, waiting for admin approval
+                    Alert.alert(
+                      "Verification Pending",
+                      "Your landlord account is pending admin approval. Please wait for confirmation before logging in.",
+                      [{ text: "OK", onPress: () => router.replace("/login") }]
+                    );
+                    return;
+                  } else if (mappedUser.verificationStatus === "rejected") {
+                    Alert.alert(
+                      "Verification Rejected",
+                      "Your landlord account verification was rejected. Please contact support for more information.",
+                      [{ text: "OK", onPress: () => router.replace("/login") }]
+                    );
+                    return;
+                  }
+                }
+                // For tenants or other roles: redirect to IC verification
                 const statusDisplay = mappedUser.verificationStatus === null ? "NULL (not verified)" : mappedUser.verificationStatus || "undefined";
                 console.log(`[SignIn] User verification status is "${statusDisplay}", redirecting to IC verification.`);
-                router.replace("/identity-verification");
+                router.replace("/identity-verification" as any);
                 return;
               }
               
@@ -491,9 +572,34 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
                   
                   // Check if verification_status is NULL, undefined, or not "approved"
                   if (!mappedUser.verificationStatus || mappedUser.verificationStatus === null || mappedUser.verificationStatus !== "approved") {
+                    // Special handling for landlords
+                    if (mappedUser.role === "landlord") {
+                      if (mappedUser.verificationStatus === null || mappedUser.verificationStatus === undefined) {
+                        // Landlord registered but hasn't done IC verification yet
+                        console.log(`[SignIn] Landlord account detected, verification status is NULL. Redirecting to IC verification.`);
+                        router.replace("/identity-verification" as any);
+                        return;
+                      } else if (mappedUser.verificationStatus === "pending") {
+                        // Landlord did IC verification, waiting for admin approval
+                        Alert.alert(
+                          "Verification Pending",
+                          "Your landlord account is pending admin approval. Please wait for confirmation before logging in.",
+                          [{ text: "OK", onPress: () => router.replace("/login") }]
+                        );
+                        return;
+                      } else if (mappedUser.verificationStatus === "rejected") {
+                        Alert.alert(
+                          "Verification Rejected",
+                          "Your landlord account verification was rejected. Please contact support for more information.",
+                          [{ text: "OK", onPress: () => router.replace("/login") }]
+                        );
+                        return;
+                      }
+                    }
+                    // For tenants or other roles: redirect to IC verification
                     const statusDisplay = mappedUser.verificationStatus === null ? "NULL (not verified)" : mappedUser.verificationStatus || "undefined";
                     console.log(`[SignIn] User verification status is "${statusDisplay}", redirecting to IC verification.`);
-                    router.replace("/identity-verification");
+                    router.replace("/identity-verification" as any);
                     return;
                   }
                   
@@ -549,6 +655,31 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           
           // Check if verification_status is NULL, undefined, or not "approved"
           if (!mappedUser.verificationStatus || mappedUser.verificationStatus === null || mappedUser.verificationStatus !== "approved") {
+            // Special handling for landlords
+            if (mappedUser.role === "landlord") {
+              if (mappedUser.verificationStatus === null || mappedUser.verificationStatus === undefined) {
+                // Landlord registered but hasn't done IC verification yet
+                console.log(`[SignIn] Landlord account detected, verification status is NULL. Redirecting to IC verification.`);
+                router.replace("/identity-verification" as any);
+                return;
+              } else if (mappedUser.verificationStatus === "pending") {
+                // Landlord did IC verification, waiting for admin approval
+                Alert.alert(
+                  "Verification Pending",
+                  "Your landlord account is pending admin approval. Please wait for confirmation before logging in.",
+                  [{ text: "OK", onPress: () => router.replace("/login") }]
+                );
+                return;
+              } else if (mappedUser.verificationStatus === "rejected") {
+                Alert.alert(
+                  "Verification Rejected",
+                  "Your landlord account verification was rejected. Please contact support for more information.",
+                  [{ text: "OK", onPress: () => router.replace("/login") }]
+                );
+                return;
+              }
+            }
+            // For tenants or other roles: redirect to IC verification
             const statusDisplay = mappedUser.verificationStatus === null ? "NULL (not verified)" : mappedUser.verificationStatus || "undefined";
             console.log(`[SignIn] User verification status is "${statusDisplay}", redirecting to IC verification.`);
             router.replace("/identity-verification");
