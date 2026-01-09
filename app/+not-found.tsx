@@ -4,9 +4,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 export default function NotFoundScreen() {
   return (
-    <>
-      <Stack.Screen options={{ title: "Oops!" }} />
-      <View style={styles.container}>
+    <View style={styles.container}>
         <View style={styles.iconContainer}>
           <Home size={64} color="#6366F1" />
         </View>
@@ -21,7 +19,6 @@ export default function NotFoundScreen() {
           </View>
         </Link>
       </View>
-    </>
   );
 }
 

@@ -36,13 +36,15 @@ function RootLayoutNav() {
       <Stack.Screen name="add-listing" options={{ title: "Add Listing" }} />
       <Stack.Screen name="edit-listing/[id]" options={{ title: "Edit Listing" }} />
       <Stack.Screen name="property/[id]" options={{ title: "Property Details" }} />
-      <Stack.Screen name="chat/[id]" options={{ title: "Chat" }} />
-      <Stack.Screen name="my-rentals" options={{ title: "My Rentals" }} />
-      <Stack.Screen name="landlord-rentals" options={{ title: "Landlord Rentals" }} />
-      <Stack.Screen name="rent-property/[id]" options={{ title: "Rent Property" }} />
-      <Stack.Screen name="submit-review/[id]" options={{ title: "Submit Review" }} />
-      <Stack.Screen name="review-history" options={{ title: "Review History" }} />
-      <Stack.Screen name="all-reviews" options={{ title: "All Reviews" }} />
+      <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="my-rentals" options={{ headerShown: false }} />
+      <Stack.Screen name="landlord-rentals" options={{ headerShown: false }} />
+      <Stack.Screen name="rent-property/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="submit-review/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="pay-rent/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="review-history" options={{ headerShown: false }} />
+      <Stack.Screen name="all-reviews" options={{ headerShown: false }} />
+      <Stack.Screen name="property/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="affordability-calculator" options={{ title: "Affordability Calculator" }} />
       <Stack.Screen name="(admin)" options={{ headerShown: false }} />
     </Stack>

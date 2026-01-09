@@ -168,14 +168,7 @@ export default function SearchScreen() {
   }, [filters]);
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          title: "Search Properties",
-          headerShown: true,
-        }}
-      />
-      <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
+    <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
         <View style={styles.container}>
           <View style={styles.searchSection}>
             <View style={styles.searchBar}>
