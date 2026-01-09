@@ -220,7 +220,8 @@ export default function PropertyDetailScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <View style={{ flex: 1 }}>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Photos */}
         <View style={styles.photoSection}>
           <ScrollView
@@ -893,5 +894,6 @@ export default function PropertyDetailScreen() {
           <Text style={styles.rentButtonText}>Rent Now</Text>
         </Pressable>
       </View>
+    </View>
   );
 }
