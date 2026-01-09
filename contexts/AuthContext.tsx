@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import type { User, UserRole, VerificationStatus } from "@/src/types";
 import { supabase } from "../lib/supabase";
 import { getUserById, updateUserRole as updateUserRoleAPI, updateUserVerification } from "@/src/api/users";
-import { AppState } from "react-native";
+import { Alert, AppState } from "react-native";
 
 // Tells Supabase Auth to continuously refresh the session automatically if
 // the app is in the foreground. When this is added, you will continue to receive
@@ -275,6 +275,20 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
           // Check if verification_status is NULL, undefined, or not "approved"
           // NULL means user registered but never completed IC verification
           if (!verificationStatus || verificationStatus === null || verificationStatus !== "approved") {
+            if(userData.role === "landlord"){
+              console.log(`[SignIn] Landlord account detected, verification status is not approved. Need to wait for admin approval.`);
+              Alert.alert(
+                "Verification Required",
+                "Your landlord account is pending admin approval. Please wait for confirmation before logging in.",
+                [
+                  {
+                    text: "OK",
+                    onPress: () => router.replace("/login"),
+                  },
+                ]
+              );
+              return;
+            }
             const statusDisplay = verificationStatus === null ? "NULL (not verified)" : verificationStatus;
             console.log(`[SignIn] User verification status is "${statusDisplay}", not approved. Redirecting to IC verification.`);
             // Load user profile and keep authenticated so they can submit verification

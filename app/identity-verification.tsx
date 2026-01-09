@@ -280,6 +280,7 @@ export default function IdentityVerificationScreen() {
       }
 
       // If verification status check fails, show success message and navigate
+      if(user?.role === "tenant"){
       Alert.alert(
         "Verification Successful",
         "Your identity has been verified successfully. You can now use all features.",
@@ -293,6 +294,7 @@ export default function IdentityVerificationScreen() {
           },
         ]
       );
+    }
     } catch (err: any) {
       console.error("Submit error:", err);
       let errorMessage = err?.message || "Unknown error occurred";

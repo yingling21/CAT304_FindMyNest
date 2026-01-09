@@ -464,6 +464,16 @@ app.post("/verify/ic", upload.fields([{ name: "front", maxCount: 1 }, { name: "b
         role: role.trim(),
         verification_status: userVerificationStatus,
       };
+
+      // Landlord must get admin approval before accessing the system
+      console.log(`Role is "${role}", setting verification_status accordingly`);
+      if(role.trim() === "landlord"){
+        console.log('before');
+        console.log(updateData);
+        updateData.verification_status = "pending";
+        console.log('after');
+        console.log(updateData);
+      }
       
       console.log(`📤 Attempting to update user data:`, JSON.stringify(updateData, null, 2));
       
