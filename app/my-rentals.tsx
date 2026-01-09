@@ -1,6 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRentals } from "@/contexts/RentalsContext";
-import { usePayments } from "@/contexts/PaymentsContext";
 import { Image } from "expo-image";
 import { Stack, useRouter } from "expo-router";
 import { ChevronLeft, Home as HomeIcon } from "lucide-react-native";
@@ -20,9 +19,7 @@ export default function MyRentalsScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { getTenantRentals, stopRental, updateRentalStatus } = useRentals();
-  const { createPayment, completePayment } = usePayments();
   const [stoppingRentalId, setStoppingRentalId] = useState<string | null>(null);
-  const [payingRentalId, setPayingRentalId] = useState<string | null>(null);
   const [cancellingRentalId, setCancellingRentalId] = useState<string | null>(null);
   const [propertyTitlesMap, setPropertyTitlesMap] = useState<Record<string, string>>({});
 
@@ -147,47 +144,8 @@ export default function MyRentalsScreen() {
     );
   };
 
-  const handlePayRent = async (rental: any) => {
-    Alert.alert(
-      "Pay Rent",
-      `Pay RM ${rental.monthlyRent} for ${rental.propertyAddress}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Pay Now",
-          onPress: async () => {
-            try {
-              setPayingRentalId(rental.id);
-              
-              const nextDueDate = new Date();
-              nextDueDate.setMonth(nextDueDate.getMonth() + 1);
-              
-              const payment = await createPayment(
-                rental.id,
-                rental.propertyId,
-                rental.landlordId,
-                'recurring',
-                rental.monthlyRent,
-                rental.monthlyRent,
-                0,
-                0,
-                nextDueDate.toISOString()
-              );
-
-              await completePayment(payment.id, 'fpx');
-
-              Alert.alert("Payment Recorded", "Your payment has been recorded successfully!");
-              setPayingRentalId(null);
-            } catch (error) {
-              console.error("Payment failed:", error);
-              Alert.alert("Error", "Failed to process payment. Please try again.");
-            } finally {
-              setPayingRentalId(null);
-            }
-          },
-        },
-      ]
-    );
+  const handlePayRent = (rental: any) => {
+    router.push(`/pay-rent/${rental.id}` as any);
   };
 
   if (!user || user.role !== "tenant") {
@@ -335,18 +293,26 @@ export default function MyRentalsScreen() {
                           <Text style={[styles.daysRemaining, { color: "#10B981" }]}>
                             Starts in {daysUntilStart} {daysUntilStart === 1 ? "day" : "days"}
                           </Text>
-                          <Pressable
-                            style={[
-                              styles.cancelButton,
-                              cancellingRentalId === rental.id && styles.cancelButtonDisabled,
-                            ]}
-                            onPress={() => handleCancelRental(rental)}
-                            disabled={cancellingRentalId === rental.id}
-                          >
-                            <Text style={styles.cancelButtonText}>
-                              {cancellingRentalId === rental.id ? "Cancelling..." : "Cancel Rental"}
-                            </Text>
-                          </Pressable>
+                          <View style={styles.actionButtons}>
+                            <Pressable
+                              style={styles.payButton}
+                              onPress={() => handlePayRent(rental)}
+                            >
+                              <Text style={styles.payButtonText}>Pay Initial Rent</Text>
+                            </Pressable>
+                            <Pressable
+                              style={[
+                                styles.cancelButton,
+                                cancellingRentalId === rental.id && styles.cancelButtonDisabled,
+                              ]}
+                              onPress={() => handleCancelRental(rental)}
+                              disabled={cancellingRentalId === rental.id}
+                            >
+                              <Text style={styles.cancelButtonText}>
+                                {cancellingRentalId === rental.id ? "Cancelling..." : "Cancel Rental"}
+                              </Text>
+                            </Pressable>
+                          </View>
                         </View>
                       </View>
                     );
@@ -405,16 +371,10 @@ export default function MyRentalsScreen() {
                         </View>
                         <View style={styles.actionButtons}>
                           <Pressable
-                            style={[
-                              styles.payButton,
-                              payingRentalId === rental.id && styles.payButtonDisabled,
-                            ]}
+                            style={styles.payButton}
                             onPress={() => handlePayRent(rental)}
-                            disabled={payingRentalId === rental.id}
                           >
-                            <Text style={styles.payButtonText}>
-                              {payingRentalId === rental.id ? "Processing..." : "Pay Rent"}
-                            </Text>
+                            <Text style={styles.payButtonText}>Pay Rent</Text>
                           </Pressable>
                           <Pressable
                             style={[

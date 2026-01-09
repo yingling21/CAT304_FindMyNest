@@ -112,6 +112,12 @@ export default function ChatRoomScreen() {
   const otherPersonPhoto =
     user.role === "tenant" ? conversation.landlordPhoto : conversation.tenantPhoto;
 
+  const hasProperty = !!conversation.propertyId || !!conversation.propertyAddress;
+  const propertyImageUri =
+    conversation.propertyImage && conversation.propertyImage.trim().length > 0
+      ? conversation.propertyImage
+      : "https://via.placeholder.com/400";
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -149,24 +155,26 @@ export default function ChatRoomScreen() {
         </View>
       </View>
 
-      <Pressable
-        style={styles.propertyBanner}
-        onPress={() => router.push(`/property/${conversation.propertyId}` as any)}
-      >
-        <Image
-          source={{ uri: conversation.propertyImage }}
-          style={styles.propertyBannerImage}
-          contentFit="cover"
-        />
-        <View style={styles.propertyBannerContent}>
-          <Text style={styles.propertyBannerTitle} numberOfLines={1}>
-            {conversation.propertyAddress}
-          </Text>
-          <Text style={styles.propertyBannerPrice}>
-            RM {conversation.propertyPrice}/mo
-          </Text>
-        </View>
-      </Pressable>
+      {hasProperty && (
+        <Pressable
+          style={styles.propertyBanner}
+          onPress={() => router.push(`/property/${conversation.propertyId}` as any)}
+        >
+          <Image
+            source={{ uri: propertyImageUri }}
+            style={styles.propertyBannerImage}
+            contentFit="cover"
+          />
+          <View style={styles.propertyBannerContent}>
+            <Text style={styles.propertyBannerTitle} numberOfLines={1}>
+              {conversation.propertyAddress}
+            </Text>
+            <Text style={styles.propertyBannerPrice}>
+              RM {conversation.propertyPrice}/mo
+            </Text>
+          </View>
+        </Pressable>
+      )}
 
       <KeyboardAvoidingView
         style={styles.flex}

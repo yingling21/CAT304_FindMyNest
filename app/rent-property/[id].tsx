@@ -1,6 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRentals } from "@/contexts/RentalsContext";
-import { usePayments } from "@/contexts/PaymentsContext";
 import type { Property } from "@/src/types";
 import { Image } from "expo-image";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -27,14 +26,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "@/styles/rent-property.styles";
 
-type PaymentMethod = "fpx" | "card" | "ewallet";
-
 export default function RentPropertyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
   const { createRental } = useRentals();
-  const { createPayment, completePayment } = usePayments();
 
   const [property, setProperty] = React.useState<Property | null>(null);
   const [isLoadingProperty, setIsLoadingProperty] = React.useState(true);
@@ -58,12 +54,12 @@ export default function RentPropertyScreen() {
     loadProperty();
   }, [id]);
 
-  const [step, setStep] = useState<number>(1);
+  // Single-step flow: configure rental details and send request
+  const [step] = useState<number>(1);
   const [duration, setDuration] = useState<number>(12);
   const [moveInDate, setMoveInDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [customDuration, setCustomDuration] = useState<string>("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("fpx");
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   // Set default moveInDate to availableDate when property loads
@@ -143,7 +139,7 @@ export default function RentPropertyScreen() {
     }
   };
 
-  const handleProceedToPayment = () => {
+  const handleSubmitRentalRequest = async () => {
     // Ensure moveInDate is strictly greater than availableDate
     if (selectedDate <= availableDate) {
       Alert.alert(
@@ -152,10 +148,7 @@ export default function RentPropertyScreen() {
       );
       return;
     }
-    setStep(2);
-  };
 
-  const handleConfirmPayment = async () => {
     if (!user) {
       Alert.alert("Error", "Please sign in to continue");
       return;
@@ -163,7 +156,7 @@ export default function RentPropertyScreen() {
 
     setIsProcessing(true);
     try {
-      const rental = await createRental(
+      await createRental(
         property.id,
         property.address,
         property.photos[0]?.url || '',
@@ -174,33 +167,19 @@ export default function RentPropertyScreen() {
         duration
       );
 
-      const payment = await createPayment(
-        rental.id,
-        property.id,
-        property.landlordId,
-        'initial',
-        totalUpfront,
-        property.monthlyRent,
-        property.securityDeposit,
-        utilitiesDeposit,
-        moveInDate.toISOString()
-      );
-
-      await completePayment(payment.id, paymentMethod);
-
       Alert.alert(
-        "Rental Confirmed",
-        "Your rental has been confirmed successfully!",
+        "Request Sent",
+        "Your rental request has been sent to the landlord. You will be notified once it is approved, then you can pay from My Rentals.",
         [
           {
             text: "OK",
-            onPress: () => router.replace("/(tabs)/profile"),
+            onPress: () => router.replace("/my-rentals"),
           },
         ]
       );
     } catch (error) {
-      console.error("Rental confirmation failed:", error);
-      Alert.alert("Error", "Failed to confirm rental. Please try again later");
+      console.error("Failed to submit rental request:", error);
+      Alert.alert("Error", "Failed to submit rental request. Please try again later");
     } finally {
       setIsProcessing(false);
     }
@@ -211,298 +190,178 @@ export default function RentPropertyScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.header}>
-          <Pressable onPress={() => (step === 2 ? setStep(1) : router.back())} style={styles.backButton}>
+          <Pressable onPress={() => router.back()} style={styles.backButton}>
             <ChevronLeft size={24} color="#1F2937" />
           </Pressable>
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>
-              {step === 1 ? "Rental Details" : "Payment"}
-            </Text>
-            <Text style={styles.headerSubtitle}>Step {step} of 2</Text>
+            <Text style={styles.headerTitle}>Rental Details</Text>
+            <Text style={styles.headerSubtitle}>Step 1 of 1</Text>
           </View>
           <View style={{ width: 40 }} />
         </View>
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Property summary */}
           <View style={styles.propertyCard}>
             <Image
-              source={{ uri: property.photos[0]?.url || 'https://via.placeholder.com/400' }}
+              source={{ uri: property.photos[0]?.url || "https://via.placeholder.com/400" }}
               style={styles.propertyImage}
               contentFit="cover"
             />
             <View style={styles.propertyInfo}>
-              <Text style={styles.propertyName}>{`${property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)} at ${property.address.split(',')[0]}`}</Text>
+              <Text style={styles.propertyName}>
+                {`${property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)} at ${
+                  property.address.split(",")[0]
+                }`}
+              </Text>
               <Text style={styles.propertyPrice}>RM {property.monthlyRent}/mo</Text>
             </View>
           </View>
 
-          {step === 1 ? (
-            <>
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Rental Duration</Text>
-                <View style={styles.durationOptions}>
-                  <Pressable
-                    style={[
-                      styles.durationButton,
-                      duration === 6 && styles.durationButtonActive,
-                    ]}
-                    onPress={() => handleDurationSelect(6)}
-                  >
-                    <Text
-                      style={[
-                        styles.durationButtonText,
-                        duration === 6 && styles.durationButtonTextActive,
-                      ]}
-                    >
-                      6 months
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={[
-                      styles.durationButton,
-                      duration === 12 && styles.durationButtonActive,
-                    ]}
-                    onPress={() => handleDurationSelect(12)}
-                  >
-                    <Text
-                      style={[
-                        styles.durationButtonText,
-                        duration === 12 && styles.durationButtonTextActive,
-                      ]}
-                    >
-                      12 months
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    style={[
-                      styles.durationButton,
-                      duration === 24 && styles.durationButtonActive,
-                    ]}
-                    onPress={() => handleDurationSelect(24)}
-                  >
-                    <Text
-                      style={[
-                        styles.durationButtonText,
-                        duration === 24 && styles.durationButtonTextActive,
-                      ]}
-                    >
-                      24 months
-                    </Text>
-                  </Pressable>
-                </View>
-                <TextInput
-                  style={styles.customDurationInput}
-                  placeholder="Or enter custom duration (months)"
-                  keyboardType="numeric"
-                  value={customDuration}
-                  onChangeText={handleCustomDurationChange}
-                  placeholderTextColor="#9CA3AF"
-                />
-              </View>
-
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Move-in Date</Text>
-                <TouchableOpacity
-                    style={styles.dateInputContainer}
-                    onPress={() => setShowDatePicker(true)}
-                  >
-                    <Calendar size={20} color="#6366F1" />
-                    <Text style={styles.dateInput}>
-                      {moveInDate.toLocaleDateString("en-MY")}
-                    </Text>
-                </TouchableOpacity>
-
-                  {showDatePicker && (
-                    <DateTimePicker
-                      value={moveInDate}
-                      mode="date"
-                    display="default"
-                    minimumDate={new Date(availableDate.getTime() + 24 * 60 * 60 * 1000)}
-                    onChange={handleDateChange}
-                    />
-                  )}
-                <Text style={styles.availableFromText}>
-                  Available from {availableDate.toLocaleDateString("en-MY", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                  })}
-                </Text>
-              </View>
-
-              <View style={styles.rentalPeriodCard}>
-                <Text style={styles.rentalPeriodTitle}>Rental Period</Text>
-                <View style={styles.rentalPeriodDates}>
-                  <Text style={styles.rentalPeriodDate}>
-                    Start: {selectedDate.toLocaleDateString("en-MY", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })}
-                  </Text>
-                  <Text style={styles.rentalPeriodDate}>
-                    End: {endDate.toLocaleDateString("en-MY", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Payment Summary</Text>
-                <View style={styles.summaryCard}>
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>First Month Rent</Text>
-                    <Text style={styles.summaryValue}>RM {firstMonthRent}</Text>
-                  </View>
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Security Deposit</Text>
-                    <Text style={styles.summaryValue}>RM {securityDeposit}</Text>
-                  </View>
-                  {utilitiesDeposit > 0 && (
-                    <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Utilities Deposit</Text>
-                      <Text style={styles.summaryValue}>RM {utilitiesDeposit}</Text>
-                    </View>
-                  )}
-                  <View style={styles.summaryDivider} />
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryTotalLabel}>Total Upfront Payment</Text>
-                    <Text style={styles.summaryTotalValue}>RM {totalUpfront}</Text>
-                  </View>
-                </View>
-              </View>
-
+          {/* Rental duration */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Rental Duration</Text>
+            <View style={styles.durationOptions}>
               <Pressable
-                style={styles.proceedButton}
-                onPress={handleProceedToPayment}
+                style={[styles.durationButton, duration === 6 && styles.durationButtonActive]}
+                onPress={() => handleDurationSelect(6)}
               >
-                <Text style={styles.proceedButtonText}>Proceed to Payment</Text>
-              </Pressable>
-            </>
-          ) : (
-            <>
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Select Payment Method</Text>
-                <Pressable
+                <Text
                   style={[
-                    styles.paymentMethodCard,
-                    paymentMethod === "fpx" && styles.paymentMethodCardActive,
+                    styles.durationButtonText,
+                    duration === 6 && styles.durationButtonTextActive,
                   ]}
-                  onPress={() => setPaymentMethod("fpx")}
                 >
-                  <View style={styles.paymentMethodIcon}>
-                    <Building2 size={24} color="#6366F1" />
-                  </View>
-                  <View style={styles.paymentMethodInfo}>
-                    <Text style={styles.paymentMethodTitle}>FPX Online Banking</Text>
-                    <Text style={styles.paymentMethodSubtitle}>
-                      All Malaysian banks supported
-                    </Text>
-                  </View>
-                  {paymentMethod === "fpx" && (
-                    <CheckCircle2 size={24} color="#6366F1" />
-                  )}
-                </Pressable>
-
-                <Pressable
-                  style={[
-                    styles.paymentMethodCard,
-                    paymentMethod === "card" && styles.paymentMethodCardActive,
-                  ]}
-                  onPress={() => setPaymentMethod("card")}
-                >
-                  <View style={styles.paymentMethodIcon}>
-                    <CreditCard size={24} color="#6366F1" />
-                  </View>
-                  <View style={styles.paymentMethodInfo}>
-                    <Text style={styles.paymentMethodTitle}>Credit / Debit Card</Text>
-                    <Text style={styles.paymentMethodSubtitle}>
-                      Visa, Mastercard accepted
-                    </Text>
-                  </View>
-                  {paymentMethod === "card" && (
-                    <CheckCircle2 size={24} color="#6366F1" />
-                  )}
-                </Pressable>
-
-                <Pressable
-                  style={[
-                    styles.paymentMethodCard,
-                    paymentMethod === "ewallet" && styles.paymentMethodCardActive,
-                  ]}
-                  onPress={() => setPaymentMethod("ewallet")}
-                >
-                  <View style={styles.paymentMethodIcon}>
-                    <Wallet size={24} color="#6366F1" />
-                  </View>
-                  <View style={styles.paymentMethodInfo}>
-                    <Text style={styles.paymentMethodTitle}>E-Wallet</Text>
-                    <Text style={styles.paymentMethodSubtitle}>
-                      Touch n Go, GrabPay, Boost
-                    </Text>
-                  </View>
-                  {paymentMethod === "ewallet" && (
-                    <CheckCircle2 size={24} color="#6366F1" />
-                  )}
-                </Pressable>
-              </View>
-
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Payment Summary</Text>
-                <View style={styles.summaryCard}>
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>First Month Rent</Text>
-                    <Text style={styles.summaryValue}>RM {firstMonthRent}</Text>
-                  </View>
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Security Deposit</Text>
-                    <Text style={styles.summaryValue}>RM {securityDeposit}</Text>
-                  </View>
-                  {utilitiesDeposit > 0 && (
-                    <View style={styles.summaryRow}>
-                      <Text style={styles.summaryLabel}>Utilities Deposit</Text>
-                      <Text style={styles.summaryValue}>RM {utilitiesDeposit}</Text>
-                    </View>
-                  )}
-                  <View style={styles.summaryDivider} />
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryTotalLabel}>Total to Pay</Text>
-                    <Text style={styles.summaryTotalValue}>RM {totalUpfront}</Text>
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.securePaymentNotice}>
-                <CheckCircle2 size={20} color="#10B981" />
-                <Text style={styles.securePaymentText}>
-                  <Text style={styles.securePaymentBold}>Secure Payment</Text>
-                  {"\n"}Your payment is protected with industry-standard encryption
-                  and security measures.
+                  6 months
                 </Text>
-              </View>
-
-              <View style={styles.buttonRow}>
-                <Pressable style={styles.backPaymentButton} onPress={() => setStep(1)}>
-                  <Text style={styles.backPaymentButtonText}>Back</Text>
-                </Pressable>
-                <Pressable
+              </Pressable>
+              <Pressable
+                style={[styles.durationButton, duration === 12 && styles.durationButtonActive]}
+                onPress={() => handleDurationSelect(12)}
+              >
+                <Text
                   style={[
-                    styles.confirmButton,
-                    isProcessing && styles.confirmButtonDisabled,
+                    styles.durationButtonText,
+                    duration === 12 && styles.durationButtonTextActive,
                   ]}
-                  onPress={handleConfirmPayment}
-                  disabled={isProcessing}
                 >
-                  <Text style={styles.confirmButtonText}>
-                    {isProcessing ? "Processing..." : "Confirm Payment"}
-                  </Text>
-                </Pressable>
+                  12 months
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.durationButton, duration === 24 && styles.durationButtonActive]}
+                onPress={() => handleDurationSelect(24)}
+              >
+                <Text
+                  style={[
+                    styles.durationButtonText,
+                    duration === 24 && styles.durationButtonTextActive,
+                  ]}
+                >
+                  24 months
+                </Text>
+              </Pressable>
+            </View>
+            <TextInput
+              style={styles.customDurationInput}
+              placeholder="Or enter custom duration (months)"
+              keyboardType="numeric"
+              value={customDuration}
+              onChangeText={handleCustomDurationChange}
+              placeholderTextColor="#9CA3AF"
+            />
+          </View>
+
+          {/* Move-in date */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Move-in Date</Text>
+            <TouchableOpacity
+              style={styles.dateInputContainer}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Calendar size={20} color="#6366F1" />
+              <Text style={styles.dateInput}>{moveInDate.toLocaleDateString("en-MY")}</Text>
+            </TouchableOpacity>
+
+            {showDatePicker && (
+              <DateTimePicker
+                value={moveInDate}
+                mode="date"
+                display="default"
+                minimumDate={new Date(availableDate.getTime() + 24 * 60 * 60 * 1000)}
+                onChange={handleDateChange}
+              />
+            )}
+
+            <Text style={styles.availableFromText}>
+              Available from{" "}
+              {availableDate.toLocaleDateString("en-MY", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              })}
+            </Text>
+          </View>
+
+          {/* Rental period summary */}
+          <View style={styles.rentalPeriodCard}>
+            <Text style={styles.rentalPeriodTitle}>Rental Period</Text>
+            <View style={styles.rentalPeriodDates}>
+              <Text style={styles.rentalPeriodDate}>
+                Start:{" "}
+                {selectedDate.toLocaleDateString("en-MY", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })}
+              </Text>
+              <Text style={styles.rentalPeriodDate}>
+                End:{" "}
+                {endDate.toLocaleDateString("en-MY", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })}
+              </Text>
+            </View>
+          </View>
+
+          {/* Upfront payment summary (for info only) */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Upfront Amount (after approval)</Text>
+            <View style={styles.summaryCard}>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>First Month Rent</Text>
+                <Text style={styles.summaryValue}>RM {firstMonthRent}</Text>
               </View>
-            </>
-          )}
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Security Deposit</Text>
+                <Text style={styles.summaryValue}>RM {securityDeposit}</Text>
+              </View>
+              {utilitiesDeposit > 0 && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Utilities Deposit</Text>
+                  <Text style={styles.summaryValue}>RM {utilitiesDeposit}</Text>
+                </View>
+              )}
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryTotalLabel}>Total Upfront</Text>
+                <Text style={styles.summaryTotalValue}>RM {totalUpfront}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Submit request */}
+          <Pressable
+            style={[styles.proceedButton, isProcessing && styles.confirmButtonDisabled]}
+            onPress={handleSubmitRentalRequest}
+            disabled={isProcessing}
+          >
+            <Text style={styles.proceedButtonText}>
+              {isProcessing ? "Sending Request..." : "Send Rental Request"}
+            </Text>
+          </Pressable>
 
           <View style={{ height: 40 }} />
         </ScrollView>
