@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import "dotenv/config";
 
 export default {
   expo: {
@@ -14,7 +14,7 @@ export default {
     splash: {
       image: "./assets/images/splash-icon.png",
       resizeMode: "contain",
-      backgroundColor: "#ffffff"
+      backgroundColor: "#ffffff",
     },
 
     ios: {
@@ -23,64 +23,68 @@ export default {
       usesIcloudStorage: true,
       deploymentTarget: "16.0",
       infoPlist: {
-        NSLocationWhenInUseUsageDescription: "Allow location access for maps"
+        NSLocationWhenInUseUsageDescription: "Allow location access for maps",
       },
       config: {
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-      }
+        googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
+      },
     },
 
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/images/adaptive-icon.png",
-        backgroundColor: "#ffffff"
+        backgroundColor: "#ffffff",
       },
       package: "app.rork.house_rent_app_clone",
       permissions: [
         "RECEIVE_BOOT_COMPLETED",
-        "SCHEDULE_EXACT_ALARM"
-      ]
+        "SCHEDULE_EXACT_ALARM",
+      ],
+      config: {
+        googleMaps: {
+          apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
+        },
+      },
     },
 
     web: {
-      favicon: "./assets/images/favicon.png"
+      favicon: "./assets/images/favicon.png",
     },
 
     extra: {
-      googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+      googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
     },
 
     plugins: [
       [
         "expo-router",
-        { origin: "https://findmynest.com/" }
+        { origin: "https://findmynest.com/" },
       ],
       "expo-font",
       "expo-web-browser",
       [
         "expo-document-picker",
-        { iCloudContainerEnvironment: "Production" }
+        { iCloudContainerEnvironment: "Production" },
       ],
       [
         "expo-notifications",
         {
-          // icon: "./local/assets/notification_icon.png",
           color: "#ffffff",
           defaultChannel: "default",
-          enableBackgroundRemoteNotifications: false
-        }
+          enableBackgroundRemoteNotifications: false,
+        },
       ],
       [
         "@stripe/stripe-react-native",
         {
           merchantIdentifier: "merchant.com.findmynest",
-          publishableKey: process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY
-        }
-      ]
+          publishableKey: process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+        },
+      ],
     ],
 
     experiments: {
-      typedRoutes: true
-    }
-  }
+      typedRoutes: true,
+    },
+  },
 };
