@@ -115,7 +115,7 @@ export default function LoginRoleSelectionScreen() {
                 </Text>
                 {!tenantVerified && (
                   <Text style={{ fontSize: 12, color: "#F59E0B", marginTop: 8, textAlign: "center", fontWeight: "600" }}>
-                    ⚠️ IC verification required - You will be redirected to complete verification
+                    ⚠️ Verification required
                   </Text>
                 )}
                 {tenantVerified && (
@@ -144,7 +144,7 @@ export default function LoginRoleSelectionScreen() {
                 </Text>
                 {!landlordVerified && (
                   <Text style={{ fontSize: 12, color: "#F59E0B", marginTop: 8, textAlign: "center", fontWeight: "600" }}>
-                    ⚠️ IC verification required - You will be redirected to complete verification
+                    ⚠️ Verification required
                   </Text>
                 )}
                 {landlordVerified && (
