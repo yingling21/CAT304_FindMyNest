@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useMessages } from "@/contexts/MessagesContext";
 import { Image } from "expo-image";
-import { useLocalSearchParams, useRouter, Stack } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, Send, AlertCircle } from "lucide-react-native";
 import React, { useEffect, useState, useRef } from "react";
 import {
@@ -120,8 +120,6 @@ export default function ChatRoomScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <Stack.Screen options={{ headerShown: false }} />
-      
       <View style={styles.header}>
         <Pressable
           style={styles.backButton}

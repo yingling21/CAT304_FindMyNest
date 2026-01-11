@@ -250,9 +250,7 @@ export default function LandlordRentalsScreen() {
   }
 
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
             <ChevronLeft size={24} color="#1F2937" />
@@ -685,7 +683,6 @@ export default function LandlordRentalsScreen() {
           <View style={{ height: 40 }} />
         </ScrollView>
       </SafeAreaView>
-    </>
   );
 }
 

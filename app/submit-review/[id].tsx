@@ -72,31 +72,28 @@ export default function SubmitReviewScreen() {
 
   if (hasReviewed(rental.id)) {
     return (
-      <>
-        <Stack.Screen options={{ headerShown: false }} />
-        <SafeAreaView style={styles.container} edges={["top"]}>
-          <View style={styles.header}>
-            <Pressable onPress={() => router.back()} style={styles.backButton}>
-              <ChevronLeft size={24} color="#1F2937" />
-            </Pressable>
-            <Text style={styles.headerTitle}>Review</Text>
-            <View style={{ width: 40 }} />
-          </View>
-          <View style={styles.alreadyReviewedContainer}>
-            <CheckCircle2 size={64} color="#10B981" />
-            <Text style={styles.alreadyReviewedTitle}>Review Already Submitted</Text>
-            <Text style={styles.alreadyReviewedText}>
-              You have already submitted a review for this rental.
-            </Text>
-            <Pressable
-              style={styles.backToRentalsButton}
-              onPress={() => router.push("/my-rentals")}
-            >
-              <Text style={styles.backToRentalsButtonText}>Back to My Rentals</Text>
-            </Pressable>
-          </View>
-        </SafeAreaView>
-      </>
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <View style={styles.header}>
+          <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <ChevronLeft size={24} color="#1F2937" />
+          </Pressable>
+          <Text style={styles.headerTitle}>Review</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.alreadyReviewedContainer}>
+          <CheckCircle2 size={64} color="#10B981" />
+          <Text style={styles.alreadyReviewedTitle}>Review Already Submitted</Text>
+          <Text style={styles.alreadyReviewedText}>
+            You have already submitted a review for this rental.
+          </Text>
+          <Pressable
+            style={styles.backToRentalsButton}
+            onPress={() => router.push("/my-rentals")}
+          >
+            <Text style={styles.backToRentalsButtonText}>Back to My Rentals</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -155,9 +152,7 @@ export default function SubmitReviewScreen() {
   };
 
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
             <ChevronLeft size={24} color="#1F2937" />
@@ -270,9 +265,8 @@ export default function SubmitReviewScreen() {
               {isSubmitting ? "Submitting..." : "Submit Review"}
             </Text>
           </Pressable>
-          </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

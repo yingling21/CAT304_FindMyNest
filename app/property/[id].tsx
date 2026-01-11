@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ScrollView, Text, View, Pressable, Alert, Button, Dimensions } from "react-native";
-import { useLocalSearchParams, useRouter, Stack } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MapComponent from "@/components/maps/MapComponent";
 import NearbyPlaces from "@/components/maps/NearbyPlaces";
@@ -220,19 +220,7 @@ export default function PropertyDetailScreen() {
   };
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerTitle: "",
-          headerTransparent: true,
-          headerRight: () => (
-            <Pressable onPress={handleFavoritePress} style={styles.headerFavoriteButton}>
-              <Heart size={24} color={favorite ? "#EF4444" : "#1F2937"} fill={favorite ? "#EF4444" : "transparent"} />
-            </Pressable>
-          ),
-        }}
-      />
-
+    <View style={{ flex: 1 }}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Photos */}
         <View style={styles.photoSection}>
@@ -906,6 +894,6 @@ export default function PropertyDetailScreen() {
           <Text style={styles.rentButtonText}>Rent Now</Text>
         </Pressable>
       </View>
-    </>
+    </View>
   );
 }

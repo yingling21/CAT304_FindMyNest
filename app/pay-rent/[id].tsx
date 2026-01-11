@@ -3,7 +3,7 @@ import { usePayments } from "@/contexts/PaymentsContext";
 import type { Rental } from "@/src/types/rental";
 import type { Property } from "@/src/types";
 import { Image } from "expo-image";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ChevronLeft,
   CreditCard,
@@ -141,9 +141,7 @@ export default function PayRentScreen() {
   };
 
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
             <ChevronLeft size={24} color="#1F2937" />
@@ -312,7 +310,6 @@ export default function PayRentScreen() {
           <View style={{ height: 40 }} />
         </ScrollView>
       </SafeAreaView>
-    </>
   );
 }
 

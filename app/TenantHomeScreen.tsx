@@ -1,7 +1,7 @@
 import PropertyCard from "@/components/PropertyCard";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Property } from "@/src/types";
-import AffordabilityCalculator from "@/app/affordability-calculator";
+import AffordabilityCalculator from "./affordability-calculator";
 import PropertySearchHeader from "@/components/tenant/PropertySearchHeader";
 import PropertyFilterTools from "@/components/tenant/PropertyFilterTools";
 import PropertyFiltersModal from "@/components/tenant/PropertyFiltersModal";

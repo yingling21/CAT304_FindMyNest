@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRentals } from "@/contexts/RentalsContext";
 import { Image } from "expo-image";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { ChevronLeft, Home as HomeIcon } from "lucide-react-native";
 import React, { useState, useEffect } from "react";
 import { getPropertyById } from "@/src/api/properties";
@@ -157,9 +157,7 @@ export default function MyRentalsScreen() {
   }
 
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
             <ChevronLeft size={24} color="#1F2937" />
@@ -463,6 +461,5 @@ export default function MyRentalsScreen() {
           <View style={{ height: 40 }} />
         </ScrollView>
       </SafeAreaView>
-    </>
   );
 }
